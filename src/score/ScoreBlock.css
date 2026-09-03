@@ -1,0 +1,115 @@
+/*
+ * Section 3b. One block, one set of type sizes, everywhere it appears.
+ *
+ * There are no modifier classes here on purpose: a `.score--compact` is exactly
+ * the bug rule 6 forbids. If a screen cannot fit this block, the screen is what
+ * gives way.
+ */
+
+.score {
+  display: block;
+}
+
+.score-label {
+  font: 600 14px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-45);
+  margin-bottom: 11px;
+}
+
+/* Line 2 — current value, /10, the date it was confirmed. */
+.score-current {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.score-value {
+  font: 600 34px/1 var(--sans);
+  color: var(--ink);
+}
+
+.score-of {
+  font: 400 17px/1 var(--sans);
+  color: var(--ink-45);
+}
+
+.score-date {
+  font: 400 16px/1 var(--mono);
+  color: var(--ink-50);
+}
+
+/* Section 4: provenance visible without opening anything. */
+.score-source {
+  font: 600 13px/1 var(--mono);
+  letter-spacing: 0.08em;
+  padding: 5px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--ink-45);
+  color: var(--ink-70);
+}
+
+/* A quiet marker, never an alarm. */
+.score-stale {
+  font: 600 16px/1 var(--sans);
+  color: var(--amber);
+}
+
+.score-unrated {
+  font: 600 34px/1 var(--sans);
+  color: var(--ink-38);
+}
+
+.score-rate {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: 600 17px/1 var(--sans);
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.score-rate:hover {
+  background: none;
+}
+
+/* Line 3 — previous value, its date, the delta, the elapsed time. */
+.score-previous {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 7px;
+}
+
+.score-prev-value {
+  font: 600 20px/1 var(--sans);
+  color: var(--ink-38);
+}
+
+.score-prev-date {
+  font: 400 16px/1 var(--mono);
+  color: var(--ink-50);
+}
+
+.score-delta {
+  font: 600 16px/1 var(--sans);
+}
+
+.score-delta-up { color: var(--accent); }
+.score-delta-down { color: var(--warn); }
+.score-delta-flat { color: var(--ink-50); }
+
+.score-elapsed {
+  font: 400 16px/1 var(--mono);
+  color: var(--ink-40);
+  margin-left: -5px;
+}
+
+.score-first {
+  font: 400 16px/1 var(--mono);
+  color: var(--ink-50);
+}

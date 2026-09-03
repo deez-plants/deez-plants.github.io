@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "lib": ["ES2023"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "module": "commonjs",
     "outDir": "./build",
     "rootDir": "../src",
@@ -13,6 +16,8 @@
     "../src/db/derive.ts",
     "../src/db/fieldCodec.ts",
     "../src/db/seed.ts",
-    "../src/lib/dates.ts"
+    "../src/lib/dates.ts",
+    "../src/care/careRound.ts",
+    "../src/score/score.ts"
   ]
 }

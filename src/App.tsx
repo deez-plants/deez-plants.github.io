@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react';
 import { boot, refresh, reseed, wipe, type Booted } from './boot';
 import { formatDayMonth } from './lib/dates';
+import { ScoreBlock } from './score/ScoreBlock';
+import { collectionScore, plantScore } from './score/score';
+import CareRoundPage from './pages/CareRoundPage';
 import type { SeedOutcome } from './db/seedRun';
 import './App.css';
 
 /**
- * A first-run check screen, not the app. It exists to make the seed visible:
- * what landed, what the log derives to, and that running the seed again changes
- * nothing. The real Home / Plants / plant detail screens replace this.
+ * A first-run check screen plus Log care, not the app. The check screen exists
+ * to make the seed visible: what landed, what the log derives to, and that
+ * running the seed again changes nothing. The real Home / Plants / plant detail
+ * screens replace it.
  */
 
 type Load =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; data: Booted };
+
+type Screen = 'check' | 'care';
 
 function seedLine(o: SeedOutcome): string {
   if (o.already_seeded) return 'Already seeded — this run did nothing.';
@@ -27,6 +33,7 @@ function seedLine(o: SeedOutcome): string {
 export default function App() {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
   const [note, setNote] = useState<string | null>(null);
+  const [screen, setScreen] = useState<Screen>('check');
 
   useEffect(() => {
     let live = true;
@@ -49,8 +56,28 @@ export default function App() {
     );
   }
 
-  const { state, outcome, thumbs, as_of } = load.data;
+  const { state, outcome, thumbs, as_of, events, registry } = load.data;
   const plants = state.order.map((id) => state.plants[id]);
+
+  // Every write goes through this: re-read the store and rebuild from the log.
+  // Nothing patches derived state in place (rule 10).
+  const reload = async () => {
+    setLoad({ status: 'ready', data: await refresh() });
+  };
+
+  if (screen === 'care') {
+    return (
+      <CareRoundPage
+        state={state}
+        events={events}
+        registry={registry}
+        thumbs={thumbs}
+        as_of={as_of}
+        onChanged={reload}
+        onBack={() => setScreen('check')}
+      />
+    );
+  }
 
   const runAgain = async () => {
     setNote('Running the seed again…');
@@ -78,29 +105,32 @@ export default function App() {
       </header>
 
       <section className="panel">
+        <button className="go-care" onClick={() => setScreen('care')}>
+          Log care
+          {state.pending_count > 0 && <span className="tag pending">{state.pending_count} pending</span>}
+        </button>
+      </section>
+
+      <section className="panel">
         <p>{seedLine(outcome)}</p>
         {outcome.missing.length > 0 && (
           <ul className="missing">{outcome.missing.map((m) => <li key={m}>{m}</li>)}</ul>
         )}
         <div className="actions">
           <button onClick={() => void runAgain()}>Run seed again</button>
-          <button onClick={() => void refresh().then((d) => setLoad({ status: 'ready', data: d }))}>
-            Recompute
-          </button>
+          <button onClick={() => void reload()}>Recompute</button>
           <button className="danger" onClick={() => void clear()}>Clear database</button>
         </div>
         {note && <p className="note">{note}</p>}
       </section>
 
       <section className="panel">
+        {/* The collection average, in the one score block. */}
+        <ScoreBlock {...collectionScore(state)} />
         <dl className="summary">
           <div><dt>Active</dt><dd>{state.collection.active_count}</dd></div>
           <div><dt>Archived</dt><dd>{state.collection.archived_count}</dd></div>
           <div><dt>Rated</dt><dd>{state.collection.rated_count}</dd></div>
-          <div>
-            <dt>Average health</dt>
-            <dd>{state.collection.average_health ?? <span className="dim">not rated</span>}</dd>
-          </div>
           <div><dt>Photos</dt><dd>{plants.reduce((n, p) => n + p.photos.length, 0)}</dd></div>
           <div>
             <dt>Needs attention</dt>
@@ -142,12 +172,8 @@ export default function App() {
                   {' · '}{p.photos.length} photo{p.photos.length === 1 ? '' : 's'}
                   {p.last_checked && <> · last event {formatDayMonth(p.last_checked)}</>}
                 </p>
-                {/* Not rated and never watered are true statements about the record,
-                    not claims about the plant. */}
-                <p className="attention">
-                  {p.health.current === null ? 'Not rated' : `Health ${p.health.current}/10`}
-                  {p.adherence.last_water === null && ' · no watering logged'}
-                </p>
+                {/* Rule 6: the same block here as on Home and plant detail. */}
+                <div className="plant-score"><ScoreBlock {...plantScore(p)} /></div>
               </div>
             </li>
           );

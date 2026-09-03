@@ -3,6 +3,7 @@ import { runFirstRunSeed, type SeedOutcome } from './db/seedRun';
 import { derive } from './db/derive';
 import { todayISO } from './lib/dates';
 import type { DerivedState } from './types/derived';
+import type { StoredEvent } from './types/event';
 import type { Registry } from './types/plant';
 import type { ISODate } from './types/ids';
 
@@ -18,9 +19,22 @@ import type { ISODate } from './types/ids';
 export interface Booted {
   outcome: SeedOutcome;
   state: DerivedState;
+  /**
+   * The raw log, as read. Screens that need a fact derived state does not carry
+   * — the last Feed on a plant, say — read it from here rather than growing
+   * `DerivedState` a field per screen.
+   */
+  events: StoredEvent[];
+  registry: Registry;
   /** media_id -> object URL for that photo's thumbnail. */
   thumbs: Map<string, string>;
   as_of: ISODate;
+}
+
+interface Read {
+  state: DerivedState;
+  events: StoredEvent[];
+  registry: Registry;
 }
 
 const EMPTY_REGISTRY: Registry = { rooms: [], planters: [], updated: '1970-01-01' as ISODate };
@@ -32,21 +46,26 @@ const EMPTY_REGISTRY: Registry = { rooms: [], planters: [], updated: '1970-01-01
  */
 const thumbUrls = new Map<string, string>();
 
-async function readAndDerive(db: DeezDB, as_of: ISODate): Promise<Booted['state']> {
-  const [baselines, events, registry] = await Promise.all([
+async function readAndDerive(db: DeezDB, as_of: ISODate): Promise<Read> {
+  const [baselines, events, stored] = await Promise.all([
     db.getAll('plants'),
     db.getAll('events'),
     db.get('registry', REGISTRY_KEY),
   ]);
+  const registry = stored ?? EMPTY_REGISTRY;
 
-  return derive({
-    baselines,
+  return {
     events,
-    registry: registry ?? EMPTY_REGISTRY,
-    as_of,
-    // The committed view: what the numbers say between Updates.
-    include_pending: false,
-  });
+    registry,
+    state: derive({
+      baselines,
+      events,
+      registry,
+      as_of,
+      // The committed view: what the numbers say between Updates.
+      include_pending: false,
+    }),
+  };
 }
 
 async function loadThumbs(db: DeezDB): Promise<Map<string, string>> {
@@ -62,7 +81,7 @@ async function start(): Promise<Booted> {
   const as_of = todayISO();
   const db = await openDeezPlants();
   const outcome = await runFirstRunSeed(db, as_of);
-  return { outcome, state: await readAndDerive(db, as_of), thumbs: await loadThumbs(db), as_of };
+  return { outcome, ...await readAndDerive(db, as_of), thumbs: await loadThumbs(db), as_of };
 }
 
 // React StrictMode runs effects twice in development. Sharing one promise keeps
@@ -81,7 +100,7 @@ export async function refresh(): Promise<Booted> {
   const current = await inFlight;
   return {
     outcome: current?.outcome ?? { ran: false, already_seeded: true, plants: 0, events: 0, photos: 0, missing: [] },
-    state: await readAndDerive(db, as_of),
+    ...await readAndDerive(db, as_of),
     thumbs: await loadThumbs(db),
     as_of,
   };
