@@ -6,6 +6,14 @@ Design is finished. `FIELD_DEFINITIONS.md` v1.5 is the build spec and the
 validation spec. `Deez Plants.dc.html` is the visual reference — a design mock,
 not the app. Do not port its code; read it for layout, type, colour and copy.
 
+## Companion document
+
+`DESIGN_REFERENCE.md` describes every screen with a screenshot, how the screens
+connect, what each control does, and the type and colour system. Use it as a
+**drift check**: read a screen's entry before building it, and check against it
+after. It is explicitly subordinate to the code — where the built app differs, the
+app is right and the reference is stale. Never revert hand-tuned sizes to match it.
+
 ## Read this before you read the mock
 
 **The mock's sample data is not the data model and not the seed data.** It is 22
