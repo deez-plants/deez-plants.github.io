@@ -1,0 +1,154 @@
+/* Plant detail. Same card language as Log care and Plants. */
+
+.detail {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.detail-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.detail-title {
+  margin: 2px 0 14px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.detail-top {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.detail-hero {
+  flex: none;
+  width: 118px;
+  height: 118px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+  background: var(--panel-raised);
+}
+
+.detail-hero-empty { display: block; }
+
+.detail-score {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.detail-checked {
+  margin: 0 0 16px;
+  font: 400 24px/1 var(--sans);
+  color: var(--ink-60);
+}
+
+.detail-checked-date {
+  font: 600 24px/1 var(--mono);
+  color: var(--ink-50);
+}
+
+.detail-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+
+.detail-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.detail-card-label {
+  flex: 1;
+  font: 600 22px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-45);
+}
+
+.detail-badge {
+  font: 600 22px/1 var(--sans);
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-60);
+}
+
+.detail-badge-on { color: var(--accent); border-color: var(--accent-line); }
+.detail-badge-slip { color: var(--amber); border-color: rgba(233, 161, 92, 0.4); }
+.detail-badge-behind { color: var(--warn); border-color: rgba(232, 138, 106, 0.4); }
+.detail-badge-quiet { color: var(--ink-45); }
+
+.detail-card-line {
+  margin: 0;
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.detail-card-sub {
+  margin: 8px 0 0;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-45);
+  text-wrap: pretty;
+}
+
+.detail-spec {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-spec div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.detail-spec dt {
+  flex: none;
+  width: 98px;
+  font: 600 22px/1.3 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-45);
+}
+
+.detail-spec dd {
+  flex: 1;
+  margin: 0;
+  font: 400 24px/1.3 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.detail-unset { color: var(--ink-40); }
+
+.detail-tag {
+  display: inline-block;
+  font: 600 22px/1 var(--sans);
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-50);
+}
+
+.detail-tag.shared { color: var(--accent); border-color: var(--accent-line); }

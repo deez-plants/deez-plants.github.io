@@ -1,4 +1,4 @@
-/* The first-run check screen. Tokens and body chrome live in index.css. */
+/* Loading and error states only — each screen owns the rest of its styling. */
 
 .shell {
   max-width: 720px;
@@ -6,45 +6,7 @@
   padding: 24px 16px 64px;
 }
 
-header h1 { margin: 0; font-size: 36px; letter-spacing: -0.01em; }
-header p { margin: 4px 0 20px; }
-
 .dim { color: var(--dim); }
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-.panel p { margin: 0 0 10px; }
-.panel p:last-child { margin-bottom: 0; }
-
-.actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-button {
-  font: inherit;
-  color: var(--ink);
-  background: #262b33;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 7px 13px;
-  cursor: pointer;
-}
-button:hover { background: #2f353f; }
-button.danger { color: var(--warn); }
-
-.note {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-  color: var(--accent);
-  font-size: 22px;
-}
-
-.warn { color: var(--warn); }
-.missing { margin: 0 0 10px; padding-left: 18px; color: var(--warn); font-size: 24px; }
 
 .error {
   white-space: pre-wrap;
@@ -54,78 +16,3 @@ button.danger { color: var(--warn); }
   border-radius: 8px;
   padding: 12px;
 }
-
-.summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-.summary div { margin: 0; }
-.summary dt {
-  font-size: 22px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--dim);
-}
-.summary dd { margin: 2px 0 0; font-size: 28px; }
-
-.plants { list-style: none; margin: 0; padding: 0; }
-
-.plant {
-  display: flex;
-  gap: 12px;
-  padding: 10px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  margin-bottom: 8px;
-}
-
-.plant img,
-.plant .noimg {
-  width: 64px;
-  height: 64px;
-  flex: none;
-  border-radius: 7px;
-  object-fit: cover;
-  background: #23272f;
-}
-
-.plant .body { min-width: 0; flex: 1; }
-.plant p { margin: 0; }
-.name { font-weight: 600; }
-.species { font-style: italic; color: var(--dim); font-size: 22px; }
-.meta { color: var(--dim); font-size: 22px; margin-top: 3px !important; }
-.attention { font-size: 22px; margin-top: 4px !important; color: var(--dim); }
-
-.tag {
-  display: inline-block;
-  font-size: 10.5px;
-  padding: 1px 6px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  background: #23272f;
-}
-.tag.shared { color: var(--accent); }
-
-.go-care {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  justify-content: center;
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-  font: 600 24px/1 var(--sans);
-  padding: 16px;
-  border-radius: 12px;
-}
-.go-care:hover { background: var(--accent); }
-
-.tag.pending { color: var(--amber); background: none; }
-
-/* The score block keeps its own type sizes here as everywhere (rule 6); only
-   the space around it belongs to this screen. */
-.plant-score { margin-top: 10px; }

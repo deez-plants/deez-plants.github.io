@@ -18,16 +18,9 @@
 }
 
 .care-title {
-  margin: 0 0 6px;
-  font: 400 34px/1.05 var(--serif);
+  margin: 0 0 18px;
+  font: 400 44px/1.05 var(--serif);
   color: var(--ink);
-}
-
-.care-lede {
-  margin: 0 0 20px;
-  font: 400 24px/1.35 var(--sans);
-  color: var(--ink-60);
-  text-wrap: pretty;
 }
 
 /* ------------------------------------------------------------ the score -- */
@@ -121,11 +114,12 @@
   cursor: pointer;
 }
 
-/* A room is a convenient gesture; a shared-soil planter is a care fact. The
-   dashed accent border says which of the two you are tapping. */
+/* A planter group chip — smaller than the selection chips above it, since
+   there are usually only one or two and they read as a secondary shortcut. */
 .care-chip.group {
   border-style: dashed;
   color: var(--ink-70);
+  padding: 7px 11px;
 }
 
 .care-chip.group.shared {
@@ -134,6 +128,14 @@
 }
 
 .care-chip-n { color: var(--ink-40); }
+
+/* Unchecks every box without touching the picked action or the note — an
+   accidental "All" or "Past interval" tap is never more than one more tap to
+   undo, and it never navigates you off this screen. */
+.care-chip.clear {
+  border-color: rgba(232, 138, 106, 0.4);
+  color: var(--warn);
+}
 
 .care-rows {
   list-style: none;

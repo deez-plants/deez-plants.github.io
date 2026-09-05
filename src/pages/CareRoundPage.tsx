@@ -5,7 +5,7 @@ import type { DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import {
-  EMPTY_DRAFT, NOTE_MAX, ROUND_ACTIONS, addAll, commitUpdate, eventCount, logRound,
+  EMPTY_DRAFT, NOTE_MAX, ROUND_ACTIONS, addAll, commitUpdate, eventCount, groupLabel, logRound,
   preselectFor, roundButtonLabel, roundCandidates, roundHeading, rowStatus, selectionGroups,
   toggle, type RoundAction, type RoundDraft,
 } from '../care/careRound';
@@ -122,9 +122,6 @@ export default function CareRoundPage({
       )}
 
       <h1 className="care-title">Log care</h1>
-      <p className="care-lede">
-        Pick what you did, then who you did it to. A whole watering round takes two taps.
-      </p>
 
       {/* The collection score, rendered by the one score component. Nothing on
           this screen computes a health figure; it reads the one the ratings
@@ -132,8 +129,7 @@ export default function CareRoundPage({
       <section className="care-score">
         <ScoreBlock {...collectionScore(state)} />
         <p className="care-score-note">
-          {state.collection.rated_count} of {state.collection.active_count} plants rated.
-          Logging care never moves this — health is yours to set.
+          {state.collection.rated_count} of {state.collection.active_count} plants rated
         </p>
       </section>
 
@@ -188,6 +184,13 @@ export default function CareRoundPage({
             <button type="button" className="care-chip" onClick={() => setSelection([])}>
               None
             </button>
+            <button
+              type="button"
+              className="care-chip clear"
+              onClick={() => setSelection([])}
+            >
+              Clear
+            </button>
           </div>
 
           <div className="care-chips">
@@ -199,7 +202,7 @@ export default function CareRoundPage({
                 onClick={() => setSelection(addAll(draft.selected, g.ids))}
                 title={g.shared_water ? 'Shared soil — one soak serves all of them' : undefined}
               >
-                + {g.name} <span className="care-chip-n">{g.ids.length}</span>
+                + {groupLabel(g.name)} <span className="care-chip-n">{g.ids.length}</span>
               </button>
             ))}
           </div>

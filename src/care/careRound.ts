@@ -80,31 +80,26 @@ export interface SelectionGroup {
 }
 
 /**
- * Planters first, then rooms. A shared-soil planter is a care fact — one soak
- * really does serve all of them — while a room is only a convenient gesture,
- * and the screen colours them differently for that reason. Groups of one are
- * dropped: a chip that selects a single plant is slower than the row itself.
+ * Planters only — a shared-soil planter is a care fact, one soak really does
+ * serve all of them. Rooms are not a group here: with most of the collection
+ * sitting in the same living room, a room chip would just be a second "All"
+ * button. Groups of one are dropped: a chip that selects a single plant is
+ * slower than the row itself.
  */
 export function selectionGroups(plants: DerivedPlant[], registry: Registry): SelectionGroup[] {
   const shared = new Map(registry.planters.map((p) => [p.name, p.shared_water]));
   const planters = new Map<string, PlantId[]>();
-  const rooms = new Map<string, PlantId[]>();
 
   for (const p of plants) {
-    if (p.planter) {
-      const list = planters.get(p.planter);
-      if (list) list.push(p.plant_id);
-      else planters.set(p.planter, [p.plant_id]);
-    }
-    const list = rooms.get(p.room);
+    if (!p.planter) continue;
+    const list = planters.get(p.planter);
     if (list) list.push(p.plant_id);
-    else rooms.set(p.room, [p.plant_id]);
+    else planters.set(p.planter, [p.plant_id]);
   }
 
-  return [
-    ...[...planters].map(([name, ids]) => ({ name, ids, shared_water: shared.get(name) ?? false })),
-    ...[...rooms].map(([name, ids]) => ({ name, ids, shared_water: false })),
-  ].filter((g) => g.ids.length > 1);
+  return [...planters]
+    .map(([name, ids]) => ({ name, ids, shared_water: shared.get(name) ?? false }))
+    .filter((g) => g.ids.length > 1);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -181,6 +176,11 @@ export function rowStatus(
 
 export function roundHeading(action: RoundAction): string {
   return `Who did you ${action.toLowerCase()}?`;
+}
+
+/** The chip is tight on space — "Decorative" doesn't earn its width there. */
+export function groupLabel(name: string): string {
+  return name.replace(/\s*Decorative\s*/i, ' ').replace(/\s+/g, ' ').trim();
 }
 
 export function roundButtonLabel(draft: RoundDraft): string {
