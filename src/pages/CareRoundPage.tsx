@@ -149,11 +149,11 @@ export default function CareRoundPage({
               onClick={() => pickAction(action)}
             >
               <span className="care-action-label">{action}</span>
-              <span className="care-action-sub">
-                {action === 'Water'
-                  ? (dueCount ? `${dueCount} past interval` : 'none past interval')
-                  : 'pick plants'}
-              </span>
+              {action === 'Water' && (
+                <span className="care-action-sub">
+                  {dueCount ? `${dueCount} past interval` : 'none past interval'}
+                </span>
+              )}
             </button>
           );
         })}

@@ -42,7 +42,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 400 17px/1.4 var(--sans);
+  font: 400 24px/1.4 var(--sans);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }

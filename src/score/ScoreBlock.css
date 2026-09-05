@@ -11,7 +11,7 @@
 }
 
 .score-label {
-  font: 600 14px/1 var(--mono);
+  font: 600 22px/1 var(--mono);
   letter-spacing: 0.08em;
   color: var(--ink-45);
   margin-bottom: 11px;
@@ -26,17 +26,17 @@
 }
 
 .score-value {
-  font: 600 34px/1 var(--sans);
+  font: 600 40px/1 var(--sans);
   color: var(--ink);
 }
 
 .score-of {
-  font: 400 17px/1 var(--sans);
+  font: 400 22px/1 var(--sans);
   color: var(--ink-45);
 }
 
 .score-date {
-  font: 400 16px/1 var(--mono);
+  font: 400 22px/1 var(--mono);
   color: var(--ink-50);
 }
 
@@ -52,12 +52,12 @@
 
 /* A quiet marker, never an alarm. */
 .score-stale {
-  font: 600 16px/1 var(--sans);
+  font: 600 22px/1 var(--sans);
   color: var(--amber);
 }
 
 .score-unrated {
-  font: 600 34px/1 var(--sans);
+  font: 600 40px/1 var(--sans);
   color: var(--ink-38);
 }
 
@@ -65,7 +65,7 @@
   background: none;
   border: 0;
   padding: 0;
-  font: 600 17px/1 var(--sans);
+  font: 600 24px/1 var(--sans);
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -86,17 +86,17 @@
 }
 
 .score-prev-value {
-  font: 600 20px/1 var(--sans);
+  font: 600 28px/1 var(--sans);
   color: var(--ink-38);
 }
 
 .score-prev-date {
-  font: 400 16px/1 var(--mono);
+  font: 400 22px/1 var(--mono);
   color: var(--ink-50);
 }
 
 .score-delta {
-  font: 600 16px/1 var(--sans);
+  font: 600 22px/1 var(--sans);
 }
 
 .score-delta-up { color: var(--accent); }
@@ -104,12 +104,12 @@
 .score-delta-flat { color: var(--ink-50); }
 
 .score-elapsed {
-  font: 400 16px/1 var(--mono);
+  font: 400 22px/1 var(--mono);
   color: var(--ink-40);
   margin-left: -5px;
 }
 
 .score-first {
-  font: 400 16px/1 var(--mono);
+  font: 400 22px/1 var(--mono);
   color: var(--ink-50);
 }
