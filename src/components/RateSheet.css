@@ -1,0 +1,89 @@
+/* The rating sheet. A bottom sheet, same overlay language as the All-pages
+   sheet described in DESIGN_REFERENCE.md — capped height, rounded top only. */
+
+.rate-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 9, 5, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 40;
+}
+
+.rate-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 74vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: 20px 20px 28px;
+}
+
+.rate-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rate-title {
+  flex: 1;
+  font: 400 32px/1.15 var(--serif);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.rate-close {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 6px;
+  font: 400 24px/1 var(--sans);
+  color: var(--ink-45);
+  cursor: pointer;
+}
+
+.rate-sub {
+  margin: 0 0 20px;
+  font: 400 24px/1.35 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.rate-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.rate-num {
+  padding: 18px 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  font: 600 26px/1 var(--sans);
+  cursor: pointer;
+}
+
+.rate-num.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.rate-num:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.rate-error {
+  margin: 16px 0 0;
+  font: 400 22px/1.35 var(--sans);
+  color: var(--warn);
+  text-wrap: pretty;
+}

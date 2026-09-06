@@ -1,6 +1,7 @@
 import type { ISODate } from '../types/ids';
 import type { DerivedCollection, DerivedHealth, DerivedPlant, DerivedState } from '../types/derived';
 import type { HealthSource } from '../types/plant';
+import { formatDayMonth } from '../lib/dates';
 
 /**
  * What the score block is given, and the only ways to build it.
@@ -47,6 +48,24 @@ export function healthScore(h: DerivedHealth, onRate?: () => void): ScoreBlockPr
     stale: h.stale,
     onRate,
   };
+}
+
+/**
+ * Section 4's worked example: "confirmed Aug 14 · unchanged since Jun 2".
+ * `ScoreBlock` itself never renders this — it is fixed at three lines (rule 6)
+ * and its line 3 already carries the previous *value*, not this sentence — so
+ * callers that want the confirm/change gap spelled out show it beside the
+ * block, on plant detail, from this adapter.
+ *
+ * Null when there is nothing to confirm yet (line 2 already reads `Not rated`
+ * in that case). When `changed` equals `confirmed`, the rating just moved and
+ * there is no gap to report, so only the confirm date is shown.
+ */
+export function confirmationLine(h: DerivedHealth): string | null {
+  if (h.current === null || h.confirmed === null) return null;
+  const confirmed = `confirmed ${formatDayMonth(h.confirmed)}`;
+  if (h.changed === null || h.changed === h.confirmed) return confirmed;
+  return `${confirmed} · unchanged since ${formatDayMonth(h.changed)}`;
 }
 
 /**

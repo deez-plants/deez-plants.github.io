@@ -1,16 +1,21 @@
+import { useState } from 'react';
 import type { ISODate } from '../types/ids';
 import type { StoredEvent } from '../types/event';
 import type { DerivedAdherence, DerivedPlant } from '../types/derived';
+import type { Health } from '../types/plant';
 import { formatDayMonth } from '../lib/dates';
 import { rowStatus } from '../care/careRound';
+import { ratePlant } from '../care/rate';
+import { openDeezPlants } from '../db/schema';
 import { ScoreBlock } from '../score/ScoreBlock';
-import { plantScore } from '../score/score';
+import { confirmationLine, plantScore } from '../score/score';
+import { RateSheet } from '../components/RateSheet';
 import './PlantDetail.css';
 
 /**
  * Plant detail: hero, the one score block, adherence as counts and days, care
- * spec, placement, last checked. No rating UI, no photo capture, no export —
- * those are later phases.
+ * spec, placement, last checked. Rating is the one write path this screen owns
+ * — photo capture and export are later phases.
  */
 
 export interface PlantDetailProps {
@@ -20,6 +25,8 @@ export interface PlantDetailProps {
   /** media_id -> object URL. */
   thumbs: Map<string, string>;
   as_of: ISODate;
+  /** Re-read the store and rebuild. Called after a rating is written. */
+  onChanged: () => Promise<void> | void;
   onBack: () => void;
 }
 
@@ -49,13 +56,36 @@ function trimSeasonNote(text: string): string {
   return text.replace(/,?\s*active season\.?$/i, '').trim();
 }
 
-export default function PlantDetail({ plant, events, thumbs, as_of, onBack }: PlantDetailProps) {
+export default function PlantDetail({ plant, events, thumbs, as_of, onChanged, onBack }: PlantDetailProps) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const hero = plant.hero ?? plant.photos[0];
   const heroUrl = hero ? thumbs.get(hero) : undefined;
   const badge = adherenceBadge(plant.adherence);
   // Rule 9: a fact about the calendar, never an instruction — "needs water" may
   // not appear here, only the interval and how far past it the date is.
   const interval = rowStatus('Water', plant, events, as_of);
+  const confirmation = confirmationLine(plant.health);
+
+  const openSheet = () => { setError(null); setSheetOpen(true); };
+  const closeSheet = () => { if (!busy) setSheetOpen(false); };
+
+  const submitRating = async (value: Health) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const db = await openDeezPlants();
+      await ratePlant(db, plant.plant_id, value, as_of);
+      await onChanged();
+      setSheetOpen(false);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <main className="detail">
@@ -67,7 +97,10 @@ export default function PlantDetail({ plant, events, thumbs, as_of, onBack }: Pl
         {heroUrl
           ? <img className="detail-hero" src={heroUrl} alt="" width={118} height={118} />
           : <div className="detail-hero detail-hero-empty" />}
-        <div className="detail-score"><ScoreBlock {...plantScore(plant)} /></div>
+        <div className="detail-score">
+          <ScoreBlock {...plantScore(plant, openSheet)} />
+          {confirmation && <p className="detail-confirmation">{confirmation}</p>}
+        </div>
       </div>
 
       <p className="detail-checked">
@@ -75,6 +108,17 @@ export default function PlantDetail({ plant, events, thumbs, as_of, onBack }: Pl
           ? <>Last checked <span className="detail-checked-date">{formatDayMonth(plant.last_checked)}</span></>
           : 'No events logged yet'}
       </p>
+
+      {sheetOpen && (
+        <RateSheet
+          plantName={plant.name}
+          current={plant.health.current}
+          busy={busy}
+          error={error}
+          onRate={(v) => void submitRating(v)}
+          onClose={closeSheet}
+        />
+      )}
 
       <section className="detail-card">
         <div className="detail-card-head">

@@ -83,6 +83,7 @@ export default function App() {
         events={events}
         thumbs={thumbs}
         as_of={as_of}
+        onChanged={reload}
         onBack={() => setScreen({ kind: 'list' })}
       />
     );

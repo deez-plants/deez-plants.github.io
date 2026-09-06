@@ -51,6 +51,13 @@
   justify-content: center;
 }
 
+.detail-confirmation {
+  margin: 8px 0 0;
+  font: 400 22px/1.3 var(--mono);
+  color: var(--ink-45);
+  text-wrap: pretty;
+}
+
 .detail-checked {
   margin: 0 0 16px;
   font: 400 24px/1 var(--sans);

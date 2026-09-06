@@ -10,7 +10,9 @@
  */
 
 const R = require('./build/care/careRound.js');
+const Rate = require('./build/care/rate.js');
 const S = require('./build/score/score.js');
+const { derive } = require('./build/db/derive.js');
 const { formatDayMonth, formatElapsed, daysBetween } = require('./build/lib/dates.js');
 
 let pass = 0, fail = 0;
@@ -232,6 +234,93 @@ eq('collection has no ME/AI tag', collection.source, null);
 // Nothing in the fixture is rated, so there is no confirmed date to show.
 eq('collection confirmed', collection.confirmed, null);
 eq('collection is not stale without a confirmed date', collection.stale, false);
+
+/* ------------------------------------------------------ the rating write path -- */
+
+// buildRateEvent is the write path's pure half. There is deliberately no branch
+// for "confirming vs changing" in it — section 4 says that distinction lives
+// entirely in how derive.ts reads the log back, never in what gets written, so
+// the same call produces all three scenarios below depending only on the log
+// it lands in.
+
+const rateCtx = { device_id: 'DEV-PHONE-ABC', date: '2026-08-14', time: '09:05' };
+const firstRateEvent = Rate.buildRateEvent('001-MON', 7, rateCtx);
+
+eq('rate event type', firstRateEvent.type, 'Rate');
+eq('rate event carries the value in to', firstRateEvent.to, 7);
+eq('rate event source is user, so health_source reads Me', firstRateEvent.source, 'user');
+eq('rate event device_id', firstRateEvent.device_id, 'DEV-PHONE-ABC');
+eq('rate event id carries date and time for a stable sort',
+  firstRateEvent.event_id.startsWith('EV-2026-08-14-0905-'), true);
+
+throws('a rating below 1 is refused', () => Rate.buildRateEvent('001-MON', 0, rateCtx));
+throws('a rating above 10 is refused', () => Rate.buildRateEvent('001-MON', 11, rateCtx));
+throws('a non-integer rating is refused', () => Rate.buildRateEvent('001-MON', 7.5, rateCtx));
+
+const baseline = (id) => ({
+  plant_id: id, name: id, species: 'Testus plantus', acquired: 'Mar 2024',
+  room: 'Living room', pot: '9" pot', planter: null,
+  water_interval_days: 7, water_interval_days_winter: 14,
+  feed: null, light: null, soil: null, notes_user: '',
+  status_label: null, do_next: null,
+  created: '2026-01-01', created_by: 'DEV-A', origin: 'seed',
+});
+
+const runRated = (rateEvents, as_of) => derive({
+  baselines: [baseline('001-MON')], events: rateEvents, registry, as_of, include_pending: false,
+}).plants['001-MON'].health;
+
+{
+  // A first rating: nothing to confirm against yet, so changed equals confirmed
+  // and the confirmation line has nothing to compare it with.
+  const h = runRated(
+    [Rate.buildRateEvent('001-MON', 7, { device_id: 'DEV-A', date: '2026-06-28', time: '10:00' })],
+    '2026-06-28',
+  );
+  eq('first rating: current', h.current, 7);
+  eq('first rating: confirmed', h.confirmed, '2026-06-28');
+  eq('first rating: changed equals confirmed', h.changed, h.confirmed);
+  eq('first rating: no previous reading', h.previous, null);
+  eq('first rating: source', h.source, 'Me');
+  eq('first rating: confirmation line', S.confirmationLine(h), 'confirmed Jun 28');
+}
+
+{
+  // A confirmation: the same value written again later. Section 4's whole
+  // point — this is a real event, so `confirmed` moves to the new date, but
+  // `changed` must not, and a single tap on the sheet is what produces it.
+  const h = runRated([
+    Rate.buildRateEvent('001-MON', 7, { device_id: 'DEV-A', date: '2026-06-28', time: '10:00' }),
+    Rate.buildRateEvent('001-MON', 7, { device_id: 'DEV-A', date: '2026-08-14', time: '09:05' }),
+  ], '2026-08-14');
+  eq('confirm: current is unchanged', h.current, 7);
+  eq('confirm: confirmed moves to the new date', h.confirmed, '2026-08-14');
+  eq('confirm: changed stays at the original date', h.changed, '2026-06-28');
+  eq('confirm: previous reading is the same value', h.previous.value, 7);
+  eq('confirm: previous reading is the original date', h.previous.date, '2026-06-28');
+  eq('confirm: movement reads no change, never +0.0',
+    S.movement(h.current, h.previous.value).text, 'no change');
+  // The spec's own worked example (section 4): confirmed vs. unchanged since.
+  eq('confirm: the signal beside the score block',
+    S.confirmationLine(h), 'confirmed Aug 14 · unchanged since Jun 28');
+}
+
+{
+  // A genuine change: a different value. Both dates move together — there is
+  // no gap left to report, so the confirmation line drops the second clause.
+  const h = runRated([
+    Rate.buildRateEvent('001-MON', 7, { device_id: 'DEV-A', date: '2026-06-28', time: '10:00' }),
+    Rate.buildRateEvent('001-MON', 9, { device_id: 'DEV-A', date: '2026-08-14', time: '09:05' }),
+  ], '2026-08-14');
+  eq('change: current is the new value', h.current, 9);
+  eq('change: confirmed moves', h.confirmed, '2026-08-14');
+  eq('change: changed moves with it', h.changed, '2026-08-14');
+  eq('change: previous is the old value', h.previous.value, 7);
+  eq('change: previous is the old date', h.previous.date, '2026-06-28');
+  eq('change: movement is up', S.movement(h.current, h.previous.value).tone, 'up');
+  eq('change: confirmation line has no residual gap to report',
+    S.confirmationLine(h), 'confirmed Aug 14');
+}
 
 /* -------------------------------------------------------------------------- */
 
