@@ -95,6 +95,13 @@ Update it as steps complete — redeploy by publishing the same source file
 path from within a session that has read it first (see the Artifact tool's
 own instructions), passing this URL, not by creating a new one.
 
+A companion page, **the Deez Plants Playbook**
+(https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
+step-by-step guide for the owner: how to start a session, what to expect
+while Claude works, the three things that need them, and exact prompts for
+each. It's mostly static — only touch it if the actual workflow changes,
+not per build step.
+
 ## Other files worth knowing about
 
 - `UPDATE_FOR_CLAUDE_DESIGN.md`, `UPDATE_FOR_CLAUDE_PLANNING.md` — point-in-
