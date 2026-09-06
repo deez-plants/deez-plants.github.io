@@ -1,6 +1,9 @@
 # Deez Plants — CLAUDE.md
 
-This file is read automatically at the start of every conversation in this repo.
+**Starting a new session to continue the build? Read `NEXT_SESSION_HANDOFF.md`
+next** — it has exactly where things stood at the end of the last one and
+what's next. This file is read automatically at the start of every
+conversation in this repo.
 The full spec lives in `FIELD_DEFINITIONS.md` (data model, validation, the build
 spec) and `HANDOFF.md` (build order, model-usage guidance). Read those by
 section number when a task needs them — don't re-read them whole every turn.
