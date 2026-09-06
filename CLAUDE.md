@@ -5,6 +5,12 @@ The full spec lives in `FIELD_DEFINITIONS.md` (data model, validation, the build
 spec) and `HANDOFF.md` (build order, model-usage guidance). Read those by
 section number when a task needs them — don't re-read them whole every turn.
 
+`DESIGN_REFERENCE.md`, with a screenshot per screen in `screenshots/`, describes
+all 25 mock screens — what each holds, how they connect, the type/colour system.
+Read a screen's entry before building it, as a drift check only: where the built
+app differs, the app is right and the reference is stale. Never revert a
+hand-tuned size to match it.
+
 ## What this is
 
 A local-first web app, installed to an iPhone home screen, that logs plant
@@ -74,8 +80,8 @@ main.tsx, App.tsx
 ```
 
 Reference/tooling at the repo root, not app code: `FIELD_DEFINITIONS.md`,
-`HANDOFF.md`, `TRANSCRIBE.md`, `SEED_PLANTS.json`, `seed-photos/`,
-`transcribe_walk.py`.
+`HANDOFF.md`, `DESIGN_REFERENCE.md`, `TRANSCRIBE.md`, `SEED_PLANTS.json`,
+`seed-photos/`, `screenshots/`, `transcribe_walk.py`.
 
 ## The non-negotiable rules (HANDOFF.md section 3)
 
