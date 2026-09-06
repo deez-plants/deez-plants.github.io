@@ -196,6 +196,14 @@ address. Then Share → Add to Home Screen.
 
 ## 6. Then what
 
+**Superseded — see `CLAUDE.md`, "Current working agreement."** This section
+assumed a minimal Phase 1 build followed by weeks of live use before more got
+built. That's no longer the plan: the app is being built out fully (all
+screens, matching `DESIGN_REFERENCE.md`) before asking for weeks of daily use.
+The two open questions below are still genuinely open and still worth
+answering from real use once the app is ready for it — just not as the gate
+before the rest gets built.
+
 Use it. Log the Saturday round for three or four weeks. Then:
 
 - **Transcription:** set up Whisper on the laptop once (`TRANSCRIBE.md` in this

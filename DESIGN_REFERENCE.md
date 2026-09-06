@@ -556,7 +556,57 @@ Do not reproduce these.
 
 ---
 
-## 6. Screenshot index
+## 6. From the original design brief
+
+Pulled from `DEEZ_PLANTS_VISUAL_DESIGN_HANDOFF.md` — the brief given to Claude
+Design before it built the mock. Not previously folded into this document.
+Kept here because it explains *why* certain decisions exist, and because two
+items in it never made it into the mock or into section 2 above.
+
+**Readability was a hard requirement, not a preference.** The brief's own
+words: "The user needs to read this without glasses... Body/general text:
+~20px minimum, not smaller... No shrinking text just to fit more on screen —
+vertical scrolling is fully acceptable." The mock itself under-shot this (its
+own type scale in section 3 floors at 16px). The app's current type floors —
+24px body, 22px labels, 44px titles (see the font-size-floor memory) — are
+this requirement carried out properly, not a departure from the design. Any
+future size discussion should treat 20px as the hard floor the brief set, not
+16px.
+
+**Locked, from the original brief — not open for redesign:**
+- The Plant Detail `‹ Prev` / `All plants ▾` / `Next ›` strip (screen 04). This
+  is a requirement from the brief, not a mock embellishment — it should not be
+  dropped even if a build pass overlooks it.
+- The bottom nav concept itself: Home / Plants / Record / More, with History
+  and Log Care as plant-specific contextual actions rather than permanent
+  tabs.
+- Permanent plant IDs, never renumbered or reused.
+- $0 operating cost — no visual or technical choice may imply a paid service.
+
+**Left open, and still open — the mock never resolved it:** whether the Quick
+Care fields on Plant Detail (water/light/soil/feed) should be inline
+accordion/dropdown expanders on the same page, or the flat list the mock
+shipped with. The brief's own framing: use accordions when content is short
+and glanceable, full detail when an expanded accordion would itself feel
+heavy — "worth testing with real content length rather than assuming either
+way." Section 2's entry for screen 04 describes the flat list because that is
+what the mock happened to ship; it was never a decision, just what got built
+first. If it turns out cramped or too plain in practice, this is the reason
+it's worth revisiting rather than treating the mock as final on this point.
+
+**Lessons already learned once — do not reintroduce:**
+- Plant list cards were previously too tall, forcing text into a narrow
+  column beside the thumbnail. Prefer compact rows.
+- A plant's photo previously rendered inside a fixed-height container
+  mismatched to the image's real aspect ratio, leaving a pale empty band
+  above it. Test any photo treatment against a real, non-square source photo,
+  not a placeholder.
+- The care calendar renders newest month first, each month in normal date
+  order — not the whole grid reversed.
+
+---
+
+## 7. Screenshot index
 
 All at 390px wide, dark theme, full screen height, in `screenshots/`.
 

@@ -9,7 +9,27 @@ section number when a task needs them — don't re-read them whole every turn.
 all 25 mock screens — what each holds, how they connect, the type/colour system.
 Read a screen's entry before building it, as a drift check only: where the built
 app differs, the app is right and the reference is stale. Never revert a
-hand-tuned size to match it.
+hand-tuned size to match it. Its section 6 carries facts pulled from the
+original brief to Claude Design that never made it into the mock itself —
+notably that the 20px readability floor is a hard requirement, not a
+preference, and that the Plant Detail Prev/Next strip is locked, not optional.
+`Deez Plants.dc.html` at the repo root is the raw mock this document
+describes — read it directly only when a screenshot is ambiguous; never port
+its code.
+
+## Current working agreement
+
+Superseding `HANDOFF.md` section 6 and `START_HERE.md`'s session-by-session,
+phase-gated workflow (both written for the user driving Claude Code by hand,
+one short conversation per concern, then living with a minimal build for
+weeks before more gets added): we build continuously toward the full app —
+all screens, the nav shell, matching `DESIGN_REFERENCE.md` — with the user
+checked in only for device-only testing (iOS mic/wake lock/install), account
+or hosting steps, and genuine judgment calls. Self-verification (running the
+app, screenshotting it, comparing against `screenshots/`, running the check
+suite) happens before reporting a piece done, not after the user notices it's
+off. Commit at every stable, checks-passing checkpoint so a session ending
+mid-work never costs more than that session.
 
 ## What this is
 
@@ -32,10 +52,10 @@ seeded from `SEED_PLANTS.json`.
 
 ## Intended file layout
 
-Nothing below exists yet except the Vite scaffold (`src/main.tsx`,
-`src/App.tsx`). This is the target shape, filled in phase by phase per
-`HANDOFF.md` section 2 — data layer first, then export/import, then capture,
-then the desk console.
+This is the target shape, filled in as we go — data layer first, then
+export/import, then capture, then the desk console. Data layer, event log,
+the care round, plants list, plant detail and ratings exist already; treat
+this tree as a map of where things go, not a claim about what's built.
 
 ```
 src/
@@ -80,8 +100,8 @@ main.tsx, App.tsx
 ```
 
 Reference/tooling at the repo root, not app code: `FIELD_DEFINITIONS.md`,
-`HANDOFF.md`, `DESIGN_REFERENCE.md`, `TRANSCRIBE.md`, `SEED_PLANTS.json`,
-`seed-photos/`, `screenshots/`, `transcribe_walk.py`.
+`HANDOFF.md`, `DESIGN_REFERENCE.md`, `Deez Plants.dc.html`, `TRANSCRIBE.md`,
+`SEED_PLANTS.json`, `seed-photos/`, `screenshots/`, `transcribe_walk.py`.
 
 ## The non-negotiable rules (HANDOFF.md section 3)
 
