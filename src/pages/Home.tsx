@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { PlantId } from '../types/ids';
 import type { DerivedPlant, DerivedState } from '../types/derived';
 import { ScoreBlock } from '../score/ScoreBlock';
-import { collectionScore } from '../score/score';
+import { collectionScore, healthBand } from '../score/score';
 import './Home.css';
 
 /**
@@ -13,9 +13,11 @@ import './Home.css';
  * Left out of this pass, and why:
  * - The catch-up banner needs a stored "last opened" timestamp, which nothing
  *   writes yet.
- * - The health sparkline needs a history of collection-average snapshots,
- *   which `DerivedState` doesn't keep (only the single most recent previous
- *   average survives, via `collectionScore`).
+ * - The health sparkline is still left off Home itself, though the data gap
+ *   that used to block it is gone: Health history (reached from this
+ *   screen's own "History ›") now reads the real `snapshots` store the same
+ *   way Adherence history does. Adding a compact version here is a follow-up,
+ *   not blocked on anything.
  * - The handoff log and the "session held on this device" notice both belong
  *   to export/import and capture, neither built yet — showing them here would
  *   mean inventing zeros.
@@ -31,20 +33,15 @@ export interface HomeProps {
   onPlaceholder: (title: string, subtitle?: string) => void;
   onArchived: () => void;
   onAdherenceHistory: () => void;
-}
-
-/** No band thresholds are specified anywhere in the spec — this is a
-    reasonable reading of the mock's 1-10 scale, not a derived fact. */
-function band(value: number): 'good' | 'holding' | 'struggling' {
-  if (value >= 7) return 'good';
-  if (value >= 4) return 'holding';
-  return 'struggling';
+  onHealthHistory: () => void;
 }
 
 const NEEDS_ATTENTION_CAP = 6;
 const MOST_URGENT_CAP = 6;
 
-export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory }: HomeProps) {
+export default function Home({
+  state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory,
+}: HomeProps) {
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
     [state],
@@ -52,7 +49,7 @@ export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArch
 
   const rated = active.filter((p) => p.health.current !== null);
   const bands = { good: 0, holding: 0, struggling: 0 };
-  for (const p of rated) bands[band(p.health.current as number)]++;
+  for (const p of rated) bands[healthBand(p.health.current as number)]++;
   const unratedCount = active.length - rated.length;
   const staleCount = active.filter((p) => p.health.stale).length;
 
@@ -114,11 +111,7 @@ export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArch
             {staleCount > 0 && <>{staleCount} not looked at in three months</>}
           </p>
         )}
-        <button
-          type="button"
-          className="home-link"
-          onClick={() => onPlaceholder('Health history', 'Every rating, plant by plant.')}
-        >
+        <button type="button" className="home-link" onClick={onHealthHistory}>
           History ›
         </button>
       </section>

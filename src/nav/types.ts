@@ -31,6 +31,9 @@ export type Screen =
   /** Screen 07: the collection-wide factual record, off Home's CARE ADHERENCE
       block. Not plant-scoped, so no `PlantChrome`. */
   | { kind: 'adherence' }
+  /** Screen 06: the collection's rating average over time, off Home's HEALTH
+      block. Not plant-scoped, so no `PlantChrome`. */
+  | { kind: 'health-history' }
   /** Screen 14: the physical registry — rooms and shared planters. */
   | { kind: 'rooms' }
   | { kind: 'placeholder'; title: string; subtitle?: string };

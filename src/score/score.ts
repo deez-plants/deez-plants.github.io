@@ -100,6 +100,16 @@ export function collectionScore(state: DerivedState): ScoreBlockProps {
 /* Line 3                                                                      */
 /* -------------------------------------------------------------------------- */
 
+/** No band thresholds are specified anywhere in the spec — this is a
+    reasonable reading of the mock's 1-10 scale, not a derived fact. Shared
+    between Home's HEALTH block and Health history so a given average is
+    never coloured differently on the two screens. */
+export function healthBand(value: number): 'good' | 'holding' | 'struggling' {
+  if (value >= 7) return 'good';
+  if (value >= 4) return 'holding';
+  return 'struggling';
+}
+
 /** Section 3b: under 0.05 reads `no change`, not `+0.0`. */
 const NO_MOVEMENT = 0.05;
 

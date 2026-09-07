@@ -12,6 +12,7 @@ import PlantEntries from './pages/PlantEntries';
 import PlantCalendar from './pages/PlantCalendar';
 import ArchivedPlants from './pages/ArchivedPlants';
 import AdherenceHistory from './pages/AdherenceHistory';
+import HealthHistory from './pages/HealthHistory';
 import RoomsPlanters from './pages/RoomsPlanters';
 import MoreAboutPlant from './pages/MoreAboutPlant';
 import InfoSettings from './pages/InfoSettings';
@@ -113,6 +114,7 @@ export default function App() {
         onPlaceholder={(title, subtitle) => placeholder(title, subtitle, 'Home')}
         onArchived={() => nav.push({ kind: 'archive' }, 'Home')}
         onAdherenceHistory={() => nav.push({ kind: 'adherence' }, 'Home')}
+        onHealthHistory={() => nav.push({ kind: 'health-history' }, 'Home')}
       />
     );
   } else if (screen.kind === 'record') {
@@ -267,6 +269,15 @@ export default function App() {
   } else if (screen.kind === 'adherence') {
     body = (
       <AdherenceHistory
+        state={state}
+        snapshots={snapshots}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+      />
+    );
+  } else if (screen.kind === 'health-history') {
+    body = (
+      <HealthHistory
         state={state}
         snapshots={snapshots}
         backLabel={nav.backLabel ?? 'Home'}
