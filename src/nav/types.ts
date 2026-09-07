@@ -20,7 +20,19 @@ export type Screen =
   | { kind: 'history'; plant_id: PlantId }
   /** Screen 25: one plant's full log. */
   | { kind: 'entries'; plant_id: PlantId }
+  /** Screens 26/27: month grids with a dot per care type. `all` selects
+      twelve months (27) over the default three (26). */
+  | { kind: 'calendar'; plant_id: PlantId; all?: boolean }
+  /** Screens 08/09 collapsed into one: soil, care instructions, notes_user. */
+  | { kind: 'more'; plant_id: PlantId }
+  /** Screen 10: identity, placement, care spec. Read display only for now. */
+  | { kind: 'info'; plant_id: PlantId }
   | { kind: 'archive' }
+  /** Screen 07: the collection-wide factual record, off Home's CARE ADHERENCE
+      block. Not plant-scoped, so no `PlantChrome`. */
+  | { kind: 'adherence' }
+  /** Screen 14: the physical registry — rooms and shared planters. */
+  | { kind: 'rooms' }
   | { kind: 'placeholder'; title: string; subtitle?: string };
 
 export type RootTab = 'home' | 'plants' | 'record';

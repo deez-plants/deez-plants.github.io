@@ -43,6 +43,10 @@ export interface PlantDetailProps {
   onLogCare: () => void;
   /** Opens this plant's entry-log History screen. */
   onHistory: () => void;
+  /** Opens the soil / care-instructions / notes screen for this plant. */
+  onMoreAbout: () => void;
+  /** Opens the identity / placement / care-spec display for this plant. */
+  onInfo: () => void;
 }
 
 /** Section 3: counts and days, never a score out of ten. */
@@ -73,7 +77,7 @@ function trimSeasonNote(text: string): string {
 
 export default function PlantDetail({
   plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
-  onHistory,
+  onHistory, onMoreAbout, onInfo,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -199,6 +203,13 @@ export default function PlantDetail({
           )}
         </dl>
       </section>
+
+      <button type="button" className="detail-linkrow" onClick={onMoreAbout}>
+        More about this plant <span aria-hidden="true">›</span>
+      </button>
+      <button type="button" className="detail-linkrow" onClick={onInfo}>
+        Info and settings <span aria-hidden="true">›</span>
+      </button>
     </main>
   );
 }

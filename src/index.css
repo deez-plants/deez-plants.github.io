@@ -26,6 +26,16 @@
   --warn: #e88a6a;
   --amber: #e9a15c;
 
+  /* Calendar-only hues (DESIGN_REFERENCE.md screens 26/27) — the core system
+     defines only accent/warn/amber, but the care-type legend needs six more
+     distinct colours than that. */
+  --cal-water: #6ba6e8;
+  --cal-repot: #c9a16b;
+  --cal-photo: #b695e8;
+  --cal-support: #6bc9c4;
+  --cal-pest: #e86ba6;
+  --cal-other: #9aa39a;
+
   --sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

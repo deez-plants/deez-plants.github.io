@@ -2,7 +2,7 @@ import { closeDeezPlants, openDeezPlants, DB_NAME, REGISTRY_KEY, type DeezDB } f
 import { runFirstRunSeed, type SeedOutcome } from './db/seedRun';
 import { derive } from './db/derive';
 import { todayISO } from './lib/dates';
-import type { DerivedState } from './types/derived';
+import type { DerivedState, Snapshot } from './types/derived';
 import type { StoredEvent } from './types/event';
 import type { Registry } from './types/plant';
 import type { ISODate } from './types/ids';
@@ -26,6 +26,9 @@ export interface Booted {
    */
   events: StoredEvent[];
   registry: Registry;
+  /** Oldest first. Section 5: the app keeps the last five, saved by each
+      Update commit — the Adherence-history screen's frozen record. */
+  snapshots: Snapshot[];
   /** media_id -> object URL for that photo's thumbnail. */
   thumbs: Map<string, string>;
   as_of: ISODate;
@@ -35,6 +38,7 @@ interface Read {
   state: DerivedState;
   events: StoredEvent[];
   registry: Registry;
+  snapshots: Snapshot[];
 }
 
 const EMPTY_REGISTRY: Registry = { rooms: [], planters: [], updated: '1970-01-01' as ISODate };
@@ -47,16 +51,19 @@ const EMPTY_REGISTRY: Registry = { rooms: [], planters: [], updated: '1970-01-01
 const thumbUrls = new Map<string, string>();
 
 async function readAndDerive(db: DeezDB, as_of: ISODate): Promise<Read> {
-  const [baselines, events, stored] = await Promise.all([
+  const [baselines, events, stored, snapshots] = await Promise.all([
     db.getAll('plants'),
     db.getAll('events'),
     db.get('registry', REGISTRY_KEY),
+    db.getAll('snapshots'),
   ]);
   const registry = stored ?? EMPTY_REGISTRY;
+  snapshots.sort((a, b) => (a.taken < b.taken ? -1 : a.taken > b.taken ? 1 : 0));
 
   return {
     events,
     registry,
+    snapshots,
     state: derive({
       baselines,
       events,
@@ -104,6 +111,22 @@ export async function refresh(): Promise<Booted> {
     thumbs: await loadThumbs(db),
     as_of,
   };
+}
+
+/**
+ * Rooms and planters are a user-editable registry, not events (FIELD_DEFINITIONS.md
+ * section 4: "the AI never proposes changes here — it cannot see your flat").
+ * A room name is appended directly rather than folded from a log, the same way
+ * the registry itself already works — there is nothing to merge or replay.
+ */
+export async function addRoom(name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const db = await openDeezPlants();
+  const stored = await db.get('registry', REGISTRY_KEY);
+  const registry = stored ?? EMPTY_REGISTRY;
+  if (registry.rooms.includes(trimmed)) return;
+  await db.put('registry', { ...registry, rooms: [...registry.rooms, trimmed], updated: todayISO() }, REGISTRY_KEY);
 }
 
 /** Calls the seed again on a live database. Should report `already_seeded`. */

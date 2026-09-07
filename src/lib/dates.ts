@@ -104,6 +104,53 @@ export function formatMonthYear(d: ISODate): string {
   return `${MONTHS[m - 1]} ${y}`;
 }
 
+/** `MMM` alone — the adherence-history bar chart's month axis (screen 07),
+    where the year is given once in the subtitle rather than per bar. */
+export function monthAbbr(d: ISODate): string {
+  const [, m] = parts(d);
+  return MONTHS[m - 1];
+}
+
+const FULL_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const;
+
+/** `Month YYYY` — the care-calendar's month-section headers (screens 26/27). */
+export function formatMonthFull(d: ISODate): string {
+  const [y, m] = parts(d);
+  return `${FULL_MONTHS[m - 1]} ${y}`;
+}
+
+/** The 1st of `d`'s own month. */
+export function monthStart(d: ISODate): ISODate {
+  const [y, m] = parts(d);
+  return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-01` as ISODate;
+}
+
+/** The 1st of the month `n` months from `d`'s month (`n` may be negative).
+    Always normalises to day 1 — this is month arithmetic, not date arithmetic. */
+export function shiftMonths(d: ISODate, n: number): ISODate {
+  const [y, m] = parts(d);
+  const total = y * 12 + (m - 1) + n;
+  const yy = Math.floor(total / 12);
+  const mm = total - yy * 12 + 1;
+  return `${String(yy).padStart(4, '0')}-${String(mm).padStart(2, '0')}-01` as ISODate;
+}
+
+/** How many days are in `d`'s own month. */
+export function daysInMonth(d: ISODate): number {
+  const start = monthStart(d);
+  return daysBetween(start, shiftMonths(start, 1));
+}
+
+/** 0 (Sun) - 6 (Sat) for the 1st of `d`'s own month. 1970-01-01 (day 0 in
+    `toDay`'s epoch) was a Thursday, index 4. */
+export function weekdayOfMonthStart(d: ISODate): number {
+  const day0 = toDay(monthStart(d));
+  return ((day0 % 7) + 7 + 4) % 7;
+}
+
 /**
  * Section 3b: "the shortest honest unit: 6d, 3wk, 4mo". A delta without its
  * interval is misleading, so the score block always pairs the two.

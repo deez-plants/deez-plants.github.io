@@ -30,6 +30,7 @@ export interface HomeProps {
   onCare: () => void;
   onPlaceholder: (title: string, subtitle?: string) => void;
   onArchived: () => void;
+  onAdherenceHistory: () => void;
 }
 
 /** No band thresholds are specified anywhere in the spec — this is a
@@ -43,7 +44,7 @@ function band(value: number): 'good' | 'holding' | 'struggling' {
 const NEEDS_ATTENTION_CAP = 6;
 const MOST_URGENT_CAP = 6;
 
-export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArchived }: HomeProps) {
+export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory }: HomeProps) {
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
     [state],
@@ -127,11 +128,7 @@ export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArch
         <p className="home-card-line">
           {onSchedule} on schedule · {slipping} slipping · {behind} behind
         </p>
-        <button
-          type="button"
-          className="home-link"
-          onClick={() => onPlaceholder('Adherence history', 'On-time counts and days late, plant by plant.')}
-        >
+        <button type="button" className="home-link" onClick={onAdherenceHistory}>
           History ›
         </button>
       </section>

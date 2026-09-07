@@ -1,0 +1,162 @@
+.rooms {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.rooms-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.rooms-title {
+  margin: 2px 0 4px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+}
+
+.rooms-sub {
+  margin: 0 0 20px;
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.rooms-label {
+  display: block;
+  margin-bottom: 8px;
+  font: 600 22px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-45);
+}
+
+.rooms-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rooms-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rooms-row:last-child { border-bottom: none; }
+
+.rooms-row-name {
+  font: 600 24px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.rooms-row-count {
+  flex: none;
+  font: 400 21px/1 var(--mono);
+  color: var(--ink-45);
+}
+
+.rooms-add {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 26px;
+}
+
+.rooms-add-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  padding: 13px 14px;
+  font: 400 22px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.rooms-add-input::placeholder { color: var(--ink-40); }
+
+.rooms-add-btn {
+  flex: none;
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 11px;
+  padding: 13px 20px;
+  font: 600 22px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.rooms-add-btn:disabled { color: var(--ink-40); border-color: var(--line); cursor: default; }
+
+.rooms-planters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.rooms-planter {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.rooms-planter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.rooms-planter-name {
+  font: 600 26px/1.25 var(--sans);
+  color: var(--ink);
+}
+
+.rooms-planter-mode {
+  display: block;
+  margin-bottom: 12px;
+  font: 600 21px/1.3 var(--sans);
+}
+
+.rooms-planter-mode.shared { color: var(--accent); }
+.rooms-planter-mode.decorative { color: var(--amber); }
+
+.rooms-planter-members {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rooms-planter-chip {
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 400 22px/1.2 var(--sans);
+  color: var(--ink-70);
+}
+
+.rooms-empty {
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-50);
+}
+
+.rooms-note {
+  margin: 0;
+  font: 400 22px/1.45 var(--sans);
+  color: var(--ink-45);
+  text-wrap: pretty;
+}
