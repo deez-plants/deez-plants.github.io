@@ -34,13 +34,14 @@ export interface HomeProps {
   onArchived: () => void;
   onAdherenceHistory: () => void;
   onHealthHistory: () => void;
+  onAddPlant: () => void;
 }
 
 const NEEDS_ATTENTION_CAP = 6;
 const MOST_URGENT_CAP = 6;
 
 export default function Home({
-  state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory,
+  state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
 }: HomeProps) {
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
@@ -222,11 +223,7 @@ export default function Home({
       </button>
 
       <div className="home-utility">
-        <button
-          type="button"
-          className="home-util-row"
-          onClick={() => onPlaceholder('Add a new plant', 'New record with ID and suffix.')}
-        >
+        <button type="button" className="home-util-row" onClick={onAddPlant}>
           <span className="home-row-body">
             <span className="home-row-name">Add a new plant</span>
           </span>

@@ -1,0 +1,189 @@
+.addplant {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.addplant-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.addplant-title {
+  margin: 2px 0 16px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+}
+
+.addplant-id-card {
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.addplant-id-label {
+  display: block;
+  margin-bottom: 6px;
+  font: 600 20px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.addplant-id-value {
+  display: block;
+  font: 600 32px/1 var(--mono);
+  color: var(--ink);
+}
+
+.addplant-id-note {
+  margin: 8px 0 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-50);
+}
+
+.addplant-photo-note {
+  margin: 0 0 18px;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-40);
+  font-style: italic;
+}
+
+.addplant-field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.addplant-label {
+  display: block;
+  margin-bottom: 7px;
+  font: 600 20px/1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-45);
+}
+
+.addplant-input {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font: 400 23px/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.addplant-input::placeholder { color: var(--ink-40); }
+
+.addplant-suffix-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.addplant-suffix-prefix {
+  flex: none;
+  font: 600 23px/1 var(--mono);
+  color: var(--ink-45);
+}
+
+.addplant-suffix-input {
+  width: 100px;
+  font: 600 23px/1.3 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.addplant-hint {
+  margin: 8px 0 0;
+  font: 400 20px/1.4 var(--sans);
+  color: var(--ink-45);
+  text-wrap: pretty;
+}
+
+.addplant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.addplant-chip {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 10px 16px;
+  font: 600 21px/1 var(--sans);
+  color: var(--ink-70);
+  cursor: pointer;
+}
+
+.addplant-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.addplant-select {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font: 400 23px/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.addplant-missing {
+  background: rgba(232, 138, 106, 0.1);
+  border: 1px solid rgba(232, 138, 106, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.addplant-missing-label {
+  display: block;
+  margin-bottom: 6px;
+  font: 600 19px/1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--warn);
+}
+
+.addplant-missing p {
+  margin: 3px 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-70);
+}
+
+.addplant-error {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--warn);
+}
+
+.addplant-submit {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  font: 600 24px/1 var(--sans);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.addplant-submit:disabled {
+  background: var(--panel-raised);
+  border-color: var(--line);
+  color: var(--ink-40);
+  cursor: default;
+}

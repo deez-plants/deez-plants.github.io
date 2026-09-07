@@ -13,6 +13,7 @@ import PlantCalendar from './pages/PlantCalendar';
 import ArchivedPlants from './pages/ArchivedPlants';
 import AdherenceHistory from './pages/AdherenceHistory';
 import HealthHistory from './pages/HealthHistory';
+import AddPlant from './pages/AddPlant';
 import RoomsPlanters from './pages/RoomsPlanters';
 import MoreAboutPlant from './pages/MoreAboutPlant';
 import InfoSettings from './pages/InfoSettings';
@@ -88,7 +89,7 @@ export default function App() {
     // The mock labels this "Photos" but points at the plant detail screen —
     // a known flaw (DESIGN_REFERENCE.md section 5.1). Renamed per its own fix note.
     { label: 'Plant detail', subtitle: 'Pick a plant from Plants for now.', go: () => placeholder('Plant detail', 'Open a plant from the Plants tab — this menu has no plant of its own to open yet.', 'All pages') },
-    { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => placeholder('Add a new plant', undefined, 'All pages') },
+    { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => nav.push({ kind: 'add-plant' }, 'All pages') },
     { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => nav.push({ kind: 'archive' }, 'All pages') },
     { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos', undefined, 'All pages') },
     { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => nav.push({ kind: 'rooms' }, 'All pages') },
@@ -115,6 +116,7 @@ export default function App() {
         onArchived={() => nav.push({ kind: 'archive' }, 'Home')}
         onAdherenceHistory={() => nav.push({ kind: 'adherence' }, 'Home')}
         onHealthHistory={() => nav.push({ kind: 'health-history' }, 'Home')}
+        onAddPlant={() => nav.push({ kind: 'add-plant' }, 'Home')}
       />
     );
   } else if (screen.kind === 'record') {
@@ -282,6 +284,18 @@ export default function App() {
         snapshots={snapshots}
         backLabel={nav.backLabel ?? 'Home'}
         onBack={nav.back}
+      />
+    );
+  } else if (screen.kind === 'add-plant') {
+    body = (
+      <AddPlant
+        state={state}
+        registry={registry}
+        as_of={as_of}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+        onChanged={reload}
+        onAdded={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
       />
     );
   } else if (screen.kind === 'rooms') {

@@ -34,6 +34,8 @@ export type Screen =
   /** Screen 06: the collection's rating average over time, off Home's HEALTH
       block. Not plant-scoped, so no `PlantChrome`. */
   | { kind: 'health-history' }
+  /** Screen 11: a new plant baseline. */
+  | { kind: 'add-plant' }
   /** Screen 14: the physical registry — rooms and shared planters. */
   | { kind: 'rooms' }
   | { kind: 'placeholder'; title: string; subtitle?: string };

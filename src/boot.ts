@@ -1,11 +1,12 @@
 import { closeDeezPlants, openDeezPlants, DB_NAME, REGISTRY_KEY, type DeezDB } from './db/schema';
 import { runFirstRunSeed, type SeedOutcome } from './db/seedRun';
 import { derive } from './db/derive';
+import { deviceId } from './db/events';
 import { todayISO } from './lib/dates';
 import type { DerivedState, Snapshot } from './types/derived';
 import type { StoredEvent } from './types/event';
-import type { Registry } from './types/plant';
-import type { ISODate } from './types/ids';
+import type { PlantBaseline, Registry } from './types/plant';
+import type { ISODate, PlantId } from './types/ids';
 
 /**
  * App boot: open the database, seed it if this is the first run, then rebuild
@@ -127,6 +128,50 @@ export async function addRoom(name: string): Promise<void> {
   const registry = stored ?? EMPTY_REGISTRY;
   if (registry.rooms.includes(trimmed)) return;
   await db.put('registry', { ...registry, rooms: [...registry.rooms, trimmed], updated: todayISO() }, REGISTRY_KEY);
+}
+
+export interface NewPlantInput {
+  plant_id: PlantId;
+  name: string;
+  species: string;
+  room: string;
+  planter: string | null;
+  water_interval_days: number;
+}
+
+/**
+ * Screen 11: a new plant baseline, written once — `plant_id` is "assigned
+ * once, permanent, never reused" (FIELD_DEFINITIONS.md section 2), so this
+ * is `add`, not `put`: a collision would mean the ID-allocation logic on the
+ * screen is broken, and silently overwriting an existing plant would be far
+ * worse than a thrown error surfacing that. Everything the Add-a-plant
+ * screen doesn't ask for (pot, feed, light, soil, acquired) starts empty and
+ * is filled in later from Info and settings, same as any other field.
+ */
+export async function addPlant(input: NewPlantInput, as_of: ISODate): Promise<void> {
+  const db = await openDeezPlants();
+  const created_by = await deviceId(db);
+  const baseline: PlantBaseline = {
+    plant_id: input.plant_id,
+    name: input.name,
+    species: input.species,
+    acquired: null,
+    room: input.room,
+    pot: '',
+    planter: input.planter,
+    water_interval_days: input.water_interval_days,
+    water_interval_days_winter: null,
+    feed: null,
+    light: null,
+    soil: null,
+    notes_user: '',
+    status_label: null,
+    do_next: null,
+    created: as_of,
+    created_by,
+    origin: 'user',
+  };
+  await db.add('plants', baseline);
 }
 
 /** Calls the seed again on a live database. Should report `already_seeded`. */
