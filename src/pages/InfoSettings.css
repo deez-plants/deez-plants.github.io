@@ -49,11 +49,111 @@
   display: block;
   width: 100%;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 12px;
   padding: 14px 14px;
   font: 400 23px/1.3 var(--sans);
   color: var(--ink);
 }
 
-.info-field-value:focus { outline: 1px solid var(--line-strong); }
+.info-field-value:focus { outline: 1px solid var(--accent-line); }
+
+.info-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.info-chip {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 10px 16px;
+  font: 600 21px/1 var(--sans);
+  color: var(--ink-70);
+  cursor: pointer;
+}
+
+.info-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.info-select {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 14px 14px;
+  font: 400 23px/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.info-missing {
+  background: rgba(232, 138, 106, 0.1);
+  border: 1px solid rgba(232, 138, 106, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 8px 0 16px;
+}
+
+.info-missing p {
+  margin: 3px 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-70);
+}
+
+.info-error {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--warn);
+}
+
+.info-save {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  font: 600 24px/1 var(--sans);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.info-save:disabled {
+  background: var(--panel-raised);
+  border-color: var(--line);
+  color: var(--ink-40);
+  cursor: default;
+}
+
+.info-pending {
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+
+.info-pending p {
+  margin: 0 0 10px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.info-update {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--accent-line);
+  border-radius: 10px;
+  padding: 12px;
+  font: 600 22px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}

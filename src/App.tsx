@@ -252,11 +252,15 @@ export default function App() {
     } else {
       body = (
         <InfoSettings
+          key={plant.plant_id}
           plant={plant}
+          registry={registry}
+          as_of={as_of}
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'info', plant_id })}
+          onChanged={reload}
         />
       );
     }
