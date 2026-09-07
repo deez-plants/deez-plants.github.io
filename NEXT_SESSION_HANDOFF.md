@@ -1,10 +1,9 @@
 # Deez Plants — handoff to the next session
 
-Written 2026-09-07, end of a session that built the nav shell, Home, the
-Plants/detail refresh, the single-plant detailed care mode, and per-plant
-History/All entries/Archived plants. This conversation is being closed
-deliberately; a fresh one continues from here. **Read this file first,
-before anything else.**
+Written 2026-09-07, end of a session that built Care calendar/All months,
+Adherence history, Rooms and planters, and More about this plant/Info and
+settings. This conversation is being closed deliberately; a fresh one
+continues from here. **Read this file first, before anything else.**
 
 ## Read in this order
 
@@ -27,117 +26,118 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `03e0021` (`git log --oneline` will show newer ones by the time
+As of commit `e7325d6` (`git log --oneline` will show newer ones by the time
 you read this):
 
-- The event log and the pure `derive()` recompute — adherence, due dates,
-  needs-attention, health confirm/change dates, calendars. Fully tested
-  (`npm run check`).
-- Plant ratings: the 1–10 sheet, single-tap confirm, the confirmation-line
-  text beside the score block, ME/AI provenance.
-- **The navigation shell** (`src/nav/`) — one stack, a fixed tab bar
-  (Home/Plants/Rec/More), the All-pages sheet with all 17 spec'd items. Back
-  buttons name their origin (`‹ Plants`, `‹ Large Monstera`, `‹ All pages`),
-  never a bare "Back". `nav.replace()` swaps the current screen in place —
-  used by Prev/Next and the plant picker — without pushing a new
-  back-stack entry.
-- **Home** (`src/pages/Home.tsx`) — the app's default landing tab, built
-  from real `DerivedState`: health with good/holding/struggling bands, care
-  adherence as counts, a water-only DUE block (see below), Needs attention,
-  Most urgent, Log care, utility rows. Four pieces deliberately deferred —
-  catch-up banner, health sparkline, handoff log/session-backup notice, feed
-  due-tracking — see the memory `project_home_screen_needed` for exactly why
-  each one.
-- **Plants list** — filter chips (All / Needs attention / Due / Not on
-  schedule) and a grouping toggle (All N / By planter, with every plant
-  visible via a "No planter" catch-all). Rows still use the full
-  `ScoreBlock`, not the mock's compact pill — that's the known, correct
-  exception (section 3b).
-- **Plant detail** — the `‹ Prev / All plants ▾ / Next ›` strip, locked in
-  the original brief. The picker is an inline scrollable list, matching the
-  mock's actual interaction, not a modal sheet. A "Log care" button opens
-  the single-plant detailed mode below, scoped to that plant.
-- **Log care, single-plant detailed mode** (`careRound.ts`'s
-  `CARE_TYPES`/`buildDetailEvent`/`logDetailEvent`, rendered in
-  `CareRoundPage.tsx` as "ONE PLANT, WITH DETAIL") — the nine-button grid
-  (Water/Feed/Prune/Repot/Photo/Inspect/Support/Pest treat/Other), editable
-  date and time, a notes field, and a save that shares the same pending/
-  Update footer as the multi-select round above it. Photo attachment is a
-  disabled note, not a working control — real capture isn't built. This
-  section only renders when reached from a specific plant's own "Log care"
-  button; every other entry point (Plants list, Home, the sheet) shows just
-  the multi-select round, as before.
-- The event log, multi-select Log care round with pending state and the
-  Update commit — unchanged this session, all still working.
-- **PlantChrome** (`src/components/PlantChrome.tsx`) — the back button,
-  `All plants ▾` picker, and Prev/Next strip pulled out of plant detail into
-  a shared component, since the mock shows the same header on History too.
-  Any future plant-scoped screen should use this rather than reimplementing
-  it.
-- **History and All entries** (`PlantHistory.tsx`/`PlantEntries.tsx`,
-  screens 24/25) — a plant's last 10 entries, then its full log, via a
-  shared `EventList` component (`src/components/EventList.tsx`) and
-  `eventLabel.ts`'s past-tense row labels ("Watered", not "Water"). Reached
-  from plant detail's new "History" button. "Care calendar ›" on History
-  still opens a placeholder — the month-grid UI (screens 26/27) wasn't built
-  this pass, it's a distinct chunk of work (calendar layout + per-day dot
-  indicators), not blocked on anything.
-- **Archived plants** (`ArchivedPlants.tsx`, screen 12) — real now, reads
-  `archived_date`/`archived_reason` straight off each plant's `Archive`
-  event. No Restore action: there's no "un-archive" event type in the model
-  and Archive-writing itself isn't wired up to any UI yet (see the
-  `project-spider-plant-status` memory) — a real gap, not a UI oversight.
-  Reachable for real now from the sheet and Home's utility row.
+Everything the previous handoff listed (event log/derive, ratings, nav shell,
+Home, Plants list, Plant detail with single-plant care mode, History/All
+entries, Archived plants) — see git history if you need that detail — plus
+this session's five screens:
+
+- **Care calendar / All months** (`src/pages/PlantCalendar.tsx`, screens
+  26/27) — one component handles both: three months with a "View all 12
+  months" link, or all twelve with none. Month grids render newest month
+  first, days within a month in normal order (a lesson already learned once,
+  per `DESIGN_REFERENCE.md` section 6 — don't reverse the whole grid). Each
+  care type gets a colour + single/double-letter mono abbreviation
+  (`src/lib/careTypeStyle.ts`; three reuse the core accent/warn/amber, six
+  are new `--cal-*` tokens in `index.css` since the mock's legend needs more
+  hues than the three-colour system defines). The legend and the dots shown
+  are both scoped to the displayed month window — an event from years
+  outside it must never add a legend entry for a type invisible on screen
+  (this was a real bug caught during self-verification and fixed same
+  session). `dates.ts` gained the month-arithmetic this needed: `shiftMonths`,
+  `monthStart`, `daysInMonth`, `weekdayOfMonthStart`, `monthAbbr`,
+  `formatMonthFull`.
+- **Adherence history** (`src/pages/AdherenceHistory.tsx`, screen 07) — the
+  live on/slip/behind split and rated-count/average from `state.collection`
+  and per-plant `adherence.state`, plus a six-month bar chart read from the
+  `snapshots` store (Section 5's "last five", now surfaced through
+  `boot.ts`'s `Booted.snapshots`, oldest first). A month with no snapshot in
+  it renders an empty bar rather than inventing a number — on a fresh
+  install with few Updates behind it, most of the six months will be empty,
+  and that's correct, not a bug to paper over (`DESIGN_REFERENCE.md` section
+  5, rule 4: derive, never hardcode). The bar-colour thresholds (≤2 good,
+  3–4 holding, ≥5 struggling) are a reading of the mock's own colours, not a
+  spec fact — flagged as such in a comment, same caveat as Home's health
+  `band()`.
+- **Rooms and planters** (`src/pages/RoomsPlanters.tsx`, screen 14) — reads
+  `registry.rooms`/`registry.planters` for room plant-counts and each
+  planter's shared/decorative mode and member chips. Unlike the other new
+  screens this one **writes**: "Add a room" is real, via a new
+  `addRoom()` in `boot.ts` that appends directly to the registry record (no
+  event — `FIELD_DEFINITIONS.md` section 4 calls rooms/planters "a
+  user-editable registry," not something events fold, and the AI can't
+  propose changes here since it can't see the flat).
+- **More about this plant** (`src/pages/MoreAboutPlant.tsx`) and **Info and
+  settings** (`src/pages/InfoSettings.tsx`, screens 08/09/10), reached from
+  two new link rows at the bottom of Plant Detail. Two real, deliberate
+  deviations from the mock here, both explained in comments at the top of
+  the files:
+  - The mock's "More about this plant" has eight topics (Environment, Soil
+    & medium, Repotting/roots, Pruning & support, Pests & disease,
+    Season/growth, Notes, Propagation) with invented per-topic content
+    (`DESIGN_REFERENCE.md` section 5: "sample data is invented"). Only two
+    of the eight — Soil and Notes — correspond to a field the data model
+    actually has. Rather than build six rows that always read "not
+    tracked," this collapses the two screens into one real page: **Soil &
+    medium** (`plant.soil`), **Care instructions** (the `care_instructions`
+    stack per `FIELD_DEFINITIONS.md` section 6c — text, added date,
+    AI/You), and **Notes** (`notes_user`, visually distinct — amber border
+    and a "YOURS · never touched by import" badge, per section 6c's "two
+    lanes, kept visually distinct" requirement).
+  - Info and settings shows every field the mock has (name, species,
+    acquired, room, pot, planter, water interval summer/winter, feed,
+    light, soil) but **read-only** — the mock has all of it editable in
+    place, which means an `Edit` event per field with the
+    user/AI-editable split `FIELD_DEFINITIONS.md` section 4 draws. That's
+    its own build step, not a corner cut here; the subtitle says so
+    honestly ("view only for now") rather than the mock's "edit anything
+    except the ID."
 
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
 which it doesn't currently do. Confirmed present before this multi-session
-thread's work started (checked via `git stash`). Not touched — flagging it
-here so it isn't mistaken for new breakage.
+thread's work started. Not touched — flagging it here so it isn't mistaken
+for new breakage.
+
+All five new screens were self-verified: ran the app in a real browser tab,
+clicked through every new nav path (Home → Adherence history; Plant detail →
+More about this plant / Info and settings; History → Care calendar → All 12
+months; the All-pages sheet → Rooms and planters, including a live "Add a
+room" write), and confirmed `npm run check` still shows only the one known
+failure.
 
 ## What's next, in order
 
-1. The rest of the remaining-screens batch, each currently a placeholder
-   reached from Home, plant detail, or the All-pages sheet:
-   - **Care calendar / All months** (screens 26/27) — month grids with dots
-     on days something happened, three months then "All 12 months". Linked
-     from History already; just needs the screen itself. Read `events`
-     grouped by date, same data History already filters, different layout.
-   - **Adherence history** (screen 07) — "the factual record: what was due,
-     what was done, how late", reached from Home's CARE ADHERENCE block.
-     Maps directly to each plant's `p.adherence.intervals` — no new
-     derivation needed, pure UI over existing data, same shape of work as
-     this session's History screen.
-   - **Health history** (screen 06) — the six-month bar chart is a bigger
-     lift than it looks: `derive()` doesn't filter events by date against
-     `as_of` (it applies the whole log regardless of date), so calling it
-     with a past `as_of` does **not** give a true historical snapshot.
-     Building the real chart means either teaching `derive()` to filter by
-     date or writing a separate lightweight replay just for this chart —
-     a real design decision, not a quick add. This is the same underlying
-     gap as Home's deferred sparkline.
-   - **Rooms & planters** (screen 14) — reads the registry
-     (`registry.rooms`/`registry.planters`), each planter showing its mode
-     (shared soil vs. decorative). Straightforward read-only screen.
-   - **Info & settings**, **More about this plant** / topic detail (screens
-     08–10) — mostly read-only display of fields already on `DerivedPlant`
-     (species, room, pot, care_instructions) plus `notes_user` — check
-     `FIELD_DEFINITIONS.md` section 6c before touching notes_user's two
-     lanes, they must stay visually distinct and import must never touch
-     the user's lane.
-   - **Add a new plant** (screen 11) — a real write flow, not just a
-     screen: needs an ID-allocation scheme (check `FIELD_DEFINITIONS.md`
-     section 2) and a new baseline record, closer in size to building
-     export/import than to the read-only screens above. Consider doing
-     this one alongside or after export/import rather than squeezed into
-     "remaining screens".
-2. Export/import + the full validation chain (section 11), the review
-   table with per-row approval.
-3. Capture: photos, both notes lanes, recording (mic + wake lock). This is
+1. **Health history** (screen 06) — still not built. The six-month bar chart
+   is a bigger lift than the ones this session did: `derive()` doesn't filter
+   events by date against `as_of` (it applies the whole log regardless of
+   date), so calling it with a past `as_of` does **not** give a true
+   historical snapshot of health specifically. Adherence history sidestepped
+   this by reading real saved `snapshots` instead of trying to replay
+   history — Health history could do the same (a health-only figure isn't
+   currently in `Snapshot`, so check what's cheaply derivable from
+   `snapshot.state.plants[...].health` before deciding whether that's enough
+   or whether `derive()` genuinely needs a date-filtering mode). This is the
+   same underlying gap as Home's deferred sparkline.
+2. **Add a new plant** (screen 11) — a real write flow, not just a screen:
+   needs an ID-allocation scheme (check `FIELD_DEFINITIONS.md` section 2)
+   and a new baseline record written to the `plants` store, closer in size
+   to building export/import than to the read-only screens this session
+   added. Consider doing this alongside or after export/import.
+3. **In-place editing for Info and settings** — now that the read display
+   exists, the natural follow-up is writing `Edit` events per field, per
+   `FIELD_DEFINITIONS.md` section 4's user/AI-editable split (rule 4: no
+   apply-all, per-field only anyway since these aren't import rows). Not
+   urgent — the read display is a complete, honest screen on its own.
+4. Export/import + the full validation chain (section 11), the review table
+   with per-row approval.
+5. Capture: photos, both notes lanes, recording (mic + wake lock). This is
    where the owner's actual iPhone is required for testing — it cannot be
    verified from here.
-4. The desk console (laptop-only, deliberately last).
+6. The desk console (laptop-only, deliberately last).
 
 Work in long, self-contained stretches per step above. Self-verify each
 piece — run the app in a real browser tab (`npm run dev`, drive it with
@@ -154,11 +154,9 @@ table with time estimates and who does what) is published at:
 
 Update it as steps complete — redeploy by publishing the same source file
 path from within a session that has read it first (see the Artifact tool's
-own instructions), passing this URL, not by creating a new one. Last
-updated after the nav shell + Home landed this session — **not yet updated**
-for the Plants/detail refresh, the single-plant care mode, or
-History/entries/Archived; do that early next session before starting new
-work.
+own instructions), passing this URL, not by creating a new one. Updated this
+session for Care calendar, Adherence history, Rooms and planters, and More
+about/Info and settings.
 
 A companion page, **the Deez Plants Playbook**
 (https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
