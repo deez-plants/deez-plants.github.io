@@ -127,6 +127,7 @@ export default function App() {
         onChanged={reload}
         backLabel={nav.backLabel ?? 'Plants'}
         onBack={nav.back}
+        detailPlantId={screen.plant_id}
       />
     );
   } else if (screen.kind === 'detail') {
@@ -148,6 +149,7 @@ export default function App() {
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
+          onLogCare={() => nav.push({ kind: 'care', plant_id: plant.plant_id }, plant.name)}
         />
       );
     }

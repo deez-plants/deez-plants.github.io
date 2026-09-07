@@ -38,6 +38,8 @@ export interface PlantDetailProps {
   /** Swaps which plant is showing without pushing a new back-stack entry —
       browsing 22 plants with Prev/Next should not take 22 taps to back out of. */
   onNavigate: (plant_id: PlantId) => void;
+  /** Opens Log care in the single-plant detailed mode for this plant. */
+  onLogCare: () => void;
 }
 
 /** Section 3: counts and days, never a score out of ten. */
@@ -67,7 +69,7 @@ function trimSeasonNote(text: string): string {
 }
 
 export default function PlantDetail({
-  plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate,
+  plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -176,6 +178,10 @@ export default function PlantDetail({
           ? <>Last checked <span className="detail-checked-date">{formatDayMonth(plant.last_checked)}</span></>
           : 'No events logged yet'}
       </p>
+
+      <button type="button" className="detail-log-care" onClick={onLogCare}>
+        Log care
+      </button>
 
       {sheetOpen && (
         <RateSheet

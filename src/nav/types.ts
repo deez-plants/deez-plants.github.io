@@ -10,7 +10,11 @@ export type Screen =
   | { kind: 'home' }
   | { kind: 'plants' }
   | { kind: 'record' }
-  | { kind: 'care' }
+  /** `plant_id` set when reached from that plant's own "Log care" — the
+      single-plant detailed mode then shows for it (careRound.ts's
+      "ONE PLANT, WITH DETAIL"). Absent from every other entry point, which
+      shows only the multi-select round, as before. */
+  | { kind: 'care'; plant_id?: PlantId }
   | { kind: 'detail'; plant_id: PlantId }
   | { kind: 'placeholder'; title: string; subtitle?: string };
 

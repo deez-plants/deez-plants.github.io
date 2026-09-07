@@ -1,6 +1,6 @@
 import type { DeezDB } from '../db/schema';
 import type { ClockTime, DeviceId, EventId, ISODate, PlantId } from '../types/ids';
-import type { CareEvent, StoredEvent } from '../types/event';
+import type { CareEvent, CareEventType, StoredEvent } from '../types/event';
 import type { DerivedPlant, DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { appendEvents, commitUpdate, deviceId, mintEventId, nowClockTime } from '../db/events';
@@ -256,3 +256,62 @@ export async function logRound(
  */
 export { commitUpdate };
 export type { CommitResult } from '../db/events';
+
+/* -------------------------------------------------------------------------- */
+/* One plant, with detail (screen 05's "ONE PLANT, WITH DETAIL")              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The nine-button grid. Distinct from `ROUND_ACTIONS`: the round is Water,
+ * Feed, Prune only — everything else has always been a one-plant action
+ * (`preselectFor`'s own comment). `source: 'user'`, never `'round'` — this is
+ * one plant, one tap, not a batch.
+ */
+export const CARE_TYPES: readonly CareEventType[] = [
+  'Water', 'Feed', 'Prune', 'Repot', 'Photo', 'Inspect', 'Support', 'Pest treat', 'Other',
+];
+
+export interface DetailDraft {
+  type: CareEventType | null;
+  /** Prefilled to now, editable — "a different time on it" is the whole point
+      of this mode over the round. */
+  date: ISODate;
+  time: ClockTime;
+  note: string;
+}
+
+export function emptyDetailDraft(as_of: ISODate): DetailDraft {
+  return { type: null, date: as_of, time: nowClockTime(), note: '' };
+}
+
+export function buildDetailEvent(
+  plant_id: PlantId,
+  draft: DetailDraft,
+  ctx: { device_id: DeviceId },
+): CareEvent {
+  if (!draft.type) throw new Error('Pick what you did.');
+  const note = draft.note.trim();
+  if (note.length > NOTE_MAX) throw new Error(`A note is at most ${NOTE_MAX} characters.`);
+
+  return {
+    event_id: mintEventId(ctx.device_id, draft.date, draft.time),
+    plant_id,
+    type: draft.type,
+    date: draft.date,
+    time: draft.time,
+    ...(note ? { note } : {}),
+    source: 'user',
+    device_id: ctx.device_id,
+  };
+}
+
+/** Instant and local, same as a round's write — pending until Update. */
+export async function logDetailEvent(
+  db: DeezDB,
+  plant_id: PlantId,
+  draft: DetailDraft,
+): Promise<EventId> {
+  const device_id = await deviceId(db);
+  const [written] = await appendEvents(db, [buildDetailEvent(plant_id, draft, { device_id })]);
+  return written.event_id;
+}

@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
-import type { ISODate, PlantId } from '../types/ids';
-import type { StoredEvent } from '../types/event';
+import type { ClockTime, ISODate, PlantId } from '../types/ids';
+import type { CareEventType, StoredEvent } from '../types/event';
 import type { DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import {
-  EMPTY_DRAFT, NOTE_MAX, ROUND_ACTIONS, addAll, commitUpdate, eventCount, groupLabel, logRound,
-  preselectFor, roundButtonLabel, roundCandidates, roundHeading, rowStatus, selectionGroups,
-  toggle, type RoundAction, type RoundDraft,
+  CARE_TYPES, EMPTY_DRAFT, NOTE_MAX, ROUND_ACTIONS, addAll, commitUpdate, emptyDetailDraft,
+  eventCount, groupLabel, logDetailEvent, logRound, preselectFor, roundButtonLabel,
+  roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
+  type DetailDraft, type RoundAction, type RoundDraft,
 } from '../care/careRound';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore } from '../score/score';
@@ -39,6 +40,11 @@ export interface CareRoundPageProps {
       (DESIGN_REFERENCE.md section 4 rule 3). */
   backLabel?: string;
   onBack?: () => void;
+  /** Set when reached from that plant's own "Log care" — shows the
+      single-plant detailed mode for it, alongside the round above. Absent
+      from every other entry point (screen 05: this section only makes sense
+      once there's a specific plant to detail-log for). */
+  detailPlantId?: PlantId;
 }
 
 type Flash =
@@ -46,12 +52,21 @@ type Flash =
   | { kind: 'folded'; events: number; plants: number }
   | { kind: 'error'; message: string };
 
+type DetailFlash =
+  | { kind: 'logged'; type: CareEventType }
+  | { kind: 'error'; message: string };
+
 export default function CareRoundPage({
-  state, events, registry, thumbs, as_of, onChanged, backLabel, onBack,
+  state, events, registry, thumbs, as_of, onChanged, backLabel, onBack, detailPlantId,
 }: CareRoundPageProps) {
   const [draft, setDraft] = useState<RoundDraft>(EMPTY_DRAFT);
   const [flash, setFlash] = useState<Flash | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const [detailDraft, setDetailDraft] = useState<DetailDraft>(() => emptyDetailDraft(as_of));
+  const [detailFlash, setDetailFlash] = useState<DetailFlash | null>(null);
+  const [detailBusy, setDetailBusy] = useState(false);
+  const detailPlant = detailPlantId ? state.plants[detailPlantId] : null;
 
   const plants = useMemo(() => roundCandidates(state), [state]);
   const groups = useMemo(() => selectionGroups(plants, registry), [plants, registry]);
@@ -113,6 +128,22 @@ export default function CareRoundPage({
       setFlash({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const saveDetail = async () => {
+    if (!detailPlant || !detailDraft.type || detailBusy) return;
+    setDetailBusy(true);
+    try {
+      const db = await openDeezPlants();
+      await logDetailEvent(db, detailPlant.plant_id, detailDraft);
+      await onChanged();
+      setDetailFlash({ kind: 'logged', type: detailDraft.type });
+      setDetailDraft(emptyDetailDraft(as_of));
+    } catch (e: unknown) {
+      setDetailFlash({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setDetailBusy(false);
     }
   };
 
@@ -298,6 +329,90 @@ export default function CareRoundPage({
           </button>
           <p className="care-save-note">
             Saves one event per plant, so History stays accurate.
+          </p>
+        </section>
+      )}
+
+      {detailPlant && (
+        <section className="care-detail">
+          <span className="care-detail-label">ONE PLANT, WITH DETAIL</span>
+          <p className="care-detail-sub">
+            {detailPlant.name} — for when you want a note, a photo, or a different time on it.
+          </p>
+
+          <div className="care-detail-grid">
+            {CARE_TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={detailDraft.type === t ? 'care-detail-type on' : 'care-detail-type'}
+                aria-pressed={detailDraft.type === t}
+                onClick={() => { setDetailFlash(null); setDetailDraft({ ...detailDraft, type: t }); }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <label className="care-detail-field-label" htmlFor="care-detail-date">DATE &amp; TIME</label>
+          <div className="care-detail-datetime">
+            <input
+              id="care-detail-date"
+              type="date"
+              className="care-detail-input"
+              value={detailDraft.date}
+              onChange={(e) => setDetailDraft({ ...detailDraft, date: e.target.value as ISODate })}
+            />
+            <input
+              type="time"
+              className="care-detail-input"
+              aria-label="Time"
+              value={detailDraft.time}
+              onChange={(e) => setDetailDraft({ ...detailDraft, time: e.target.value as ClockTime })}
+            />
+          </div>
+
+          <label className="care-detail-field-label" htmlFor="care-detail-notes">NOTES</label>
+          <textarea
+            id="care-detail-notes"
+            className="care-detail-notes"
+            value={detailDraft.note}
+            maxLength={NOTE_MAX}
+            placeholder="Thorough soak. Good drainage."
+            onChange={(e) => setDetailDraft({ ...detailDraft, note: e.target.value })}
+          />
+
+          <p className="care-detail-photo-note">
+            Optional photo, attached to this event — arrives with photo capture, later.
+          </p>
+
+          {detailFlash && (
+            <div className={detailFlash.kind === 'error' ? 'care-flash error' : 'care-flash'}>
+              {detailFlash.kind === 'logged' && (
+                <>
+                  <span className="care-flash-tick" aria-hidden="true">✓</span>
+                  <span>
+                    <b>{detailFlash.type} logged</b>
+                    <span className="care-flash-detail">
+                      Saved, and not folded into the record until you tap Update.
+                    </span>
+                  </span>
+                </>
+              )}
+              {detailFlash.kind === 'error' && <span>{detailFlash.message}</span>}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="care-save"
+            disabled={!detailDraft.type || detailBusy}
+            onClick={() => void saveDetail()}
+          >
+            {detailDraft.type ? `Log ${detailDraft.type.toLowerCase()}` : 'Pick what you did'}
+          </button>
+          <p className="care-save-note">
+            Saves one event, same as the round above — not folded in until you tap Update.
           </p>
         </section>
       )}

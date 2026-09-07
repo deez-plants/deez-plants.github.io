@@ -170,6 +170,19 @@
   color: var(--ink-50);
 }
 
+.detail-log-care {
+  display: block;
+  width: 100%;
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 12px;
+  padding: 15px 16px;
+  margin-bottom: 16px;
+  font: 600 24px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
 .detail-card {
   background: var(--panel);
   border: 1px solid var(--line);
