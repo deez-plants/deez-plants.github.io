@@ -1,9 +1,10 @@
 # Deez Plants — handoff to the next session
 
 Written 2026-09-07, end of a session that built Care calendar/All months,
-Adherence history, Rooms and planters, and More about this plant/Info and
-settings. This conversation is being closed deliberately; a fresh one
-continues from here. **Read this file first, before anything else.**
+Adherence history, Rooms and planters, More about this plant/Info and
+settings, and Health history. This conversation is being closed
+deliberately; a fresh one continues from here. **Read this file first,
+before anything else.**
 
 ## Read in this order
 
@@ -26,13 +27,13 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `e7325d6` (`git log --oneline` will show newer ones by the time
+As of commit `1bf046b` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
 Home, Plants list, Plant detail with single-plant care mode, History/All
 entries, Archived plants) — see git history if you need that detail — plus
-this session's five screens:
+this session's six screens:
 
 - **Care calendar / All months** (`src/pages/PlantCalendar.tsx`, screens
   26/27) — one component handles both: three months with a "View all 12
@@ -95,6 +96,23 @@ this session's five screens:
     honestly ("view only for now") rather than the mock's "edit anything
     except the ID."
 
+- **Health history** (`src/pages/HealthHistory.tsx`, screen 06) — the gap the
+  previous handoff flagged here (`derive()` can't replay a past `as_of`,
+  so it can't give a true historical health figure) turned out to already
+  be solved by the same trick Adherence history used: each saved `Snapshot`
+  already carries `collection.average_health`, frozen at the moment Update
+  was tapped, computed the honest way (rule 2's cousin for health — an
+  unrated plant is never folded in as a middling value; `derive()` already
+  enforces that, this screen just reads the result). No `derive()` changes
+  needed. The `good`/`holding`/`struggling` band thresholds Home's HEALTH
+  block already used got pulled out into `score.ts` as an exported
+  `healthBand()`, so this screen and Home colour a given average identically
+  rather than each keeping its own copy of the same magic numbers. Wired
+  from Home's HEALTH block "History ›" in place of its placeholder.
+  Self-verified past the empty-state screenshot: rated a plant, logged a
+  care event, committed Update, and confirmed the new snapshot populated
+  that month's bar with the right average and band colour.
+
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
@@ -111,27 +129,25 @@ failure.
 
 ## What's next, in order
 
-1. **Health history** (screen 06) — still not built. The six-month bar chart
-   is a bigger lift than the ones this session did: `derive()` doesn't filter
-   events by date against `as_of` (it applies the whole log regardless of
-   date), so calling it with a past `as_of` does **not** give a true
-   historical snapshot of health specifically. Adherence history sidestepped
-   this by reading real saved `snapshots` instead of trying to replay
-   history — Health history could do the same (a health-only figure isn't
-   currently in `Snapshot`, so check what's cheaply derivable from
-   `snapshot.state.plants[...].health` before deciding whether that's enough
-   or whether `derive()` genuinely needs a date-filtering mode). This is the
-   same underlying gap as Home's deferred sparkline.
-2. **Add a new plant** (screen 11) — a real write flow, not just a screen:
+1. **Add a new plant** (screen 11) — a real write flow, not just a screen:
    needs an ID-allocation scheme (check `FIELD_DEFINITIONS.md` section 2)
    and a new baseline record written to the `plants` store, closer in size
    to building export/import than to the read-only screens this session
    added. Consider doing this alongside or after export/import.
-3. **In-place editing for Info and settings** — now that the read display
+2. **In-place editing for Info and settings** — now that the read display
    exists, the natural follow-up is writing `Edit` events per field, per
    `FIELD_DEFINITIONS.md` section 4's user/AI-editable split (rule 4: no
    apply-all, per-field only anyway since these aren't import rows). Not
    urgent — the read display is a complete, honest screen on its own.
+3. **Care calendar link on Plant Detail** — the mock shows a live 3-month
+   calendar preview embedded directly on Plant Detail (below Quick Care),
+   with its own "View all ›". Right now the calendar is only reachable one
+   level deeper, via Detail → History → "Care calendar ›". The owner asked
+   about this gap mid-session; the agreed plan is to fold in at minimum a
+   direct link row on Detail (matching the More about/Info rows already
+   there) next time Detail is being touched for other work — not a
+   standalone step, and the fuller inline-grid embed is lower priority than
+   a plain link.
 4. Export/import + the full validation chain (section 11), the review table
    with per-row approval.
 5. Capture: photos, both notes lanes, recording (mic + wake lock). This is
@@ -155,8 +171,8 @@ table with time estimates and who does what) is published at:
 Update it as steps complete — redeploy by publishing the same source file
 path from within a session that has read it first (see the Artifact tool's
 own instructions), passing this URL, not by creating a new one. Updated this
-session for Care calendar, Adherence history, Rooms and planters, and More
-about/Info and settings.
+session for Care calendar, Adherence history, Rooms and planters, More
+about/Info and settings, and Health history.
 
 A companion page, **the Deez Plants Playbook**
 (https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
