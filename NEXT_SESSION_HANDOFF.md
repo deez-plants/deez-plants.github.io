@@ -1,8 +1,9 @@
 # Deez Plants — handoff to the next session
 
-Written 2026-09-07, end of the session that built the navigation shell and
-the Home screen. This conversation is being closed deliberately; a fresh one
-continues from here. **Read this file first, before anything else.**
+Written 2026-09-07, end of a session that built the nav shell, Home, the
+Plants/detail refresh, and the single-plant detailed care mode. This
+conversation is being closed deliberately; a fresh one continues from here.
+**Read this file first, before anything else.**
 
 ## Read in this order
 
@@ -25,7 +26,7 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `1ac19d1` (`git log --oneline` will show newer ones by the time
+As of commit `4dd37c7` (`git log --oneline` will show newer ones by the time
 you read this):
 
 - The event log and the pure `derive()` recompute — adherence, due dates,
@@ -33,63 +34,69 @@ you read this):
   (`npm run check`).
 - Plant ratings: the 1–10 sheet, single-tap confirm, the confirmation-line
   text beside the score block, ME/AI provenance.
-- **The navigation shell** (`src/nav/`) — `useNav.ts` (one stack, three
-  tab-bar roots, one sheet), `TabBar.tsx` (Home/Plants/Rec/More, Rec
-  centred), `AllPagesSheet.tsx` (all 17 items from DESIGN_REFERENCE.md
-  section 1), `Placeholder.tsx` (stands in for every screen not built yet).
-  Tapping Home or Plants clears the stack; everything else pushes and
-  carries the label its own back button should show — plant detail's back
-  button reads `‹ Plants` (or `‹ Home`, or `‹ All pages`, depending on
-  where it was opened from), never a bare "Back". `PlantDetail` and
-  `CareRoundPage` both take a `backLabel` prop now instead of hardcoding
-  "Back".
-- **Home** (`src/pages/Home.tsx`) — the app's default landing tab. Title
-  with a derived TRACKED count, the collection `ScoreBlock` with
-  good/holding/struggling bands, care adherence as counts, a DUE block,
-  Needs attention, a Most-urgent water list, Log care, and utility rows.
-  Deliberately left out and why (all still open, see the memory
-  `project_home_screen_needed` for detail): the catch-up banner (needs a
-  stored "last opened" timestamp, doesn't exist), the health sparkline
-  (needs a history of collection-average snapshots, `DerivedState` only
-  keeps one), the handoff log / session-backup notice (belong to
-  export/import and capture, neither built), and feed due-tracking in DUE
-  and Most urgent (`feed` is free text, not a scheduled interval —
-  water-only is the honest current answer, not an oversight).
-- Plants list, plant detail, the three-button Log care round with pending
-  state and the Update commit — all now reached through the nav shell
-  rather than an ad-hoc back link.
+- **The navigation shell** (`src/nav/`) — one stack, a fixed tab bar
+  (Home/Plants/Rec/More), the All-pages sheet with all 17 spec'd items. Back
+  buttons name their origin (`‹ Plants`, `‹ Large Monstera`, `‹ All pages`),
+  never a bare "Back". `nav.replace()` swaps the current screen in place —
+  used by Prev/Next and the plant picker — without pushing a new
+  back-stack entry.
+- **Home** (`src/pages/Home.tsx`) — the app's default landing tab, built
+  from real `DerivedState`: health with good/holding/struggling bands, care
+  adherence as counts, a water-only DUE block (see below), Needs attention,
+  Most urgent, Log care, utility rows. Four pieces deliberately deferred —
+  catch-up banner, health sparkline, handoff log/session-backup notice, feed
+  due-tracking — see the memory `project_home_screen_needed` for exactly why
+  each one.
+- **Plants list** — filter chips (All / Needs attention / Due / Not on
+  schedule) and a grouping toggle (All N / By planter, with every plant
+  visible via a "No planter" catch-all). Rows still use the full
+  `ScoreBlock`, not the mock's compact pill — that's the known, correct
+  exception (section 3b).
+- **Plant detail** — the `‹ Prev / All plants ▾ / Next ›` strip, locked in
+  the original brief. The picker is an inline scrollable list, matching the
+  mock's actual interaction, not a modal sheet. A "Log care" button opens
+  the single-plant detailed mode below, scoped to that plant.
+- **Log care, single-plant detailed mode** (`careRound.ts`'s
+  `CARE_TYPES`/`buildDetailEvent`/`logDetailEvent`, rendered in
+  `CareRoundPage.tsx` as "ONE PLANT, WITH DETAIL") — the nine-button grid
+  (Water/Feed/Prune/Repot/Photo/Inspect/Support/Pest treat/Other), editable
+  date and time, a notes field, and a save that shares the same pending/
+  Update footer as the multi-select round above it. Photo attachment is a
+  disabled note, not a working control — real capture isn't built. This
+  section only renders when reached from a specific plant's own "Log care"
+  button; every other entry point (Plants list, Home, the sheet) shows just
+  the multi-select round, as before.
+- The event log, multi-select Log care round with pending state and the
+  Update commit — unchanged this session, all still working.
 
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
-which it doesn't currently do. Confirmed present before the previous
-session's work started (checked via `git stash`). Not touched — flagging it
+which it doesn't currently do. Confirmed present before this multi-session
+thread's work started (checked via `git stash`). Not touched — flagging it
 here so it isn't mistaken for new breakage.
 
 ## What's next, in order
 
-1. **Plants list & plant detail, brought up to the reference** — filter
-   chips, the grouping toggle, the Prev/Next strip, the `All plants ▾`
-   picker. Do **not** give Plants list rows the mock's compact colour-pill
-   health display — the built app's use of the full `ScoreBlock` there is
-   correct per `FIELD_DEFINITIONS.md` section 3b's cross-screen consistency
-   rule; the mock's pill predates that rule and is the known exception.
-2. **Log care, rounded out** — the single-plant, nine-action detailed mode
-   (screen 05's "ONE PLANT, WITH DETAIL") alongside the multi-select round
-   that's already built.
-3. Remaining phase-1-adjacent screens, each currently a placeholder reached
-   from Home or the All-pages sheet: health history, adherence history,
-   care history/calendar, archived plants, rooms & planters, add-a-plant,
-   info & settings. Building one of these is: replace its `placeholder(...)`
-   call site in `App.tsx` (there are two — one in `menuItems`, sometimes
-   also one in `Home.tsx`) with a real push, same pattern as `care` and
-   `detail` already follow.
-4. Export/import + the full validation chain (section 11), the review
+1. Remaining phase-1-adjacent screens, each currently a placeholder reached
+   from Home, plant detail, or the All-pages sheet: history (entry log +
+   care calendar), health history, adherence history, archived plants,
+   rooms & planters, add-a-plant, info & settings, "more about this plant".
+   Building one is: replace its `placeholder(...)` call site in `App.tsx`
+   (there's one in `menuItems`, sometimes also one in `Home.tsx`) with a
+   real push, same pattern `care` and `detail` already follow. Once History
+   exists, plant detail should probably also get a link to it (held back
+   for the same reason Log care was, now resolved) — check DESIGN_REFERENCE
+   screen 04's route-row list for what else plant detail is still missing
+   (More about this plant, Info and settings, Photos, "your ratings against
+   what you changed", Take photo, Record note, Archive this plant — none of
+   these exist yet).
+2. Export/import + the full validation chain (section 11), the review
    table with per-row approval.
-5. Capture: photos, both notes lanes, recording (mic + wake lock). This is
+3. Capture: photos, both notes lanes, recording (mic + wake lock). This is
    where the owner's actual iPhone is required for testing — it cannot be
    verified from here.
-6. The desk console (laptop-only, deliberately last).
+4. The desk console (laptop-only, deliberately last).
 
 Work in long, self-contained stretches per step above. Self-verify each
 piece — run the app in a real browser tab (`npm run dev`, drive it with
@@ -106,8 +113,10 @@ table with time estimates and who does what) is published at:
 
 Update it as steps complete — redeploy by publishing the same source file
 path from within a session that has read it first (see the Artifact tool's
-own instructions), passing this URL, not by creating a new one. Updated this
-session to reflect the nav shell and Home landing.
+own instructions), passing this URL, not by creating a new one. Last
+updated after the nav shell + Home landed this session — **not yet updated**
+for the Plants/detail refresh or the single-plant care mode; do that early
+next session before starting new work.
 
 A companion page, **the Deez Plants Playbook**
 (https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
