@@ -1,9 +1,10 @@
 # Deez Plants — handoff to the next session
 
 Written 2026-09-07, end of a session that built the nav shell, Home, the
-Plants/detail refresh, and the single-plant detailed care mode. This
-conversation is being closed deliberately; a fresh one continues from here.
-**Read this file first, before anything else.**
+Plants/detail refresh, the single-plant detailed care mode, and per-plant
+History/All entries/Archived plants. This conversation is being closed
+deliberately; a fresh one continues from here. **Read this file first,
+before anything else.**
 
 ## Read in this order
 
@@ -26,7 +27,7 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `4dd37c7` (`git log --oneline` will show newer ones by the time
+As of commit `03e0021` (`git log --oneline` will show newer ones by the time
 you read this):
 
 - The event log and the pure `derive()` recompute — adherence, due dates,
@@ -68,6 +69,25 @@ you read this):
   the multi-select round, as before.
 - The event log, multi-select Log care round with pending state and the
   Update commit — unchanged this session, all still working.
+- **PlantChrome** (`src/components/PlantChrome.tsx`) — the back button,
+  `All plants ▾` picker, and Prev/Next strip pulled out of plant detail into
+  a shared component, since the mock shows the same header on History too.
+  Any future plant-scoped screen should use this rather than reimplementing
+  it.
+- **History and All entries** (`PlantHistory.tsx`/`PlantEntries.tsx`,
+  screens 24/25) — a plant's last 10 entries, then its full log, via a
+  shared `EventList` component (`src/components/EventList.tsx`) and
+  `eventLabel.ts`'s past-tense row labels ("Watered", not "Water"). Reached
+  from plant detail's new "History" button. "Care calendar ›" on History
+  still opens a placeholder — the month-grid UI (screens 26/27) wasn't built
+  this pass, it's a distinct chunk of work (calendar layout + per-day dot
+  indicators), not blocked on anything.
+- **Archived plants** (`ArchivedPlants.tsx`, screen 12) — real now, reads
+  `archived_date`/`archived_reason` straight off each plant's `Archive`
+  event. No Restore action: there's no "un-archive" event type in the model
+  and Archive-writing itself isn't wired up to any UI yet (see the
+  `project-spider-plant-status` memory) — a real gap, not a UI oversight.
+  Reachable for real now from the sheet and Home's utility row.
 
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
@@ -78,19 +98,40 @@ here so it isn't mistaken for new breakage.
 
 ## What's next, in order
 
-1. Remaining phase-1-adjacent screens, each currently a placeholder reached
-   from Home, plant detail, or the All-pages sheet: history (entry log +
-   care calendar), health history, adherence history, archived plants,
-   rooms & planters, add-a-plant, info & settings, "more about this plant".
-   Building one is: replace its `placeholder(...)` call site in `App.tsx`
-   (there's one in `menuItems`, sometimes also one in `Home.tsx`) with a
-   real push, same pattern `care` and `detail` already follow. Once History
-   exists, plant detail should probably also get a link to it (held back
-   for the same reason Log care was, now resolved) — check DESIGN_REFERENCE
-   screen 04's route-row list for what else plant detail is still missing
-   (More about this plant, Info and settings, Photos, "your ratings against
-   what you changed", Take photo, Record note, Archive this plant — none of
-   these exist yet).
+1. The rest of the remaining-screens batch, each currently a placeholder
+   reached from Home, plant detail, or the All-pages sheet:
+   - **Care calendar / All months** (screens 26/27) — month grids with dots
+     on days something happened, three months then "All 12 months". Linked
+     from History already; just needs the screen itself. Read `events`
+     grouped by date, same data History already filters, different layout.
+   - **Adherence history** (screen 07) — "the factual record: what was due,
+     what was done, how late", reached from Home's CARE ADHERENCE block.
+     Maps directly to each plant's `p.adherence.intervals` — no new
+     derivation needed, pure UI over existing data, same shape of work as
+     this session's History screen.
+   - **Health history** (screen 06) — the six-month bar chart is a bigger
+     lift than it looks: `derive()` doesn't filter events by date against
+     `as_of` (it applies the whole log regardless of date), so calling it
+     with a past `as_of` does **not** give a true historical snapshot.
+     Building the real chart means either teaching `derive()` to filter by
+     date or writing a separate lightweight replay just for this chart —
+     a real design decision, not a quick add. This is the same underlying
+     gap as Home's deferred sparkline.
+   - **Rooms & planters** (screen 14) — reads the registry
+     (`registry.rooms`/`registry.planters`), each planter showing its mode
+     (shared soil vs. decorative). Straightforward read-only screen.
+   - **Info & settings**, **More about this plant** / topic detail (screens
+     08–10) — mostly read-only display of fields already on `DerivedPlant`
+     (species, room, pot, care_instructions) plus `notes_user` — check
+     `FIELD_DEFINITIONS.md` section 6c before touching notes_user's two
+     lanes, they must stay visually distinct and import must never touch
+     the user's lane.
+   - **Add a new plant** (screen 11) — a real write flow, not just a
+     screen: needs an ID-allocation scheme (check `FIELD_DEFINITIONS.md`
+     section 2) and a new baseline record, closer in size to building
+     export/import than to the read-only screens above. Consider doing
+     this one alongside or after export/import rather than squeezed into
+     "remaining screens".
 2. Export/import + the full validation chain (section 11), the review
    table with per-row approval.
 3. Capture: photos, both notes lanes, recording (mic + wake lock). This is
@@ -115,8 +156,9 @@ Update it as steps complete — redeploy by publishing the same source file
 path from within a session that has read it first (see the Artifact tool's
 own instructions), passing this URL, not by creating a new one. Last
 updated after the nav shell + Home landed this session — **not yet updated**
-for the Plants/detail refresh or the single-plant care mode; do that early
-next session before starting new work.
+for the Plants/detail refresh, the single-plant care mode, or
+History/entries/Archived; do that early next session before starting new
+work.
 
 A companion page, **the Deez Plants Playbook**
 (https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
