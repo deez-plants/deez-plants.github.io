@@ -2,9 +2,9 @@
 
 Written 2026-09-07, end of a session that built Care calendar/All months,
 Adherence history, Rooms and planters, More about this plant/Info and
-settings, and Health history. This conversation is being closed
-deliberately; a fresh one continues from here. **Read this file first,
-before anything else.**
+settings, Health history, and the Add-a-plant write flow. This conversation
+is being closed deliberately; a fresh one continues from here. **Read this
+file first, before anything else.**
 
 ## Read in this order
 
@@ -27,13 +27,13 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `1bf046b` (`git log --oneline` will show newer ones by the time
+As of commit `27f880a` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
 Home, Plants list, Plant detail with single-plant care mode, History/All
 entries, Archived plants) — see git history if you need that detail — plus
-this session's six screens:
+this session's seven screens:
 
 - **Care calendar / All months** (`src/pages/PlantCalendar.tsx`, screens
   26/27) — one component handles both: three months with a "View all 12
@@ -113,6 +113,25 @@ this session's six screens:
   care event, committed Update, and confirmed the new snapshot populated
   that month's bar with the right average and band colour.
 
+- **Add a plant** (`src/pages/AddPlant.tsx`, `addPlant()` in `boot.ts`,
+  screen 11) — a real write, not just a screen. The next `NNN` is one past
+  the highest number any plant has ever held, active or archived
+  (`FIELD_DEFINITIONS.md` section 2: IDs are permanent and never reused).
+  The three-letter suffix auto-suggests from the species' genus (first
+  three letters, uppercased — "Epipremnum aureum" suggests "EPI", matching
+  the mock's own example exactly) and stays freely editable until save.
+  Save is disabled until name, species and a three-letter suffix all exist,
+  matching the mock's own validation copy. `addPlant()` writes with
+  `db.add`, never `put` — a collision would mean the ID allocator itself is
+  broken, and that should throw loudly, not silently overwrite a plant.
+  Fields the mock's own Add screen doesn't ask for (`pot`, `feed`, `light`,
+  `soil`, `acquired`) start empty and are filled in later from Info and
+  settings, same as any other field. Wired from both Home's utility row and
+  the All-pages sheet. Self-verified end to end: typed a name and species,
+  watched the suffix auto-suggest, submitted, landed on the new plant's own
+  detail page as `023-EPI` with the right water interval and room, and
+  confirmed the Plants list now reads "23 active" for real.
+
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
@@ -129,17 +148,15 @@ failure.
 
 ## What's next, in order
 
-1. **Add a new plant** (screen 11) — a real write flow, not just a screen:
-   needs an ID-allocation scheme (check `FIELD_DEFINITIONS.md` section 2)
-   and a new baseline record written to the `plants` store, closer in size
-   to building export/import than to the read-only screens this session
-   added. Consider doing this alongside or after export/import.
-2. **In-place editing for Info and settings** — now that the read display
+1. **In-place editing for Info and settings** — now that the read display
    exists, the natural follow-up is writing `Edit` events per field, per
    `FIELD_DEFINITIONS.md` section 4's user/AI-editable split (rule 4: no
-   apply-all, per-field only anyway since these aren't import rows). Not
-   urgent — the read display is a complete, honest screen on its own.
-3. **Care calendar link on Plant Detail** — the mock shows a live 3-month
+   apply-all, per-field only anyway since these aren't import rows). Also
+   the natural place to fill in `pot` — Add-a-plant's own screen never asks
+   for it, so every plant added through it needs Info and settings to set
+   a pot afterward. Not urgent — the read display is a complete, honest
+   screen on its own.
+2. **Care calendar link on Plant Detail** — the mock shows a live 3-month
    calendar preview embedded directly on Plant Detail (below Quick Care),
    with its own "View all ›". Right now the calendar is only reachable one
    level deeper, via Detail → History → "Care calendar ›". The owner asked
@@ -148,12 +165,12 @@ failure.
    there) next time Detail is being touched for other work — not a
    standalone step, and the fuller inline-grid embed is lower priority than
    a plain link.
-4. Export/import + the full validation chain (section 11), the review table
+3. Export/import + the full validation chain (section 11), the review table
    with per-row approval.
-5. Capture: photos, both notes lanes, recording (mic + wake lock). This is
+4. Capture: photos, both notes lanes, recording (mic + wake lock). This is
    where the owner's actual iPhone is required for testing — it cannot be
    verified from here.
-6. The desk console (laptop-only, deliberately last).
+5. The desk console (laptop-only, deliberately last).
 
 Work in long, self-contained stretches per step above. Self-verify each
 piece — run the app in a real browser tab (`npm run dev`, drive it with
