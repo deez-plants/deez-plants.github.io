@@ -59,6 +59,14 @@ export default function App() {
   const placeholder = (title: string, subtitle: string | undefined, backLabel: string) =>
     nav.push({ kind: 'placeholder', title, subtitle }, backLabel);
 
+  // Active plants, in list order — the Prev/Next strip and the All-plants
+  // picker on plant detail both walk this (DESIGN_REFERENCE.md screen 04,
+  // locked per the original brief, section 6).
+  const activePlants = state.order
+    .map((id) => state.plants[id])
+    .filter((p) => !p.archived)
+    .map((p) => ({ plant_id: p.plant_id, name: p.name }));
+
   // DESIGN_REFERENCE.md section 1's 17 All-pages items, in order. Most targets
   // aren't built — those go to a named placeholder rather than the generic
   // build-target string, so the sheet reads the same before and after the
@@ -138,6 +146,8 @@ export default function App() {
           onChanged={reload}
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
+          allPlants={activePlants}
+          onNavigate={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
         />
       );
     }

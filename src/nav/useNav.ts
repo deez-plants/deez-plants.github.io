@@ -28,6 +28,16 @@ export function useNav(initialTab: RootTab = 'plants') {
     setSheetOpen(false);
   };
 
+  /** Swaps the top of the stack in place — same depth, same backLabel.
+      For Prev/Next and the plant picker: browsing sideways between plants
+      isn't a new destination to back out of, one at a time. */
+  const replace = (screen: Screen) => {
+    setStack((s) => {
+      const top = s[s.length - 1];
+      return [...s.slice(0, -1), { screen, backLabel: top.backLabel }];
+    });
+  };
+
   const back = () => {
     setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
   };
@@ -39,6 +49,7 @@ export function useNav(initialTab: RootTab = 'plants') {
     sheetOpen,
     goRoot,
     push,
+    replace,
     back,
     openSheet: () => setSheetOpen(true),
     closeSheet: () => setSheetOpen(false),

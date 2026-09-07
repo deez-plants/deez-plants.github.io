@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ISODate } from '../types/ids';
+import type { ISODate, PlantId } from '../types/ids';
 import type { StoredEvent } from '../types/event';
 import type { DerivedAdherence, DerivedPlant } from '../types/derived';
 import type { Health } from '../types/plant';
@@ -31,6 +31,13 @@ export interface PlantDetailProps {
       (DESIGN_REFERENCE.md section 4 rule 3). */
   backLabel: string;
   onBack: () => void;
+  /** Active plants, in list order — the Prev/Next strip and the All-plants
+      picker both walk this. Locked in the original design brief (section 6):
+      not optional even though the mock's own screenshot is easy to miss it in. */
+  allPlants: readonly { plant_id: PlantId; name: string }[];
+  /** Swaps which plant is showing without pushing a new back-stack entry —
+      browsing 22 plants with Prev/Next should not take 22 taps to back out of. */
+  onNavigate: (plant_id: PlantId) => void;
 }
 
 /** Section 3: counts and days, never a score out of ten. */
@@ -59,10 +66,22 @@ function trimSeasonNote(text: string): string {
   return text.replace(/,?\s*active season\.?$/i, '').trim();
 }
 
-export default function PlantDetail({ plant, events, thumbs, as_of, onChanged, backLabel, onBack }: PlantDetailProps) {
+export default function PlantDetail({
+  plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate,
+}: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const index = allPlants.findIndex((p) => p.plant_id === plant.plant_id);
+  const prev = index > 0 ? allPlants[index - 1] : null;
+  const next = index >= 0 && index < allPlants.length - 1 ? allPlants[index + 1] : null;
+
+  const goTo = (id: PlantId) => {
+    setPickerOpen(false);
+    onNavigate(id);
+  };
 
   const hero = plant.hero ?? plant.photos[0];
   const heroUrl = hero ? thumbs.get(hero) : undefined;
@@ -92,7 +111,53 @@ export default function PlantDetail({ plant, events, thumbs, as_of, onChanged, b
 
   return (
     <main className="detail">
-      <button type="button" className="detail-back" onClick={onBack}>‹ {backLabel}</button>
+      <div className="detail-chrome">
+        <button type="button" className="detail-back" onClick={onBack}>‹ {backLabel}</button>
+        <button
+          type="button"
+          className="detail-picker-toggle"
+          aria-expanded={pickerOpen}
+          onClick={() => setPickerOpen((o) => !o)}
+        >
+          All plants {pickerOpen ? '▴' : '▾'}
+        </button>
+      </div>
+
+      <div className="detail-nav-strip">
+        <button
+          type="button"
+          className="detail-nav-btn"
+          disabled={!prev}
+          onClick={() => prev && goTo(prev.plant_id)}
+        >
+          ‹ Prev
+        </button>
+        <span className="detail-nav-id">{plant.plant_id}</span>
+        <button
+          type="button"
+          className="detail-nav-btn"
+          disabled={!next}
+          onClick={() => next && goTo(next.plant_id)}
+        >
+          Next ›
+        </button>
+      </div>
+
+      {pickerOpen && (
+        <div className="detail-picker">
+          {allPlants.map((p) => (
+            <button
+              key={p.plant_id}
+              type="button"
+              className={p.plant_id === plant.plant_id ? 'detail-picker-row on' : 'detail-picker-row'}
+              onClick={() => goTo(p.plant_id)}
+            >
+              <span className="detail-picker-id">{p.plant_id}</span>
+              <span className="detail-picker-name">{p.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <h1 className="detail-title">{plant.name}</h1>
 

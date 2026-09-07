@@ -38,10 +38,48 @@
   margin-bottom: 10px;
 }
 
+.plants-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.plants-chip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 9px 15px;
+  font: 600 21px/1 var(--sans);
+  color: var(--ink-60);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.plants-chip.on {
+  background: var(--panel-on);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
 .plants-count {
   margin: 0 0 14px;
   font: 400 22px/1 var(--sans);
   color: var(--ink-50);
+}
+
+.plants-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.plants-group-label {
+  display: block;
+  margin-bottom: 8px;
+  font: 600 21px/1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-45);
 }
 
 .plants-items {

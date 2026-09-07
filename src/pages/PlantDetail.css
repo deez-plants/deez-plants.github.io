@@ -6,15 +6,116 @@
   padding: 16px 20px 40px;
 }
 
+.detail-chrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
 .detail-back {
+  flex: none;
   display: block;
   background: none;
   border: 0;
   padding: 10px 8px 10px 0;
-  margin-bottom: 4px;
   font: 600 24px/1 var(--sans);
   color: var(--accent);
   cursor: pointer;
+  max-width: 44%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-picker-toggle {
+  flex: 1;
+  background: var(--panel-on);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 11px 14px;
+  font: 600 22px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.detail-nav-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.detail-nav-btn {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 8px;
+  font: 600 22px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.detail-nav-btn:disabled {
+  color: var(--ink-38);
+  cursor: default;
+}
+
+.detail-nav-id {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+  font: 600 21px/1.2 var(--mono);
+  color: var(--ink-60);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-picker {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 8px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-picker-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 11px;
+  padding: 12px 12px;
+  cursor: pointer;
+}
+
+.detail-picker-row.on { background: var(--panel-on); }
+
+.detail-picker-id {
+  flex: none;
+  width: 90px;
+  font: 600 19px/1 var(--mono);
+  color: var(--accent);
+}
+
+.detail-picker-name {
+  flex: 1;
+  min-width: 0;
+  font: 600 23px/1.2 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail-title {
