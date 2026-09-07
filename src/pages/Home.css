@@ -1,0 +1,249 @@
+/* Home. Same card language as Plants, Plant detail and Log care. */
+
+.home {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.home-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.home-title {
+  margin: 0;
+  font: 400 44px/1.05 var(--serif);
+  color: var(--ink);
+}
+
+.home-tracked {
+  font: 600 20px/1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-45);
+  white-space: nowrap;
+}
+
+.home-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+
+.home-label {
+  display: block;
+  margin-bottom: 8px;
+  font: 600 22px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-45);
+}
+
+.home-card-line {
+  margin: 4px 0 0;
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.home-sub {
+  margin: 8px 0 0;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.home-link {
+  display: block;
+  margin-top: 10px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: 600 22px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+/* HEALTH bands bar */
+
+.home-bands {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 14px 0 6px;
+}
+
+.home-band { display: block; }
+.home-band-good { background: var(--accent); }
+.home-band-holding { background: var(--amber); }
+.home-band-struggling { background: var(--warn); }
+
+.home-bands-line {
+  margin: 0;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-60);
+}
+
+/* DUE */
+
+.home-due-total {
+  font: 600 38px/1 var(--sans);
+  color: var(--ink);
+}
+
+.home-due-split {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.home-due-split > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-due-n {
+  font: 600 26px/1 var(--sans);
+  color: var(--ink);
+}
+
+.home-due-n.past { color: var(--warn); }
+
+.home-due-label {
+  font: 400 20px/1.2 var(--sans);
+  color: var(--ink-50);
+}
+
+.home-due-note {
+  margin: 12px 0 0;
+  font: 400 20px/1.35 var(--sans);
+  color: var(--ink-40);
+}
+
+/* Rows shared by Needs attention and Most urgent */
+
+.home-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.home-section-title {
+  flex: 1;
+  font: 600 24px/1 var(--sans);
+  color: var(--ink);
+}
+
+.home-badge {
+  font: 600 20px/1 var(--mono);
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: var(--panel-on);
+  color: var(--accent);
+}
+
+.home-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.home-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.home-row-body { flex: 1; min-width: 0; }
+
+.home-row-name {
+  display: block;
+  font: 600 24px/1.25 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.home-row-sub {
+  display: block;
+  margin-top: 3px;
+  font: 400 21px/1.25 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.home-row-chev {
+  flex: none;
+  font: 400 24px/1 var(--sans);
+  color: var(--ink-40);
+}
+
+.home-row-tag {
+  flex: none;
+  font: 600 18px/1 var(--mono);
+  letter-spacing: 0.06em;
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: var(--ink-60);
+  border: 1px solid var(--line-strong);
+}
+
+.home-row-tag.water { color: var(--accent); border-color: var(--accent-line); }
+
+.home-row-days {
+  flex: none;
+  font: 600 20px/1 var(--mono);
+  color: var(--warn);
+}
+
+/* Log care and the utility rows */
+
+.home-care {
+  display: block;
+  width: 100%;
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 12px;
+  padding: 15px 16px;
+  margin-bottom: 14px;
+  font: 600 24px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.home-utility {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-util-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
