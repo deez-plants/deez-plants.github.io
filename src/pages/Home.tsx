@@ -29,6 +29,7 @@ export interface HomeProps {
   onOpenPlant: (plant_id: PlantId) => void;
   onCare: () => void;
   onPlaceholder: (title: string, subtitle?: string) => void;
+  onArchived: () => void;
 }
 
 /** No band thresholds are specified anywhere in the spec — this is a
@@ -42,7 +43,7 @@ function band(value: number): 'good' | 'holding' | 'struggling' {
 const NEEDS_ATTENTION_CAP = 6;
 const MOST_URGENT_CAP = 6;
 
-export default function Home({ state, onOpenPlant, onCare, onPlaceholder }: HomeProps) {
+export default function Home({ state, onOpenPlant, onCare, onPlaceholder, onArchived }: HomeProps) {
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
     [state],
@@ -264,10 +265,7 @@ export default function Home({ state, onOpenPlant, onCare, onPlaceholder }: Home
         <button
           type="button"
           className="home-util-row"
-          onClick={() => onPlaceholder(
-            'Archived plants',
-            `${state.collection.archived_count} plant${state.collection.archived_count === 1 ? '' : 's'} kept out of the active list.`,
-          )}
+          onClick={onArchived}
         >
           <span className="home-row-body">
             <span className="home-row-name">Archived plants</span>

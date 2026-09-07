@@ -10,6 +10,7 @@ import { openDeezPlants } from '../db/schema';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { confirmationLine, plantScore } from '../score/score';
 import { RateSheet } from '../components/RateSheet';
+import { PlantChrome } from '../components/PlantChrome';
 import './PlantDetail.css';
 
 /**
@@ -40,6 +41,8 @@ export interface PlantDetailProps {
   onNavigate: (plant_id: PlantId) => void;
   /** Opens Log care in the single-plant detailed mode for this plant. */
   onLogCare: () => void;
+  /** Opens this plant's entry-log History screen. */
+  onHistory: () => void;
 }
 
 /** Section 3: counts and days, never a score out of ten. */
@@ -70,20 +73,11 @@ function trimSeasonNote(text: string): string {
 
 export default function PlantDetail({
   plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
+  onHistory,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  const index = allPlants.findIndex((p) => p.plant_id === plant.plant_id);
-  const prev = index > 0 ? allPlants[index - 1] : null;
-  const next = index >= 0 && index < allPlants.length - 1 ? allPlants[index + 1] : null;
-
-  const goTo = (id: PlantId) => {
-    setPickerOpen(false);
-    onNavigate(id);
-  };
 
   const hero = plant.hero ?? plant.photos[0];
   const heroUrl = hero ? thumbs.get(hero) : undefined;
@@ -113,53 +107,13 @@ export default function PlantDetail({
 
   return (
     <main className="detail">
-      <div className="detail-chrome">
-        <button type="button" className="detail-back" onClick={onBack}>‹ {backLabel}</button>
-        <button
-          type="button"
-          className="detail-picker-toggle"
-          aria-expanded={pickerOpen}
-          onClick={() => setPickerOpen((o) => !o)}
-        >
-          All plants {pickerOpen ? '▴' : '▾'}
-        </button>
-      </div>
-
-      <div className="detail-nav-strip">
-        <button
-          type="button"
-          className="detail-nav-btn"
-          disabled={!prev}
-          onClick={() => prev && goTo(prev.plant_id)}
-        >
-          ‹ Prev
-        </button>
-        <span className="detail-nav-id">{plant.plant_id}</span>
-        <button
-          type="button"
-          className="detail-nav-btn"
-          disabled={!next}
-          onClick={() => next && goTo(next.plant_id)}
-        >
-          Next ›
-        </button>
-      </div>
-
-      {pickerOpen && (
-        <div className="detail-picker">
-          {allPlants.map((p) => (
-            <button
-              key={p.plant_id}
-              type="button"
-              className={p.plant_id === plant.plant_id ? 'detail-picker-row on' : 'detail-picker-row'}
-              onClick={() => goTo(p.plant_id)}
-            >
-              <span className="detail-picker-id">{p.plant_id}</span>
-              <span className="detail-picker-name">{p.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <PlantChrome
+        plant={{ plant_id: plant.plant_id, name: plant.name }}
+        backLabel={backLabel}
+        onBack={onBack}
+        allPlants={allPlants}
+        onNavigate={onNavigate}
+      />
 
       <h1 className="detail-title">{plant.name}</h1>
 
@@ -179,9 +133,14 @@ export default function PlantDetail({
           : 'No events logged yet'}
       </p>
 
-      <button type="button" className="detail-log-care" onClick={onLogCare}>
-        Log care
-      </button>
+      <div className="detail-actions">
+        <button type="button" className="detail-log-care" onClick={onLogCare}>
+          Log care
+        </button>
+        <button type="button" className="detail-history" onClick={onHistory}>
+          History
+        </button>
+      </div>
 
       {sheetOpen && (
         <RateSheet

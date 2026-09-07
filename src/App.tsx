@@ -7,6 +7,9 @@ import Placeholder from './nav/Placeholder';
 import Home from './pages/Home';
 import PlantsList from './pages/PlantsList';
 import PlantDetail from './pages/PlantDetail';
+import PlantHistory from './pages/PlantHistory';
+import PlantEntries from './pages/PlantEntries';
+import ArchivedPlants from './pages/ArchivedPlants';
 import CareRoundPage from './pages/CareRoundPage';
 import './App.css';
 
@@ -73,14 +76,14 @@ export default function App() {
   // screen behind it exists.
   const menuItems: AllPagesItem[] = [
     { label: 'Log care', subtitle: 'Water, feed, prune — logs as you tap', go: () => nav.push({ kind: 'care' }, 'All pages') },
-    { label: 'History', subtitle: 'Entry log and care calendar', go: () => placeholder('History', 'Per-plant entry log.', 'All pages') },
+    { label: 'History', subtitle: 'Entry log and care calendar', go: () => placeholder('History', 'Per-plant entry log — open a plant from Plants to see its history.', 'All pages') },
     { label: 'More about this plant', subtitle: 'Species, soil, pests, season', go: () => placeholder('More about this plant', undefined, 'All pages') },
     { label: 'Info and settings', subtitle: 'Identity, placement, care spec', go: () => placeholder('Info and settings', undefined, 'All pages') },
     // The mock labels this "Photos" but points at the plant detail screen —
     // a known flaw (DESIGN_REFERENCE.md section 5.1). Renamed per its own fix note.
     { label: 'Plant detail', subtitle: 'Pick a plant from Plants for now.', go: () => placeholder('Plant detail', 'Open a plant from the Plants tab — this menu has no plant of its own to open yet.', 'All pages') },
     { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => placeholder('Add a new plant', undefined, 'All pages') },
-    { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => placeholder('Archived plants', undefined, 'All pages') },
+    { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => nav.push({ kind: 'archive' }, 'All pages') },
     { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos', undefined, 'All pages') },
     { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => placeholder('Rooms and planters', undefined, 'All pages') },
     { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => placeholder('Recordings', undefined, 'All pages') },
@@ -103,6 +106,7 @@ export default function App() {
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Home')}
         onCare={() => nav.push({ kind: 'care' }, 'Home')}
         onPlaceholder={(title, subtitle) => placeholder(title, subtitle, 'Home')}
+        onArchived={() => nav.push({ kind: 'archive' }, 'Home')}
       />
     );
   } else if (screen.kind === 'record') {
@@ -150,9 +154,56 @@ export default function App() {
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
           onLogCare={() => nav.push({ kind: 'care', plant_id: plant.plant_id }, plant.name)}
+          onHistory={() => nav.push({ kind: 'history', plant_id: plant.plant_id }, plant.name)}
         />
       );
     }
+  } else if (screen.kind === 'history') {
+    const plant = state.plants[screen.plant_id];
+    if (!plant) {
+      nav.goRoot('plants');
+      body = null;
+    } else {
+      body = (
+        <PlantHistory
+          plant={plant}
+          events={events}
+          as_of={as_of}
+          backLabel={nav.backLabel ?? 'Plants'}
+          onBack={nav.back}
+          allPlants={activePlants}
+          onNavigate={(plant_id) => nav.replace({ kind: 'history', plant_id })}
+          onViewAll={() => nav.push({ kind: 'entries', plant_id: plant.plant_id }, 'History')}
+          onCareCalendar={() => placeholder('Care calendar', `${plant.name} — month grids, newest first.`, 'History')}
+        />
+      );
+    }
+  } else if (screen.kind === 'entries') {
+    const plant = state.plants[screen.plant_id];
+    if (!plant) {
+      nav.goRoot('plants');
+      body = null;
+    } else {
+      body = (
+        <PlantEntries
+          plant={plant}
+          events={events}
+          as_of={as_of}
+          backLabel={nav.backLabel ?? 'History'}
+          onBack={nav.back}
+          allPlants={activePlants}
+          onNavigate={(plant_id) => nav.replace({ kind: 'entries', plant_id })}
+        />
+      );
+    }
+  } else if (screen.kind === 'archive') {
+    body = (
+      <ArchivedPlants
+        state={state}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+      />
+    );
   } else {
     body = (
       <Placeholder

@@ -115,6 +115,15 @@ export function formatElapsed(days: number): string {
   return `${Math.round(n / 30.44)}mo`;
 }
 
+/** `5 days ago` / `Yesterday` / `Today` — the History screen's entry rows
+    (DESIGN_REFERENCE.md screen 24), always paired with `formatDayMonth` so
+    the absolute date is never lost. */
+export function formatRelativeDays(days: number): string {
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return `${days} days ago`;
+}
+
 /**
  * The only impure function in this module, and the only place the app reads the
  * clock. Callers pass the result into `derive` as `as_of`; `derive` itself never

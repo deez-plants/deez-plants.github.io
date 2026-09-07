@@ -125,7 +125,7 @@ function newWorking(base: PlantBaseline): Working {
  * the order the events arrived in — which is the whole basis of section 8's
  * "union by event_id, then recompute".
  */
-function compareEvents(a: StoredEvent, b: StoredEvent): number {
+export function compareEvents(a: StoredEvent, b: StoredEvent): number {
   if (a.date !== b.date) return a.date < b.date ? -1 : 1;
   if (a.time !== b.time) return a.time < b.time ? -1 : 1;
   if (a.event_id === b.event_id) return 0;

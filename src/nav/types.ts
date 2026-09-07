@@ -16,6 +16,11 @@ export type Screen =
       shows only the multi-select round, as before. */
   | { kind: 'care'; plant_id?: PlantId }
   | { kind: 'detail'; plant_id: PlantId }
+  /** Screen 24: one plant's last 10 entries. */
+  | { kind: 'history'; plant_id: PlantId }
+  /** Screen 25: one plant's full log. */
+  | { kind: 'entries'; plant_id: PlantId }
+  | { kind: 'archive' }
   | { kind: 'placeholder'; title: string; subtitle?: string };
 
 export type RootTab = 'home' | 'plants' | 'record';
