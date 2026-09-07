@@ -35,6 +35,9 @@ export interface CareRoundPageProps {
   as_of: ISODate;
   /** Re-read the store and rebuild. Called after every write. */
   onChanged: () => Promise<void> | void;
+  /** What the back button reads — the screen it returns to, never a bare "Back"
+      (DESIGN_REFERENCE.md section 4 rule 3). */
+  backLabel?: string;
   onBack?: () => void;
 }
 
@@ -44,7 +47,7 @@ type Flash =
   | { kind: 'error'; message: string };
 
 export default function CareRoundPage({
-  state, events, registry, thumbs, as_of, onChanged, onBack,
+  state, events, registry, thumbs, as_of, onChanged, backLabel, onBack,
 }: CareRoundPageProps) {
   const [draft, setDraft] = useState<RoundDraft>(EMPTY_DRAFT);
   const [flash, setFlash] = useState<Flash | null>(null);
@@ -118,7 +121,7 @@ export default function CareRoundPage({
   return (
     <main className="care">
       {onBack && (
-        <button type="button" className="care-back" onClick={onBack}>‹ Back</button>
+        <button type="button" className="care-back" onClick={onBack}>‹ {backLabel ?? 'Back'}</button>
       )}
 
       <h1 className="care-title">Log care</h1>

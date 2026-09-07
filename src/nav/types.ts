@@ -1,0 +1,24 @@
+import type { PlantId } from '../types/ids';
+
+/**
+ * Every destination the shell knows how to render. Most of the 25 screens in
+ * DESIGN_REFERENCE.md don't exist yet — those resolve to `placeholder` until
+ * their own build step lands, so the All-pages sheet and the tab bar are
+ * complete now and only need their `go` targets swapped out later.
+ */
+export type Screen =
+  | { kind: 'home' }
+  | { kind: 'plants' }
+  | { kind: 'record' }
+  | { kind: 'care' }
+  | { kind: 'detail'; plant_id: PlantId }
+  | { kind: 'placeholder'; title: string; subtitle?: string };
+
+export type RootTab = 'home' | 'plants' | 'record';
+
+export interface StackEntry {
+  screen: Screen;
+  /** What the back button on the NEXT pushed screen should read, e.g. "Plants"
+      or "All pages". Empty for root screens, which show no back button. */
+  backLabel: string;
+}

@@ -27,6 +27,9 @@ export interface PlantDetailProps {
   as_of: ISODate;
   /** Re-read the store and rebuild. Called after a rating is written. */
   onChanged: () => Promise<void> | void;
+  /** What the back button reads — the screen it returns to, never a bare "Back"
+      (DESIGN_REFERENCE.md section 4 rule 3). */
+  backLabel: string;
   onBack: () => void;
 }
 
@@ -56,7 +59,7 @@ function trimSeasonNote(text: string): string {
   return text.replace(/,?\s*active season\.?$/i, '').trim();
 }
 
-export default function PlantDetail({ plant, events, thumbs, as_of, onChanged, onBack }: PlantDetailProps) {
+export default function PlantDetail({ plant, events, thumbs, as_of, onChanged, backLabel, onBack }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +92,7 @@ export default function PlantDetail({ plant, events, thumbs, as_of, onChanged, o
 
   return (
     <main className="detail">
-      <button type="button" className="detail-back" onClick={onBack}>‹ Back</button>
+      <button type="button" className="detail-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="detail-title">{plant.name}</h1>
 

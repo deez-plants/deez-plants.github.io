@@ -1,0 +1,32 @@
+.placeholder {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.placeholder-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.placeholder-title {
+  margin: 2px 0 14px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.placeholder-note {
+  margin: 0 0 8px;
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.placeholder-note.dim { color: var(--ink-45); }

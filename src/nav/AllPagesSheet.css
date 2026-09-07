@@ -1,0 +1,92 @@
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(7, 10, 7, 0.72);
+}
+
+.sheet-scrim-dismiss {
+  flex: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sheet {
+  flex: none;
+  max-height: 74%;
+  overflow: auto;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-radius: 22px 22px 0 0;
+  padding: 20px 18px calc(26px + env(safe-area-inset-bottom, 0px));
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sheet-title {
+  flex: 1;
+  font: 600 22px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--ink-50);
+}
+
+.sheet-close {
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  padding: 9px 13px;
+  font: 600 22px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sheet-items {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sheet-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 15px 16px;
+  cursor: pointer;
+}
+
+.sheet-row-body { flex: 1; min-width: 0; }
+
+.sheet-row-label {
+  display: block;
+  font: 600 24px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.sheet-row-sub {
+  display: block;
+  margin-top: 4px;
+  font: 400 22px/1.25 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.sheet-row-chev {
+  flex: none;
+  font: 400 24px/1 var(--sans);
+  color: var(--ink-40);
+}

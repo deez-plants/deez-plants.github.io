@@ -1,4 +1,9 @@
-/* Loading and error states only — each screen owns the rest of its styling. */
+/* Loading and error states, plus the space the fixed tab bar needs below every
+   screen — each screen otherwise owns the rest of its own styling. */
+
+.app-content {
+  padding-bottom: 104px;
+}
 
 .shell {
   max-width: 720px;

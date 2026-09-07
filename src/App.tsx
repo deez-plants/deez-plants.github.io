@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
 import { boot, refresh, type Booted } from './boot';
-import type { PlantId } from './types/ids';
+import { useNav } from './nav/useNav';
+import { TabBar } from './nav/TabBar';
+import { AllPagesSheet, type AllPagesItem } from './nav/AllPagesSheet';
+import Placeholder from './nav/Placeholder';
 import PlantsList from './pages/PlantsList';
 import PlantDetail from './pages/PlantDetail';
 import CareRoundPage from './pages/CareRoundPage';
 import './App.css';
 
 /**
- * Navigation between the three screens built so far: the plants list, plant
- * detail, and the existing Log care screen. No rating UI, no photo capture, no
- * export yet — those are later phases.
+ * The nav shell: one stack, a fixed four-item tab bar (Home/Plants/Rec/More),
+ * and the All-pages sheet, per DESIGN_REFERENCE.md section 1. Home and Rec are
+ * placeholders until their own build steps land; every other All-pages item
+ * resolves to a placeholder too, so the sheet is complete now even though most
+ * of its destinations aren't built yet.
  */
 
 type Load =
@@ -17,14 +22,9 @@ type Load =
   | { status: 'error'; message: string }
   | { status: 'ready'; data: Booted };
 
-type Screen =
-  | { kind: 'list' }
-  | { kind: 'detail'; plant_id: PlantId }
-  | { kind: 'care' };
-
 export default function App() {
   const [load, setLoad] = useState<Load>({ status: 'loading' });
-  const [screen, setScreen] = useState<Screen>({ kind: 'list' });
+  const nav = useNav('plants');
 
   useEffect(() => {
     let live = true;
@@ -55,8 +55,52 @@ export default function App() {
     setLoad({ status: 'ready', data: await refresh() });
   };
 
-  if (screen.kind === 'care') {
-    return (
+  const placeholder = (title: string, subtitle?: string) => nav.push({ kind: 'placeholder', title, subtitle }, 'All pages');
+
+  // DESIGN_REFERENCE.md section 1's 17 All-pages items, in order. Most targets
+  // aren't built — those go to a named placeholder rather than the generic
+  // build-target string, so the sheet reads the same before and after the
+  // screen behind it exists.
+  const menuItems: AllPagesItem[] = [
+    { label: 'Log care', subtitle: 'Water, feed, prune — logs as you tap', go: () => nav.push({ kind: 'care' }, 'All pages') },
+    { label: 'History', subtitle: 'Entry log and care calendar', go: () => placeholder('History', 'Per-plant entry log.') },
+    { label: 'More about this plant', subtitle: 'Species, soil, pests, season', go: () => placeholder('More about this plant') },
+    { label: 'Info and settings', subtitle: 'Identity, placement, care spec', go: () => placeholder('Info and settings') },
+    // The mock labels this "Photos" but points at the plant detail screen —
+    // a known flaw (DESIGN_REFERENCE.md section 5.1). Renamed per its own fix note.
+    { label: 'Plant detail', subtitle: 'Pick a plant from Plants for now.', go: () => placeholder('Plant detail', 'Open a plant from the Plants tab — this menu has no plant of its own to open yet.') },
+    { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => placeholder('Add a new plant') },
+    { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => placeholder('Archived plants') },
+    { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos') },
+    { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => placeholder('Rooms and planters') },
+    { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => placeholder('Recordings') },
+    { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders') },
+    { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => placeholder('Since last time') },
+    { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works') },
+    { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => placeholder('Prepare review package') },
+    { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => placeholder('Apply AI update') },
+    { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => placeholder('Handoff log') },
+    { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works') },
+  ];
+
+  const screen = nav.current;
+  let body: React.ReactNode;
+
+  if (screen.kind === 'home') {
+    body = <Placeholder title="Home" subtitle="The daily surface — coming next." onBack={nav.back} />;
+  } else if (screen.kind === 'record') {
+    body = <Placeholder title="Record" subtitle="Start or resume a walk recording." onBack={nav.back} />;
+  } else if (screen.kind === 'plants') {
+    body = (
+      <PlantsList
+        state={state}
+        thumbs={thumbs}
+        onOpen={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Plants')}
+        onCare={() => nav.push({ kind: 'care' }, 'Plants')}
+      />
+    );
+  } else if (screen.kind === 'care') {
+    body = (
       <CareRoundPage
         state={state}
         events={events}
@@ -64,37 +108,46 @@ export default function App() {
         thumbs={thumbs}
         as_of={as_of}
         onChanged={reload}
-        onBack={() => setScreen({ kind: 'list' })}
+        backLabel={nav.backLabel ?? 'Plants'}
+        onBack={nav.back}
       />
     );
-  }
-
-  if (screen.kind === 'detail') {
+  } else if (screen.kind === 'detail') {
     const plant = state.plants[screen.plant_id];
     if (!plant) {
       // The plant vanished from the store between navigating here and now —
       // fall back rather than rendering with nothing.
-      setScreen({ kind: 'list' });
-      return null;
+      nav.goRoot('plants');
+      body = null;
+    } else {
+      body = (
+        <PlantDetail
+          plant={plant}
+          events={events}
+          thumbs={thumbs}
+          as_of={as_of}
+          onChanged={reload}
+          backLabel={nav.backLabel ?? 'Plants'}
+          onBack={nav.back}
+        />
+      );
     }
-    return (
-      <PlantDetail
-        plant={plant}
-        events={events}
-        thumbs={thumbs}
-        as_of={as_of}
-        onChanged={reload}
-        onBack={() => setScreen({ kind: 'list' })}
+  } else {
+    body = (
+      <Placeholder
+        title={screen.title}
+        subtitle={screen.subtitle}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
       />
     );
   }
 
   return (
-    <PlantsList
-      state={state}
-      thumbs={thumbs}
-      onOpen={(plant_id) => setScreen({ kind: 'detail', plant_id })}
-      onCare={() => setScreen({ kind: 'care' })}
-    />
+    <>
+      <div className="app-content">{body}</div>
+      <TabBar active={nav.activeTab} onTab={nav.goRoot} onMore={nav.openSheet} />
+      {nav.sheetOpen && <AllPagesSheet items={menuItems} onClose={nav.closeSheet} />}
+    </>
   );
 }
