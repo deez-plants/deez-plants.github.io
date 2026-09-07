@@ -2,9 +2,10 @@
 
 Written 2026-09-07, end of a session that built Care calendar/All months,
 Adherence history, Rooms and planters, More about this plant/Info and
-settings, Health history, and the Add-a-plant write flow. This conversation
-is being closed deliberately; a fresh one continues from here. **Read this
-file first, before anything else.**
+settings (later made fully editable), Health history, and the Add-a-plant
+write flow. This conversation is being closed deliberately (session budget);
+a fresh one continues from here. **Read this file first, before anything
+else.**
 
 ## Read in this order
 
@@ -27,13 +28,13 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `27f880a` (`git log --oneline` will show newer ones by the time
+As of commit `678d462` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
 Home, Plants list, Plant detail with single-plant care mode, History/All
 entries, Archived plants) — see git history if you need that detail — plus
-this session's seven screens:
+this session's screens:
 
 - **Care calendar / All months** (`src/pages/PlantCalendar.tsx`, screens
   26/27) — one component handles both: three months with a "View all 12
@@ -131,6 +132,24 @@ this session's seven screens:
   watched the suffix auto-suggest, submitted, landed on the new plant's own
   detail page as `023-EPI` with the right water interval and room, and
   confirmed the Plants list now reads "23 active" for real.
+- **Info and settings, made editable** (`src/care/editField.ts`, updated
+  `InfoSettings.tsx`) — every field on the screen is `editable_by: user` or
+  `both`, so the user can edit any of it directly with no review table (that
+  machinery is only for import). Room is now a chip picker and Shared
+  planter a select, matching Add-a-plant's own controls. Saving writes one
+  `Edit` event per changed field via a new `editPlantFields()`. Those events
+  are pending like any other — `derive.ts` only exempts `Rate` and
+  `Archive` from the pending filter — so this screen surfaces the same
+  pending/Update footer Log care uses. Self-verification past the happy
+  path caught two real bugs, both fixed and re-verified: diffing every save
+  against the still-uncommitted `plant` prop was writing a duplicate edit
+  on a second save before the next Update (fixed with a local typed
+  `baseline` that becomes the just-saved values); and "Update now" wasn't
+  resyncing the form at all, leaving stale pre-Update numbers on screen
+  (fixed by reading the fresh plant off `commitUpdate()`'s own return value
+  instead of waiting on the prop to flow back down). `App.tsx`'s
+  `<InfoSettings>` now carries `key={plant.plant_id}` so Prev/Next remounts
+  cleanly instead of carrying stale form state to the next plant.
 
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
@@ -148,15 +167,7 @@ failure.
 
 ## What's next, in order
 
-1. **In-place editing for Info and settings** — now that the read display
-   exists, the natural follow-up is writing `Edit` events per field, per
-   `FIELD_DEFINITIONS.md` section 4's user/AI-editable split (rule 4: no
-   apply-all, per-field only anyway since these aren't import rows). Also
-   the natural place to fill in `pot` — Add-a-plant's own screen never asks
-   for it, so every plant added through it needs Info and settings to set
-   a pot afterward. Not urgent — the read display is a complete, honest
-   screen on its own.
-2. **Care calendar link on Plant Detail** — the mock shows a live 3-month
+1. **Care calendar link on Plant Detail** — the mock shows a live 3-month
    calendar preview embedded directly on Plant Detail (below Quick Care),
    with its own "View all ›". Right now the calendar is only reachable one
    level deeper, via Detail → History → "Care calendar ›". The owner asked
@@ -165,12 +176,12 @@ failure.
    there) next time Detail is being touched for other work — not a
    standalone step, and the fuller inline-grid embed is lower priority than
    a plain link.
-3. Export/import + the full validation chain (section 11), the review table
+2. Export/import + the full validation chain (section 11), the review table
    with per-row approval.
-4. Capture: photos, both notes lanes, recording (mic + wake lock). This is
+3. Capture: photos, both notes lanes, recording (mic + wake lock). This is
    where the owner's actual iPhone is required for testing — it cannot be
    verified from here.
-5. The desk console (laptop-only, deliberately last).
+4. The desk console (laptop-only, deliberately last).
 
 Work in long, self-contained stretches per step above. Self-verify each
 piece — run the app in a real browser tab (`npm run dev`, drive it with
