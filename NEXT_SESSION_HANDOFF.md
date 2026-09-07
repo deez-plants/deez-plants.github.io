@@ -106,9 +106,8 @@ table with time estimates and who does what) is published at:
 
 Update it as steps complete — redeploy by publishing the same source file
 path from within a session that has read it first (see the Artifact tool's
-own instructions), passing this URL, not by creating a new one. It was not
-updated this session — do that early next session before starting new work,
-so it doesn't drift further.
+own instructions), passing this URL, not by creating a new one. Updated this
+session to reflect the nav shell and Home landing.
 
 A companion page, **the Deez Plants Playbook**
 (https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
