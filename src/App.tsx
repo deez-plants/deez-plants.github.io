@@ -243,11 +243,14 @@ export default function App() {
     } else {
       body = (
         <MoreAboutPlant
+          key={plant.plant_id}
           plant={plant}
+          as_of={as_of}
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'more', plant_id })}
+          onChanged={reload}
         />
       );
     }

@@ -65,11 +65,16 @@
 }
 
 .more-instruction {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   background: var(--panel-raised);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px 14px;
 }
+
+.more-instruction-body { flex: 1; min-width: 0; }
 
 .more-instruction-text {
   margin: 0 0 6px;
@@ -81,4 +86,110 @@
 .more-instruction-meta {
   font: 600 18px/1 var(--mono);
   color: var(--ink-45);
+}
+
+.more-instruction-delete {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-45);
+  font: 400 18px/1 var(--sans);
+  cursor: pointer;
+}
+
+.more-instruction-delete:disabled { opacity: 0.5; cursor: default; }
+
+.more-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.more-add-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  padding: 12px 13px;
+  font: 400 21px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.more-add-input::placeholder { color: var(--ink-40); }
+
+.more-add-btn {
+  flex: none;
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 11px;
+  padding: 12px 18px;
+  font: 600 21px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.more-add-btn:disabled { color: var(--ink-40); border-color: var(--line); cursor: default; }
+
+.more-error {
+  margin: -4px 0 12px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--warn);
+}
+
+.more-notes-input {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 14px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink);
+  resize: vertical;
+}
+
+.more-notes-input::placeholder { color: var(--ink-40); }
+
+.more-notes-save {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 11px;
+  padding: 14px;
+  font: 600 22px/1 var(--sans);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.more-notes-save:disabled { opacity: 0.6; cursor: default; }
+
+.more-notes-pending {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(233, 161, 92, 0.3);
+}
+
+.more-notes-pending p {
+  margin: 0 0 10px;
+  font: 400 21px/1.4 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.more-notes-update {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--accent-line);
+  border-radius: 10px;
+  padding: 12px;
+  font: 600 21px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
 }
