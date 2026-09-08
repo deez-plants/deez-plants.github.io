@@ -1,15 +1,14 @@
 # Deez Plants — handoff to the next session
 
-Written 2026-09-07, updated mid-session as work continues. This single
-session has now built Care calendar/All months, Adherence history, Rooms
-and planters, More about this plant/Info and settings (later made fully
-editable), Health history, the Add-a-plant write flow, a direct
-Care-calendar link on Plant Detail, export/import (Prepare review package +
-Apply AI update, the full section-11 validation chain), and Capture — real
-photo capture with gallery and hero selection, plus both notes lanes
-(editable care instructions and user notes). Whenever this conversation does
-close, a fresh one continues from here. **Read this file first, before
-anything else.**
+Written 2026-09-07, updated as work continues. The build has now reached
+Care calendar/All months, Adherence history, Rooms and planters, More about
+this plant/Info and settings (later made fully editable), Health history,
+the Add-a-plant write flow, a direct Care-calendar link on Plant Detail,
+export/import (Prepare review package + Apply AI update, the full
+section-11 validation chain), and the whole of Capture — photo capture with
+gallery and hero selection, both notes lanes, and walk recording with
+markers, the screen log and both transcript tiers. **Read this file first,
+before anything else.**
 
 ## Read in this order
 
@@ -30,49 +29,41 @@ Do not re-read `HANDOFF.md` section 6 as live instruction — it's marked
 superseded in place. The build order in its section 2 still roughly holds;
 the phase-gated pacing and "live-test for weeks before continuing" does not.
 
-## Start here: this session was deliberately restarted for recording
+## Start here: recording is built — the next step needs the owner
 
-Everything through both notes lanes (see below) is done, committed, and
-self-verified. The **only** remaining Capture item is audio recording (mic +
-wake lock + screen log + markers), and the owner intentionally started a
-fresh conversation on a stronger/thinking model for it, rather than
-switching mid-session — `HANDOFF.md` section 4 names "the recording
-lifecycle on iOS: wake lock, backgrounding, MediaRecorder chunks" as one of
-only four things in this whole build that warrant the strongest model with
-extended thinking on, everything else being fast-model work. If this
-session is running on a fast/default model, ask the owner to confirm before
-starting recording rather than assuming it's fine.
+**Capture is complete.** Recording landed in commit `dc397b4` (see "Walk
+recording" below), which closes out the whole of Capture and, with it,
+every phone-side feature in the build apart from the desk console.
 
-Build target for this piece (`FIELD_DEFINITIONS.md` section 6, screens
-03/15 in `DESIGN_REFERENCE.md`): `capture/recording.ts`
-(`MediaRecorder`/`audio/mp4`, wake lock held while recording, one long
-recording per session, foreground-only), `capture/screenLog.ts` (always-on,
-5-second pass-through filter, 7-day/500-entry retention, absolute `at`
-timestamp outside a recording and both `at`+`offset_s` inside one), a
-markers sidecar per session (`session_start`/`plant_open`/`care_logged`/
-`photo`/`session_end`, auto-recorded — see the JSON shape in
-`FIELD_DEFINITIONS.md` section 6), the Record screen (screen 03: timer,
-READY/RECORDING/PAUSED state word, Pause/Delete/End-session controls, a
-live marker list), and Recordings (screen 15: sessions on this device,
-date/duration/marker count/transcript-tier, an export step that moves audio
-+ sidecar out for Whisper). `Prepare review package` already writes honest
-empty `transcript.txt`/`markers.json` placeholders — once real session data
-exists, wire it through there instead of the placeholder strings.
+**The next step is not more building. It is hosting the app on real HTTPS
+and testing recording on the owner's iPhone.** Everything about recording
+that a desktop browser can prove has been proved (see the bullet for what
+was driven and checked); the three things that remain are the three a
+laptop physically cannot answer:
 
-**What can be self-verified on desktop Chrome at `localhost` before handing
-back to the owner:** `getUserMedia`/`MediaRecorder` and the Wake Lock API
-both work over plain `http://localhost` (browsers treat localhost as a
-secure context), so the record/pause/stop lifecycle, the marker list, the
-screen log's pass-through filter, and the Recordings list can all be driven
-and screenshotted in-browser same as every other feature this session.
-**What genuinely cannot be verified without the owner:** real backgrounding
-behavior on iOS Safari (does the recording actually survive vs. the mock's
-own warning that switching apps can end it), installed-to-home-screen
-behavior, and moving a real audio file to a laptop for Whisper — those need
-the owner's iPhone and, per `HANDOFF.md` section 1, real HTTPS hosting
-(GitHub Pages or Netlify), which is a one-time account step to flag
-plainly, not assume. Build and desktop-verify everything else first; call
-out the iPhone-only gaps explicitly rather than claiming full verification.
+1. **Does a recording survive backgrounding on iOS Safari?** The app assumes
+   it might not, warns on screen that it might not, and writes audio chunks
+   to storage every ten seconds so that a capture iOS kills is still
+   recoverable in full up to the last chunk. Whether that assumption is
+   pessimistic or optimistic is a fact about the owner's phone.
+2. **Does it behave better installed to the home screen than in a Safari
+   tab?** Section 6 says materially so. Untested here.
+3. **Does moving a real walk's audio to the laptop and running Whisper on
+   it produce a transcript the coverage gate accepts?** The gate itself is
+   checked (20 assertions in `check/coverage.check.cjs`, plus a real
+   pass and a real fail driven through the UI), but never against genuine
+   Whisper output from genuine iPhone audio.
+
+All three need the app hosted somewhere with real HTTPS — GitHub Pages or
+Netlify, per `HANDOFF.md` section 1. That is a one-time account step and it
+is the owner's to make, not something to assume or work around. **Raise it
+plainly and wait**; do not start the desk console on the assumption that
+recording is fine, because if backgrounding turns out to kill capture the
+fix lives in `capture/recording.ts` and is better made before more is built
+on top of it.
+
+If the owner would rather keep building than test now, the desk console
+(step 2 below) is the honest next thing.
 
 ## What's built and committed
 
@@ -313,6 +304,105 @@ this session's screens:
   double-delete on the same `instruction_id` from a double-click, which
   `applyInstructionOp` resolved idempotently rather than erroring.
 
+- **Walk recording** (`src/capture/{recording,liveSession,screenLog,coverage,
+  sessions}.ts`, `src/pages/{RecordSession,Recordings}.tsx`, screens 03/15) —
+  the last piece of Capture, and the end of the phone-side build.
+  - **The recorder is a module singleton, not component state.** A walk has
+    to survive navigating to a plant, logging care and taking a photo —
+    that navigation is precisely what writes the markers — so
+    `capture/recording.ts` owns the state and React subscribes to it through
+    `useSyncExternalStore`. Leaving the Record screen does not end the walk.
+  - **Durability was designed for iOS killing the capture, not against it.**
+    `MediaRecorder` is asked for a chunk every ten seconds; each chunk is
+    written to the `audio` store under `session_id#NNNN` as it arrives, and
+    the `SessionRecord` is written when the walk *starts* and updated as it
+    runs. So a walk that dies — backgrounded too long, a call, a reload — is
+    already in the Recordings list with its audio and markers up to the last
+    chunk. There is deliberately no crash-recovery path: there is nothing to
+    recover, only a session whose `closed` never became true, which the
+    Recordings screen labels ENDED UNEXPECTEDLY. On a clean end the chunks
+    are assembled into one blob and replace themselves.
+  - **`capture/liveSession.ts` exists to break a cycle.** `db/events.ts`
+    stamps every event it writes with the live `session_id`/`offset_s`, and
+    `capture/screenLog.ts` does the same for its entries; both reaching into
+    the recorder directly would be circular, since the recorder imports the
+    database and the event writer. That module imports nothing but types,
+    the recorder registers itself there on start, and the dependency runs
+    one way.
+  - **Markers are recorded automatically, per section 6.** `appendEvents`
+    emits `care_logged` (and `photo` for a `Photo` event's media) after the
+    write succeeds, never before; the shell's one `enterScreen` call emits
+    `plant_open`, deduped so the Prev/Next strip cannot mint a dozen of
+    them. `Rate`/`Edit`/`Archive` have no marker type in the spec and get
+    none. Screen 03's "tap one to correct it" retags a `plant_open` to a
+    different plant, keeping its offset (the time is objective, only the
+    attribution was a guess) and flipping AUTO to MANUAL — the sidecar keeps
+    the distinction so the AI knows which is which.
+  - **The screen log runs always**, not only while recording, and lives at
+    exactly one call site (an effect in `App.tsx` keyed on the current
+    screen). Under-five-second visits are dropped inside `enterScreen` and
+    never reach storage; retention is 7 days or 500 entries; an entry inside
+    a recording carries `session_id` and `offset_s`, one outside carries
+    only its absolute `at`. It rides out in `markers.json` with section 6's
+    "evidence, not fact" wording attached to it rather than in a fifth file
+    section 7 does not name.
+  - **Both transcript tiers are real.** Paste prose and it is accepted whole
+    as `unverified` with no gate; paste Whisper JSON or SRT/VTT and it is
+    `verified` and the four coverage assertions run, with failures listed
+    inline at their own offsets. Replacing an unverified transcript with a
+    verified one raises the tier and re-runs the gate, which falls out of it
+    being a plain replace rather than a separate upgrade path.
+  - **`Prepare review package` now carries walks for real** — the
+    placeholder strings are gone. A walk with no transcript still ships,
+    with `transcript.txt` saying so for that walk: the AI being told a
+    recorded walk exists and holds no words yet is a fact about the package,
+    not an absence to hide. `PackageRecord` gained `session_ids` so a walk
+    goes out once, the same rule `event_ids` applies to events, and
+    `verified` is true only when every walk in the package passed coverage
+    (a package with no audio in it is not `verified` — there was nothing to
+    verify, which is not the same as having verified something).
+  - **Timestamps are local and zoneless** (`nowLocalStamp` in `lib/dates.ts`)
+    for both `SessionRecord.started` and screen-log `at`, matching section
+    6's own sidecar example and `ISODate`'s convention. `toISOString()` would
+    stamp an evening walk with tomorrow's date west of Greenwich while every
+    event logged during that same walk carried today's.
+  - **Two deliberate deviations from the mock**, both explained at the top of
+    their files: the tab bar's centre button turns red and shows the running
+    timer but still *navigates* to the Record screen rather than pretending
+    to pause (Rec is a root tab, and a button labelled Pause that does not
+    pause is worse than one that says what it does); and there is a plain
+    "End session" above the mock's "End session and prepare package", because
+    without one the finished-session state the reference's own States line
+    names would be unreachable, and ending straight into the package screen
+    builds a package whose walk has no words in it yet.
+  - **Self-verified in a real browser tab**, end to end: started a walk and
+    watched the wake lock take; navigated to a plant and logged a watering,
+    getting a `plant_open` at 00:17 and a `care_logged` at 00:46 with the
+    plant-open dedupe holding across detail and Log care; retagged the first
+    marker to another plant and confirmed the offset held while the badge
+    became MANUAL; paused (timer froze, button became Resume) and resumed;
+    ended and confirmed the saved summary; reloaded the page and confirmed
+    1.3 MB of real audio had survived; attached prose (UNVERIFIED, no
+    coverage badge), then a JSON with a deliberate 35-second hole (VERIFIED ·
+    COVERAGE FAILED · 2, naming assertion 2's gap at 00:10 and assertion 3's
+    uncovered marker at 00:17 by plant id), then a clean SRT (VERIFIED ·
+    COVERAGE PASSED); built a package and unzipped it to confirm
+    `transcript.txt` and `markers.json` hold the real sidecar shape and the
+    screen log with its evidence note, with in-recording entries carrying
+    `session_id`+`offset_s` and outside ones carrying neither; exported a
+    walk and confirmed the zip holds a genuine ISOBMFF `.m4a` plus sidecar,
+    screen log and Whisper instructions; deleted it and confirmed both the
+    session record and its audio were gone; and discarded a walk mid-record
+    and confirmed the same. Two real bugs were found and fixed this way: the
+    Record screen went on summarising a session that had since been deleted
+    from Recordings, and `previewReviewPackage` had no session counts so
+    screen 19 still read "No recording sessions on this device yet".
+  - `check/coverage.check.cjs` (20 assertions) pins the four coverage
+    assertions and the transcript parsing — the one part of recording that
+    is pure enough to check in node. It runs **before** `care.check.cjs` in
+    the `check` chain, deliberately: the chain is `&&`-joined, so anything
+    after the known pre-existing failure below would never run.
+
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
@@ -328,17 +418,11 @@ as of this commit (only the one known pre-existing failure noted above).
 
 ## What's next, in order
 
-1. **Capture, continued**: photo capture/gallery/hero and both notes lanes
-   are done (see above). Left in Capture: recording (mic + wake lock) — the
-   last piece. Recording is where the owner's actual iPhone is required for
-   testing — mic permission and wake-lock behavior can't be verified from a
-   desktop browser, and testing it at all needs the app hosted somewhere
-   with real HTTPS first (a one-time account step, flag it plainly rather
-   than assume). Note that `Prepare review package` already writes honest
-   empty placeholders for `transcript.txt`/`markers.json` — once recording
-   exists, that's the file to come back to and wire real data through
-   instead of the placeholder strings.
-2. The desk console (laptop-only, deliberately last).
+1. **Hosting, then the iPhone test.** See "Start here" above — this is the
+   owner's step, not a build step, and it gates the three questions about
+   recording a laptop cannot answer. Capture itself is done.
+2. The desk console (laptop-only, deliberately last). The honest thing to
+   build if the owner would rather keep going than test now.
 3. Smaller loose ends, whenever convenient rather than as their own steps:
    the mock's fuller inline Care-calendar preview on Plant Detail (the
    plain link there now is the interim version); the "AI proposes, both
