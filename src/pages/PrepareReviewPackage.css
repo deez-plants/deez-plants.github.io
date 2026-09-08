@@ -1,0 +1,110 @@
+.prep {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.prep-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.prep-title {
+  margin: 2px 0 4px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+}
+
+.prep-sub {
+  margin: 0 0 18px;
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.prep-note {
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink-50);
+}
+
+.prep-files {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prep-files li {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.prep-file-name {
+  display: block;
+  font: 600 23px/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.prep-file-detail {
+  display: block;
+  margin-top: 3px;
+  font: 400 21px/1.3 var(--sans);
+  color: var(--ink-50);
+}
+
+.prep-file-detail.dim { color: var(--ink-40); font-style: italic; }
+
+.prep-done {
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+.prep-done p {
+  margin: 0;
+  font: 400 22px/1.45 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.prep-filename {
+  font: 600 20px/1 var(--mono);
+  color: var(--accent);
+}
+
+.prep-error {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--warn);
+}
+
+.prep-build {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  font: 600 24px/1 var(--sans);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.prep-build:disabled {
+  background: var(--panel-raised);
+  border-color: var(--line);
+  color: var(--ink-40);
+  cursor: default;
+}

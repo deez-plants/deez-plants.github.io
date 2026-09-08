@@ -14,6 +14,8 @@ import ArchivedPlants from './pages/ArchivedPlants';
 import AdherenceHistory from './pages/AdherenceHistory';
 import HealthHistory from './pages/HealthHistory';
 import AddPlant from './pages/AddPlant';
+import PrepareReviewPackage from './pages/PrepareReviewPackage';
+import ApplyAIUpdate from './pages/ApplyAIUpdate';
 import RoomsPlanters from './pages/RoomsPlanters';
 import MoreAboutPlant from './pages/MoreAboutPlant';
 import InfoSettings from './pages/InfoSettings';
@@ -97,8 +99,8 @@ export default function App() {
     { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders', undefined, 'All pages') },
     { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => placeholder('Since last time', undefined, 'All pages') },
     { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works', undefined, 'All pages') },
-    { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => placeholder('Prepare review package', undefined, 'All pages') },
-    { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => placeholder('Apply AI update', undefined, 'All pages') },
+    { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => nav.push({ kind: 'prepare-package' }, 'All pages') },
+    { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => nav.push({ kind: 'apply-update' }, 'All pages') },
     { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => placeholder('Handoff log', undefined, 'All pages') },
     { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works', undefined, 'All pages') },
   ];
@@ -117,6 +119,8 @@ export default function App() {
         onAdherenceHistory={() => nav.push({ kind: 'adherence' }, 'Home')}
         onHealthHistory={() => nav.push({ kind: 'health-history' }, 'Home')}
         onAddPlant={() => nav.push({ kind: 'add-plant' }, 'Home')}
+        onPreparePackage={() => nav.push({ kind: 'prepare-package' }, 'Home')}
+        onApplyUpdate={() => nav.push({ kind: 'apply-update' }, 'Home')}
       />
     );
   } else if (screen.kind === 'record') {
@@ -301,6 +305,25 @@ export default function App() {
         onBack={nav.back}
         onChanged={reload}
         onAdded={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
+      />
+    );
+  } else if (screen.kind === 'prepare-package') {
+    body = (
+      <PrepareReviewPackage
+        state={state}
+        as_of={as_of}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+      />
+    );
+  } else if (screen.kind === 'apply-update') {
+    body = (
+      <ApplyAIUpdate
+        state={state}
+        as_of={as_of}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+        onChanged={reload}
       />
     );
   } else if (screen.kind === 'rooms') {

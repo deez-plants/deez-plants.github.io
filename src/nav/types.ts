@@ -36,6 +36,10 @@ export type Screen =
   | { kind: 'health-history' }
   /** Screen 11: a new plant baseline. */
   | { kind: 'add-plant' }
+  /** Screen 19: builds the export ZIP. */
+  | { kind: 'prepare-package' }
+  /** Screen 20: import an update file, review table, per-row approval. */
+  | { kind: 'apply-update' }
   /** Screen 14: the physical registry — rooms and shared planters. */
   | { kind: 'rooms' }
   | { kind: 'placeholder'; title: string; subtitle?: string };

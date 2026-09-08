@@ -35,6 +35,8 @@ export interface HomeProps {
   onAdherenceHistory: () => void;
   onHealthHistory: () => void;
   onAddPlant: () => void;
+  onPreparePackage: () => void;
+  onApplyUpdate: () => void;
 }
 
 const NEEDS_ATTENTION_CAP = 6;
@@ -42,6 +44,7 @@ const MOST_URGENT_CAP = 6;
 
 export default function Home({
   state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
+  onPreparePackage, onApplyUpdate,
 }: HomeProps) {
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
@@ -229,21 +232,13 @@ export default function Home({
           </span>
           <span className="home-row-chev" aria-hidden="true">›</span>
         </button>
-        <button
-          type="button"
-          className="home-util-row"
-          onClick={() => onPlaceholder('Prepare review package', 'Bundle sessions, photos and events.')}
-        >
+        <button type="button" className="home-util-row" onClick={onPreparePackage}>
           <span className="home-row-body">
             <span className="home-row-name">Prepare review package</span>
           </span>
           <span className="home-row-chev" aria-hidden="true">›</span>
         </button>
-        <button
-          type="button"
-          className="home-util-row"
-          onClick={() => onPlaceholder('Apply AI update', 'Import one update file, approve changes.')}
-        >
+        <button type="button" className="home-util-row" onClick={onApplyUpdate}>
           <span className="home-row-body">
             <span className="home-row-name">Apply AI update</span>
           </span>
