@@ -30,9 +30,53 @@ Do not re-read `HANDOFF.md` section 6 as live instruction — it's marked
 superseded in place. The build order in its section 2 still roughly holds;
 the phase-gated pacing and "live-test for weeks before continuing" does not.
 
+## Start here: this session was deliberately restarted for recording
+
+Everything through both notes lanes (see below) is done, committed, and
+self-verified. The **only** remaining Capture item is audio recording (mic +
+wake lock + screen log + markers), and the owner intentionally started a
+fresh conversation on a stronger/thinking model for it, rather than
+switching mid-session — `HANDOFF.md` section 4 names "the recording
+lifecycle on iOS: wake lock, backgrounding, MediaRecorder chunks" as one of
+only four things in this whole build that warrant the strongest model with
+extended thinking on, everything else being fast-model work. If this
+session is running on a fast/default model, ask the owner to confirm before
+starting recording rather than assuming it's fine.
+
+Build target for this piece (`FIELD_DEFINITIONS.md` section 6, screens
+03/15 in `DESIGN_REFERENCE.md`): `capture/recording.ts`
+(`MediaRecorder`/`audio/mp4`, wake lock held while recording, one long
+recording per session, foreground-only), `capture/screenLog.ts` (always-on,
+5-second pass-through filter, 7-day/500-entry retention, absolute `at`
+timestamp outside a recording and both `at`+`offset_s` inside one), a
+markers sidecar per session (`session_start`/`plant_open`/`care_logged`/
+`photo`/`session_end`, auto-recorded — see the JSON shape in
+`FIELD_DEFINITIONS.md` section 6), the Record screen (screen 03: timer,
+READY/RECORDING/PAUSED state word, Pause/Delete/End-session controls, a
+live marker list), and Recordings (screen 15: sessions on this device,
+date/duration/marker count/transcript-tier, an export step that moves audio
++ sidecar out for Whisper). `Prepare review package` already writes honest
+empty `transcript.txt`/`markers.json` placeholders — once real session data
+exists, wire it through there instead of the placeholder strings.
+
+**What can be self-verified on desktop Chrome at `localhost` before handing
+back to the owner:** `getUserMedia`/`MediaRecorder` and the Wake Lock API
+both work over plain `http://localhost` (browsers treat localhost as a
+secure context), so the record/pause/stop lifecycle, the marker list, the
+screen log's pass-through filter, and the Recordings list can all be driven
+and screenshotted in-browser same as every other feature this session.
+**What genuinely cannot be verified without the owner:** real backgrounding
+behavior on iOS Safari (does the recording actually survive vs. the mock's
+own warning that switching apps can end it), installed-to-home-screen
+behavior, and moving a real audio file to a laptop for Whisper — those need
+the owner's iPhone and, per `HANDOFF.md` section 1, real HTTPS hosting
+(GitHub Pages or Netlify), which is a one-time account step to flag
+plainly, not assume. Build and desktop-verify everything else first; call
+out the iPhone-only gaps explicitly rather than claiming full verification.
+
 ## What's built and committed
 
-As of commit `e1f9ce1` (`git log --oneline` will show newer ones by the time
+As of commit `b2669fa` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
