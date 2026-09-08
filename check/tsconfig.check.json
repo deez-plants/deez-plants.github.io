@@ -19,6 +19,7 @@
     "../src/lib/dates.ts",
     "../src/care/careRound.ts",
     "../src/care/rate.ts",
-    "../src/score/score.ts"
+    "../src/score/score.ts",
+    "../src/capture/coverage.ts"
   ]
 }

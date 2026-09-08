@@ -9,10 +9,11 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check:build": "tsc -p check/tsconfig.check.json",
-    "check": "npm run check:build && node check/derive.check.cjs && node check/seed.check.cjs && node check/care.check.cjs",
+    "check": "npm run check:build && node check/derive.check.cjs && node check/seed.check.cjs && node check/coverage.check.cjs && node check/care.check.cjs",
     "check:round": "npm run check:build && node check/round.check.cjs",
     "check:seed": "npm run check:build && node check/seed.check.cjs",
-    "check:care": "npm run check:build && node check/care.check.cjs"
+    "check:care": "npm run check:build && node check/care.check.cjs",
+    "check:coverage": "npm run check:build && node check/coverage.check.cjs"
   },
   "dependencies": {
     "idb": "^8.0.3",

@@ -44,6 +44,8 @@ export type Screen =
   | { kind: 'apply-update' }
   /** Screen 14: the physical registry — rooms and shared planters. */
   | { kind: 'rooms' }
+  /** Screen 15: walks held on this device, and the Whisper hand-off. */
+  | { kind: 'recordings' }
   | { kind: 'placeholder'; title: string; subtitle?: string };
 
 export type RootTab = 'home' | 'plants' | 'record';

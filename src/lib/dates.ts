@@ -180,3 +180,29 @@ export function todayISO(): ISODate {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` as ISODate;
 }
+
+/**
+ * `YYYY-MM-DDTHH:MM:SS`, local, no zone — the form section 6's own sidecar
+ * example prints (`"started": "2026-08-14T18:22:04"`).
+ *
+ * Deliberately not `toISOString()`. That returns UTC, so a walk recorded at
+ * eight in the evening west of Greenwich would be stamped with tomorrow's
+ * date while every event logged during the same walk carried today's — the
+ * exact class of bug `ISODate`'s own doc comment exists to prevent. Sorting
+ * still works: these strings are fixed-width and compare lexicographically
+ * within one device's timezone, which is the only place they are compared.
+ */
+export function nowLocalStamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    + `T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+/** `nowLocalStamp` shifted back by whole days — the screen log's retention cutoff. */
+export function localStampDaysAgo(days: number): string {
+  const then = new Date(Date.now() - days * 86_400_000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${then.getFullYear()}-${pad(then.getMonth() + 1)}-${pad(then.getDate())}`
+    + `T${pad(then.getHours())}:${pad(then.getMinutes())}:${pad(then.getSeconds())}`;
+}

@@ -55,3 +55,39 @@
   font: 700 20px/1 var(--sans);
   color: var(--ink);
 }
+
+/* A walk in progress, visible from every screen. */
+.tabbar-rec.live .tabbar-rec-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--warn);
+  box-shadow: 0 6px 18px rgba(232, 138, 106, 0.3);
+}
+
+.tabbar-rec.recording .tabbar-rec-dot {
+  animation: tabbar-rec-pulse 1.6s ease-in-out infinite;
+}
+
+.tabbar-rec-square {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: #2a1410;
+}
+
+.tabbar-rec.live .tabbar-rec-label {
+  font: 700 19px/1 var(--mono);
+  color: var(--warn);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes tabbar-rec-pulse {
+  0%, 100% { box-shadow: 0 6px 18px rgba(232, 138, 106, 0.3); }
+  50% { box-shadow: 0 6px 26px rgba(232, 138, 106, 0.65); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbar-rec.recording .tabbar-rec-dot { animation: none; }
+}

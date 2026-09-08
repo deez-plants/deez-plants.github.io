@@ -1,0 +1,135 @@
+/**
+ * Transcript coverage — FIELD_DEFINITIONS.md section 6's four assertions, and
+ * the parsing that decides which tier a transcript lands in.
+ *
+ * This is the one piece of recording that is pure and therefore checkable in
+ * node: everything else in `capture/` needs a microphone, a wake lock or
+ * IndexedDB, and is exercised in the browser instead. The gate itself is the
+ * part worth pinning down — "a package is not marked `verified` until coverage
+ * passes" is a promise about behaviour, not about a UI.
+ *
+ * Run with `npm run check:coverage`.
+ */
+
+const { checkCoverage, parseTranscript } = require('./build/capture/coverage.js');
+
+let pass = 0, fail = 0;
+const eq = (name, got, want) => {
+  const a = JSON.stringify(got), b = JSON.stringify(want);
+  if (a === b) { pass++; }
+  else { fail++; console.log(`FAIL ${name}\n  got  ${a}\n  want ${b}`); }
+};
+
+/** Which assertions failed, deduplicated and sorted — the shape worth asserting. */
+const failed = (report) => [...new Set(report.failures.map((f) => f.assertion))].sort();
+
+const MARKERS = [
+  { offset_s: 0, type: 'session_start' },
+  { offset_s: 12, type: 'plant_open', plant_id: '001-MON' },
+  { offset_s: 48, type: 'care_logged', plant_id: '001-MON', event_id: 'EV-1' },
+  { offset_s: 100, type: 'session_end' },
+];
+
+const FULL = [
+  { start: 0, end: 30, text: 'one' },
+  { start: 30, end: 65, text: 'two' },
+  { start: 65, end: 98, text: 'three' },
+];
+
+/* ------------------------------------------------------------- the gate -- */
+
+eq('a transcript covering the whole walk passes',
+  checkCoverage(FULL, 100, MARKERS).passed, true);
+
+eq('no failures are reported on a pass',
+  checkCoverage(FULL, 100, MARKERS).failures.length, 0);
+
+eq('empty segments fail rather than vacuously passing',
+  checkCoverage([], 100, MARKERS).passed, false);
+
+// 1. The last segment ends within 5 seconds of duration_s.
+eq('assertion 1: a transcript stopping 20s early fails',
+  failed(checkCoverage([{ start: 0, end: 80, text: 'x' }], 100, [])), [1]);
+
+eq('assertion 1: 4 seconds short is inside tolerance',
+  checkCoverage([{ start: 0, end: 96, text: 'x' }], 100, []).passed, true);
+
+eq('assertion 1: running past the audio fails too',
+  failed(checkCoverage([{ start: 0, end: 120, text: 'x' }], 100, [])), [1, 4]);
+
+// 2. No gap between segments exceeds 20 seconds.
+eq('assertion 2: a 35s hole between segments fails',
+  failed(checkCoverage(
+    [{ start: 0, end: 10, text: 'a' }, { start: 45, end: 98, text: 'b' }],
+    100,
+    [],
+  )), [2]);
+
+eq('assertion 2: a 19s gap is allowed',
+  checkCoverage(
+    [{ start: 0, end: 40, text: 'a' }, { start: 59, end: 98, text: 'b' }],
+    100,
+    [],
+  ).passed, true);
+
+// 3. Every marker offset falls inside a transcribed segment.
+eq('assertion 3: an uncovered marker fails, and reports its own offset',
+  checkCoverage(
+    [{ start: 0, end: 10, text: 'a' }, { start: 30, end: 98, text: 'b' }],
+    100,
+    [{ offset_s: 20, type: 'plant_open', plant_id: '004-MNY' }],
+  ).failures.filter((f) => f.assertion === 3).map((f) => f.offset_s), [20]);
+
+eq('assertion 3: session_end past the last segment is not a failure',
+  checkCoverage(FULL, 100, [{ offset_s: 100, type: 'session_end' }]).passed, true);
+
+// 4. Timestamps are monotonic and inside the recorded duration.
+eq('assertion 4: segments going backwards fail',
+  failed(checkCoverage(
+    [{ start: 50, end: 98, text: 'b' }, { start: 0, end: 40, text: 'a' }],
+    100,
+    [],
+  )).includes(4), true);
+
+eq('assertion 4: a segment ending before it starts fails',
+  failed(checkCoverage([{ start: 60, end: 40, text: 'x' }], 100, [])).includes(4), true);
+
+/* ------------------------------------------------------------- parsing -- */
+
+const whisper = JSON.stringify({
+  text: 'Hello there.',
+  segments: [{ start: 0, end: 4.5, text: 'Hello' }, { start: 4.5, end: 9, text: 'there.' }],
+});
+
+eq('Whisper JSON yields segments (the verified tier)',
+  parseTranscript(whisper).segments.length, 2);
+
+eq('Whisper JSON keeps its own full text',
+  parseTranscript(whisper).text, 'Hello there.');
+
+const srt = '1\n00:00:00,000 --> 00:00:04,500\nHello\n\n2\n00:00:04,500 --> 00:00:09,000\nthere.\n';
+
+eq('SRT parses to the same segments',
+  parseTranscript(srt).segments, [
+    { start: 0, end: 4.5, text: 'Hello' },
+    { start: 4.5, end: 9, text: 'there.' },
+  ]);
+
+eq('WebVTT decimal points parse too',
+  parseTranscript('00:00:01.250 --> 00:00:03.000\nWords\n').segments,
+  [{ start: 1.25, end: 3, text: 'Words' }]);
+
+eq('plain prose yields no segments (the unverified tier)',
+  parseTranscript('I walked around and the monstera looked fine.').segments.length, 0);
+
+eq('plain prose is still kept whole',
+  parseTranscript('  Kept whole.  ').text, 'Kept whole.');
+
+eq('an empty transcript parses to nothing',
+  parseTranscript('   '), { text: '', segments: [] });
+
+eq('malformed JSON falls back to prose rather than throwing',
+  parseTranscript('{ not really json').segments.length, 0);
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

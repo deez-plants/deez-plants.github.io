@@ -21,6 +21,9 @@ import RoomsPlanters from './pages/RoomsPlanters';
 import MoreAboutPlant from './pages/MoreAboutPlant';
 import InfoSettings from './pages/InfoSettings';
 import CareRoundPage from './pages/CareRoundPage';
+import RecordSession from './pages/RecordSession';
+import Recordings from './pages/Recordings';
+import { enterScreen } from './capture/screenLog';
 import './App.css';
 
 /**
@@ -50,6 +53,18 @@ export default function App() {
       }));
     return () => { live = false; };
   }, []);
+
+  // The screen log (FIELD_DEFINITIONS.md section 6) runs always, not only while
+  // recording — this is its one call site. Visits under five seconds are
+  // dropped inside `enterScreen`, so navigating through a screen writes
+  // nothing; opening a plant's page also places a `plant_open` marker when a
+  // walk happens to be running.
+  const current = nav.current;
+  const screenKind = current.kind;
+  const screenPlant = 'plant_id' in current ? current.plant_id : undefined;
+  useEffect(() => {
+    enterScreen(screenKind, screenPlant);
+  }, [screenKind, screenPlant]);
 
   if (load.status === 'loading') return <main className="shell"><p className="dim">Opening…</p></main>;
   if (load.status === 'error') {
@@ -96,7 +111,7 @@ export default function App() {
     { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => nav.push({ kind: 'archive' }, 'All pages') },
     { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos', 'Open a plant from Plants — this menu has no plant of its own to open.', 'All pages') },
     { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => nav.push({ kind: 'rooms' }, 'All pages') },
-    { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => placeholder('Recordings', undefined, 'All pages') },
+    { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => nav.push({ kind: 'recordings' }, 'All pages') },
     { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders', undefined, 'All pages') },
     { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => placeholder('Since last time', undefined, 'All pages') },
     { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works', undefined, 'All pages') },
@@ -106,7 +121,7 @@ export default function App() {
     { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works', undefined, 'All pages') },
   ];
 
-  const screen = nav.current;
+  const screen = current;
   let body: React.ReactNode;
 
   if (screen.kind === 'home') {
@@ -125,7 +140,18 @@ export default function App() {
       />
     );
   } else if (screen.kind === 'record') {
-    body = <Placeholder title="Record" subtitle="Start or resume a walk recording." onBack={nav.back} />;
+    body = (
+      <RecordSession
+        state={state}
+        as_of={as_of}
+        backLabel={nav.backLabel}
+        onBack={nav.back}
+        onPreparePackage={() => nav.push({ kind: 'prepare-package' }, 'Record')}
+        onRecordings={() => nav.push({ kind: 'recordings' }, 'Record')}
+      />
+    );
+  } else if (screen.kind === 'recordings') {
+    body = <Recordings backLabel={nav.backLabel ?? 'Record'} onBack={nav.back} />;
   } else if (screen.kind === 'plants') {
     body = (
       <PlantsList

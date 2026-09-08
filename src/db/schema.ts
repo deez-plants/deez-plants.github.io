@@ -43,6 +43,10 @@ export interface CoverageReport {
 
 export interface SessionRecord {
   session_id: SessionId;
+  /** `YYYY-MM-DDTHH:MM:SS`, local, no zone — section 6's own sidecar shape,
+      and the same local-civil convention `ISODate` uses. Never UTC: a walk
+      recorded in the evening west of Greenwich would otherwise carry
+      tomorrow's date while its own events carried today's. */
   started: string;
   duration_s: number;
   /** Markers are written by the app as it goes — page opens, care, photos. */
@@ -50,6 +54,21 @@ export interface SessionRecord {
   transcript: string | null;
   transcript_tier: TranscriptTier | null;
   coverage: CoverageReport | null;
+  /**
+   * What `MediaRecorder` actually produced. Section 6 asks for `audio/mp4`,
+   * which Safari gives and Chrome does not — the export names the file from
+   * this rather than assuming, so a walk recorded on a laptop is still handed
+   * to Whisper under a name matching its contents.
+   */
+  mime?: string;
+  /**
+   * False while the walk is still being recorded, true once it ended cleanly.
+   * The record is written at the start of a walk and updated as it runs (see
+   * `capture/recording.ts`), so a session left `closed: false` with no live
+   * recorder is one iOS ended from under us — the audio up to the last chunk
+   * is still there and still playable.
+   */
+  closed?: boolean;
 }
 
 export interface SessionMarker {
@@ -58,6 +77,10 @@ export interface SessionMarker {
   plant_id?: PlantId;
   event_id?: string;
   media?: MediaId;
+  /** Screen 03 lets you retag a `plant_open` the app placed. An automatic
+      marker reads AUTO; one you corrected reads MANUAL, and the difference
+      is kept because the AI reading the sidecar should know which is which. */
+  manual?: boolean;
 }
 
 /**
@@ -66,7 +89,9 @@ export interface SessionMarker {
  * not navigation. Retention: 7 days or 500 entries, whichever comes first.
  */
 export interface ScreenLogEntry {
-  /** Absolute timestamp, always present. Sorted and swept on this. */
+  /** Absolute timestamp, always present. Sorted and swept on this.
+      `YYYY-MM-DDTHH:MM:SS`, local and zoneless like `SessionRecord.started` —
+      fixed width, so lexicographic order is chronological order. */
   at: string;
   screen: string;
   plant_id?: PlantId;
@@ -85,6 +110,10 @@ export interface PackageRecord {
   plant_ids: PlantId[];
   transcript_tier: TranscriptTier | null;
   verified: boolean;
+  /** The walks this package carried, so the next one does not repeat them —
+      the same rule `event_ids` applies to events. Absent on packages built
+      before recording existed. */
+  session_ids?: SessionId[];
 }
 
 /** Rule 2: no previously applied update cites the same package_id. */
@@ -151,7 +180,14 @@ export interface DeezPlantsDB extends DBSchema {
     value: SessionRecord;
   };
 
-  /** Kept out of `sessions` so listing walks does not drag 20 MB per row. */
+  /**
+   * Kept out of `sessions` so listing walks does not drag 20 MB per row.
+   *
+   * Keyed by `session_id` for a finished walk. While one is being recorded the
+   * chunks land under `session_id#0000`, `#0001`, … as they arrive, so a walk
+   * that iOS ends from under us keeps everything up to the last chunk instead
+   * of nothing. `capture/recording.ts`'s `readSessionAudio` reads either form.
+   */
   audio: {
     key: string;
     value: Blob;

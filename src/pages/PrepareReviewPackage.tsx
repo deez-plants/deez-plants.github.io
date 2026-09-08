@@ -2,14 +2,19 @@ import { useEffect, useState } from 'react';
 import type { DerivedState } from '../types/derived';
 import type { ISODate } from '../types/ids';
 import { openDeezPlants } from '../db/schema';
-import { buildReviewPackage, previewReviewPackage, saveBlob } from '../package/export';
+import { buildReviewPackage, previewReviewPackage, saveBlob, type PackagePreview } from '../package/export';
 import './PrepareReviewPackage.css';
 
 /**
- * DESIGN_REFERENCE.md screen 19. The mock's own sessions/media rows are left
- * out here rather than shown as fake checkboxes — Capture isn't built, so
- * there is nothing real to check off yet (same principle as the empty bars
- * on Adherence/Health history: derive, never invent).
+ * DESIGN_REFERENCE.md screen 19.
+ *
+ * The four rows report what is actually going in, walks included: how many
+ * were recorded since the last package and how many of those have a
+ * transcript. A walk with no transcript still ships — the AI is told it
+ * exists and that it holds no words yet, which is a fact about the package
+ * rather than an absence to hide. The mock's separate media checkboxes are
+ * still left out: section 7's review set is the four text files, and photos
+ * go in only when flagged, which has no screen yet.
  */
 
 export interface PrepareReviewPackageProps {
@@ -21,7 +26,7 @@ export interface PrepareReviewPackageProps {
 
 type Status =
   | { kind: 'loading' }
-  | { kind: 'ready'; plant_count: number; event_count: number }
+  | ({ kind: 'ready' } & PackagePreview)
   | { kind: 'building' }
   | { kind: 'done'; package_id: string; filename: string }
   | { kind: 'error'; message: string };
@@ -85,11 +90,21 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
           </li>
           <li>
             <span className="prep-file-name">transcript.txt</span>
-            <span className="prep-file-detail dim">No recording sessions on this device yet</span>
+            <span className={status.kind === 'ready' && status.transcribed_count ? 'prep-file-detail' : 'prep-file-detail dim'}>
+              {status.kind !== 'ready' ? 'Walks since last package'
+                : status.session_count === 0 ? 'No walks recorded since the last package'
+                  : status.transcribed_count === 0
+                    ? `${status.session_count} walk${status.session_count === 1 ? '' : 's'}, none transcribed yet`
+                    : `${status.transcribed_count} of ${status.session_count} walk${status.session_count === 1 ? '' : 's'} transcribed · ${status.tier}`}
+            </span>
           </li>
           <li>
             <span className="prep-file-name">markers.json</span>
-            <span className="prep-file-detail dim">No recording sessions on this device yet</span>
+            <span className={status.kind === 'ready' && status.marker_count ? 'prep-file-detail' : 'prep-file-detail dim'}>
+              {status.kind !== 'ready' ? 'Marker tracks and screen log'
+                : status.session_count === 0 ? 'No walks recorded since the last package'
+                  : `${status.marker_count} marker${status.marker_count === 1 ? '' : 's'} across ${status.session_count} walk${status.session_count === 1 ? '' : 's'}, plus the screen log`}
+            </span>
           </li>
         </ul>
       )}

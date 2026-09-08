@@ -1,0 +1,351 @@
+.rec {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.rec-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.rec-title {
+  margin: 2px 0 18px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+}
+
+/* The record panel — screen 03's rounded state block. */
+.rec-panel {
+  background: var(--panel-on);
+  border: 1px solid var(--accent-line);
+  border-radius: 20px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+}
+
+.rec-panel.ready,
+.rec-panel.finished {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+.rec-state {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.rec-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--ink-38);
+  flex: none;
+}
+
+.rec-dot.recording {
+  background: var(--warn);
+  animation: rec-pulse 1.6s ease-in-out infinite;
+}
+
+.rec-dot.paused { background: var(--amber); }
+.rec-dot.finished { background: var(--accent); }
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-dot.recording { animation: none; }
+}
+
+.rec-state-word {
+  font: 600 20px/1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.rec-session-id {
+  font: 600 17px/1 var(--mono);
+  color: var(--ink-40);
+}
+
+.rec-time {
+  font: 600 52px/1 var(--mono);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-panel-note {
+  margin: 12px 0 0;
+  font: 400 22px/1.35 var(--sans);
+  color: var(--ink-60);
+  text-wrap: pretty;
+}
+
+.rec-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rec-primary {
+  flex: 1;
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border: 0;
+  border-radius: 14px;
+  padding: 18px 8px;
+  margin-bottom: 14px;
+  font: 600 24px/1 var(--sans);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.rec-controls .rec-primary { margin-bottom: 0; }
+.rec-primary:disabled { opacity: 0.5; cursor: default; }
+
+.rec-delete {
+  flex: 1;
+  background: none;
+  border: 1px solid rgba(232, 138, 106, 0.5);
+  border-radius: 14px;
+  padding: 18px 8px;
+  font: 600 24px/1 var(--sans);
+  color: var(--warn);
+  cursor: pointer;
+}
+
+.rec-secondary {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 22px;
+  font: 600 24px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.rec-error {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--warn);
+  text-wrap: pretty;
+}
+
+.rec-confirm {
+  background: #241a17;
+  border: 1px solid rgba(232, 138, 106, 0.45);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+
+.rec-confirm-title {
+  margin: 0 0 8px;
+  font: 600 26px/1.25 var(--sans);
+  color: var(--ink);
+}
+
+.rec-confirm-body {
+  margin: 0 0 18px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.rec-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rec-keep {
+  flex: 1;
+  background: var(--panel-on);
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  padding: 16px 6px;
+  font: 600 22px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.rec-confirm-delete {
+  flex: 1;
+  background: var(--warn);
+  border: 0;
+  border-radius: 13px;
+  padding: 16px 6px;
+  font: 600 22px/1 var(--sans);
+  color: #2a1410;
+  cursor: pointer;
+}
+
+.rec-done {
+  background: var(--panel);
+  border: 1px solid var(--accent-line);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.rec-done-title {
+  margin: 0 0 8px;
+  font: 600 26px/1.25 var(--sans);
+  color: var(--ink);
+}
+
+.rec-done-body {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.rec-done-actions { display: flex; gap: 8px; }
+.rec-done-actions .rec-secondary { margin-bottom: 0; }
+
+.rec-warning {
+  margin: 0 0 22px;
+  font: 400 22px/1.45 var(--sans);
+  color: var(--amber);
+  text-wrap: pretty;
+}
+
+.rec-route-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rec-route-title {
+  margin: 0;
+  font: 600 26px/1 var(--sans);
+  color: var(--ink);
+}
+
+.rec-route-count {
+  font: 400 22px/1 var(--sans);
+  color: var(--ink-50);
+}
+
+.rec-route-note,
+.rec-route-empty {
+  margin: 0 0 12px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.rec-markers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rec-marker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rec-marker {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.rec-marker:disabled { cursor: default; }
+
+.rec-marker-stamp {
+  flex: none;
+  min-width: 62px;
+  font: 600 20px/1 var(--mono);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-marker-name {
+  flex: 1;
+  font: 600 24px/1.25 var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-marker-kind {
+  flex: none;
+  font: 600 17px/1 var(--mono);
+  letter-spacing: 0.05em;
+  color: var(--ink-40);
+}
+
+.rec-marker-kind.photo { color: var(--cal-photo); }
+.rec-marker-kind.care_logged { color: var(--cal-water); }
+
+.rec-retag {
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 14px 16px;
+}
+
+.rec-retag-note {
+  margin: 0 0 10px;
+  font: 400 22px/1.3 var(--sans);
+  color: var(--ink-60);
+}
+
+.rec-retag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.rec-chip {
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 9px 14px;
+  font: 600 20px/1 var(--sans);
+  color: var(--ink-70);
+  cursor: pointer;
+}
+
+.rec-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.rec-foot {
+  margin: 22px 0 18px;
+  font: 400 22px/1.45 var(--sans);
+  color: var(--ink-45);
+  text-wrap: pretty;
+}

@@ -5,6 +5,7 @@ import type { PlantEvent, StoredEvent } from '../types/event';
 import type { DerivedState, Snapshot } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { derive } from './derive';
+import { markCareLogged, markPhoto, sessionStamp } from '../capture/liveSession';
 
 /**
  * Appending events, and the Update commit.
@@ -67,7 +68,17 @@ export async function deviceId(db: DeezDB): Promise<DeviceId> {
  * and a silent overwrite here would lose a watering.
  */
 export async function appendEvents(db: DeezDB, events: PlantEvent[]): Promise<StoredEvent[]> {
-  const stored: StoredEvent[] = events.map((e) => ({ ...e, pending: 1 }));
+  // Section 6: anything logged during a walk belongs to that walk. The stamp is
+  // null outside a recording, which is the ordinary case, and an event that
+  // already carries a session (an imported one) is left as it is.
+  const stamp = sessionStamp();
+  const stored: StoredEvent[] = events.map((e) => ({
+    ...e,
+    ...(stamp && e.session_id === undefined
+      ? { session_id: stamp.session_id, offset_s: stamp.offset_s }
+      : {}),
+    pending: 1,
+  }));
 
   const tx = db.transaction('events', 'readwrite');
   for (const e of stored) {
@@ -77,6 +88,20 @@ export async function appendEvents(db: DeezDB, events: PlantEvent[]): Promise<St
     await tx.store.add(e);
   }
   await tx.done;
+
+  // Only after the write: a marker pointing at an event that failed to store
+  // would be worse than no marker. Section 6 records `care_logged` and `photo`
+  // automatically; `Rate`, `Edit` and `Archive` have no marker type and get none.
+  if (stamp) {
+    for (const e of stored) {
+      if (e.type === 'Rate' || e.type === 'Edit' || e.type === 'Archive') continue;
+      if (e.type === 'Photo' && e.media?.length) {
+        for (const media of e.media) markPhoto(e.plant_id, media);
+      } else {
+        markCareLogged(e.plant_id, e.event_id);
+      }
+    }
+  }
 
   return stored;
 }
