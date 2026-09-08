@@ -1,12 +1,13 @@
 # Deez Plants — handoff to the next session
 
-Written 2026-09-07, end of a long session that built Care calendar/All
-months, Adherence history, Rooms and planters, More about this
-plant/Info and settings (later made fully editable), Health history, the
-Add-a-plant write flow, a direct Care-calendar link on Plant Detail, and —
-the big one — export/import (Prepare review package + Apply AI update, the
-full section-11 validation chain). This conversation is being closed
-deliberately (session budget); a fresh one continues from here. **Read this
+Written 2026-09-07, updated mid-session as work continues. This single
+session has now built Care calendar/All months, Adherence history, Rooms
+and planters, More about this plant/Info and settings (later made fully
+editable), Health history, the Add-a-plant write flow, a direct
+Care-calendar link on Plant Detail, export/import (Prepare review package +
+Apply AI update, the full section-11 validation chain), and the first piece
+of Capture — real photo capture, the gallery, and hero selection. Whenever
+this conversation does close, a fresh one continues from here. **Read this
 file first, before anything else.**
 
 ## Read in this order
@@ -30,7 +31,7 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `0d889ca` (`git log --oneline` will show newer ones by the time
+As of commit `4cc344f` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
@@ -219,6 +220,30 @@ this session's screens:
     this commit, but run `npm run build` alongside `npm run check` from now
     on — `npm run check` alone will not catch a broken page.
 
+- **Photo capture, gallery, and hero selection** (`src/capture/photos.ts`'s
+  new `capturePhoto()`, `src/components/{PhotoCaptureButton,
+  CapturePhotoSheet}.tsx`, `src/pages/PhotosPage.tsx`, screen 13) — the
+  first piece of Capture. A file input with `capture="environment"` opens
+  the camera directly on a phone (a plain picker on a laptop), then a
+  one-tap label sheet (whole/leaf/soil/roots, section 6b: never a text
+  field) saves immediately — no separate confirm step. The write mints a
+  real `NNN-XXX_YYYY-MM-DD_HHMM_NN.jpg` media id, stores the full image and
+  a thumbnail as Blobs (no synced folder exists yet, so section 6b's
+  iOS-bytes fallback is what every device gets for now), and logs the
+  `Photo` care event in the same call. Hero selection goes through the same
+  `editPlantFields()` Info and settings uses, so it's a pending `Edit` like
+  any other field, resolved on the next Update — but the gallery itself
+  reads the raw event log directly (History/Entries' own pattern), not the
+  pending-filtered `plant.photos`, so a photo you just took is visible
+  immediately even before it's in the committed record. That split
+  (immediate view, pending hero) is deliberate, not an inconsistency — see
+  the comment at the top of `PhotosPage.tsx`. No `PlantChrome` on this
+  screen: the mock's own screenshot shows a plain back button here, not the
+  Prev/Next strip every other plant-scoped screen carries. Self-verified in
+  a real browser tab with a real uploaded photo, through label → save →
+  pending count → Update → hero badge switching on both the gallery and
+  Plant Detail's header thumbnail.
+
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
@@ -234,12 +259,19 @@ as of this commit (only the one known pre-existing failure noted above).
 
 ## What's next, in order
 
-1. **Capture**: photos, both notes lanes, recording (mic + wake lock). This
-   is where the owner's actual iPhone is required for testing — it cannot
-   be verified from here. Note that `Prepare review package` already writes
-   honest empty placeholders for `transcript.txt`/`markers.json`/session
-   counts — once Capture exists, that's the file to come back to and wire
-   real data through instead of the placeholder strings.
+1. **Capture, continued**: photo capture/gallery/hero is done (see above).
+   Left in Capture: both notes lanes (`notes_user` is still read-only on
+   More about this plant — the delete/add/replace machinery `derive.ts`
+   already folds for `care_instructions` has no UI writer yet either) and
+   recording (mic + wake lock). Recording is where the owner's actual
+   iPhone is required for testing — mic permission and wake-lock behavior
+   can't be verified from a desktop browser, and testing it at all needs
+   the app hosted somewhere with real HTTPS first (a one-time account
+   step, flag it plainly rather than assume). Note that `Prepare review
+   package` already writes honest empty placeholders for
+   `transcript.txt`/`markers.json` — once recording exists, that's the
+   file to come back to and wire real data through instead of the
+   placeholder strings.
 2. The desk console (laptop-only, deliberately last).
 3. Smaller loose ends, whenever convenient rather than as their own steps:
    the mock's fuller inline Care-calendar preview on Plant Detail (the
