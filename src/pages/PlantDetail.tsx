@@ -11,12 +11,12 @@ import { ScoreBlock } from '../score/ScoreBlock';
 import { confirmationLine, plantScore } from '../score/score';
 import { RateSheet } from '../components/RateSheet';
 import { PlantChrome } from '../components/PlantChrome';
+import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
 import './PlantDetail.css';
 
 /**
  * Plant detail: hero, the one score block, adherence as counts and days, care
- * spec, placement, last checked. Rating is the one write path this screen owns
- * — photo capture and export are later phases.
+ * spec, placement, last checked, and a "Take photo" quick-capture action.
  */
 
 export interface PlantDetailProps {
@@ -52,6 +52,8 @@ export interface PlantDetailProps {
   onMoreAbout: () => void;
   /** Opens the identity / placement / care-spec display for this plant. */
   onInfo: () => void;
+  /** Opens this plant's photo gallery. */
+  onPhotos: () => void;
 }
 
 /** Section 3: counts and days, never a score out of ten. */
@@ -82,7 +84,7 @@ function trimSeasonNote(text: string): string {
 
 export default function PlantDetail({
   plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
-  onHistory, onCareCalendar, onMoreAbout, onInfo,
+  onHistory, onCareCalendar, onMoreAbout, onInfo, onPhotos,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -141,6 +143,15 @@ export default function PlantDetail({
           ? <>Last checked <span className="detail-checked-date">{formatDayMonth(plant.last_checked)}</span></>
           : 'No events logged yet'}
       </p>
+
+      <PhotoCaptureButton
+        plant_id={plant.plant_id}
+        plant_name={plant.name}
+        as_of={as_of}
+        className="detail-take-photo"
+        label="Take photo"
+        onSaved={() => void onChanged()}
+      />
 
       <div className="detail-actions">
         <button type="button" className="detail-log-care" onClick={onLogCare}>
@@ -209,6 +220,9 @@ export default function PlantDetail({
         </dl>
       </section>
 
+      <button type="button" className="detail-linkrow" onClick={onPhotos}>
+        Photos{plant.photos.length > 0 && ` · ${plant.photos.length}`} <span aria-hidden="true">›</span>
+      </button>
       <button type="button" className="detail-linkrow" onClick={onCareCalendar}>
         Care calendar <span aria-hidden="true">›</span>
       </button>

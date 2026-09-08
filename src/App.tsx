@@ -14,6 +14,7 @@ import ArchivedPlants from './pages/ArchivedPlants';
 import AdherenceHistory from './pages/AdherenceHistory';
 import HealthHistory from './pages/HealthHistory';
 import AddPlant from './pages/AddPlant';
+import PhotosPage from './pages/PhotosPage';
 import PrepareReviewPackage from './pages/PrepareReviewPackage';
 import ApplyAIUpdate from './pages/ApplyAIUpdate';
 import RoomsPlanters from './pages/RoomsPlanters';
@@ -93,7 +94,7 @@ export default function App() {
     { label: 'Plant detail', subtitle: 'Pick a plant from Plants for now.', go: () => placeholder('Plant detail', 'Open a plant from the Plants tab — this menu has no plant of its own to open yet.', 'All pages') },
     { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => nav.push({ kind: 'add-plant' }, 'All pages') },
     { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => nav.push({ kind: 'archive' }, 'All pages') },
-    { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos', undefined, 'All pages') },
+    { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos', 'Open a plant from Plants — this menu has no plant of its own to open.', 'All pages') },
     { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => nav.push({ kind: 'rooms' }, 'All pages') },
     { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => placeholder('Recordings', undefined, 'All pages') },
     { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders', undefined, 'All pages') },
@@ -172,6 +173,7 @@ export default function App() {
           onCareCalendar={() => nav.push({ kind: 'calendar', plant_id: plant.plant_id }, plant.name)}
           onMoreAbout={() => nav.push({ kind: 'more', plant_id: plant.plant_id }, plant.name)}
           onInfo={() => nav.push({ kind: 'info', plant_id: plant.plant_id }, plant.name)}
+          onPhotos={() => nav.push({ kind: 'photos', plant_id: plant.plant_id }, plant.name)}
         />
       );
     }
@@ -307,6 +309,24 @@ export default function App() {
         onAdded={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
       />
     );
+  } else if (screen.kind === 'photos') {
+    const plant = state.plants[screen.plant_id];
+    if (!plant) {
+      nav.goRoot('plants');
+      body = null;
+    } else {
+      body = (
+        <PhotosPage
+          plant={plant}
+          events={events}
+          thumbs={thumbs}
+          as_of={as_of}
+          backLabel={nav.backLabel ?? 'Plants'}
+          onBack={nav.back}
+          onChanged={reload}
+        />
+      );
+    }
   } else if (screen.kind === 'prepare-package') {
     body = (
       <PrepareReviewPackage

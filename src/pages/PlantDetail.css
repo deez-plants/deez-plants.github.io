@@ -58,6 +58,19 @@
   color: var(--ink-50);
 }
 
+.detail-take-photo {
+  display: block;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 15px 16px;
+  margin-bottom: 8px;
+  font: 600 24px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
 .detail-actions {
   display: flex;
   gap: 8px;

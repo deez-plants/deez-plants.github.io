@@ -36,6 +36,8 @@ export type Screen =
   | { kind: 'health-history' }
   /** Screen 11: a new plant baseline. */
   | { kind: 'add-plant' }
+  /** Screen 13: the photo gallery for one plant, hero selection. */
+  | { kind: 'photos'; plant_id: PlantId }
   /** Screen 19: builds the export ZIP. */
   | { kind: 'prepare-package' }
   /** Screen 20: import an update file, review table, per-row approval. */
