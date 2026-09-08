@@ -5,10 +5,11 @@ session has now built Care calendar/All months, Adherence history, Rooms
 and planters, More about this plant/Info and settings (later made fully
 editable), Health history, the Add-a-plant write flow, a direct
 Care-calendar link on Plant Detail, export/import (Prepare review package +
-Apply AI update, the full section-11 validation chain), and the first piece
-of Capture — real photo capture, the gallery, and hero selection. Whenever
-this conversation does close, a fresh one continues from here. **Read this
-file first, before anything else.**
+Apply AI update, the full section-11 validation chain), and Capture — real
+photo capture with gallery and hero selection, plus both notes lanes
+(editable care instructions and user notes). Whenever this conversation does
+close, a fresh one continues from here. **Read this file first, before
+anything else.**
 
 ## Read in this order
 
@@ -31,7 +32,7 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `4cc344f` (`git log --oneline` will show newer ones by the time
+As of commit `e1f9ce1` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
@@ -244,6 +245,30 @@ this session's screens:
   pending count → Update → hero badge switching on both the gallery and
   Plant Detail's header thumbnail.
 
+- **Both notes lanes made real** (`src/notes/{careInstructions,notesUser}.ts`,
+  rewritten `MoreAboutPlant.tsx`) — the last gap in that screen, closing out
+  Capture apart from recording. `care_instructions` add/delete write plain
+  `Edit` events with `op`/`instruction_id` that `derive.ts`'s
+  `applyInstructionOp` already folded (built for import, unused by any UI
+  until now); delete is user-only here by construction — the writer that
+  could invoke `op: 'delete'` from an import file simply doesn't exist,
+  enforced independently in `package/validate.ts`. `notes_user` reuses
+  `editPlantFields()` behind a thin `setNotesUser()` wrapper and follows the
+  exact InfoSettings save/pending baseline pattern: a local `baseline` state
+  (not the live `plant` prop) is the "from" for the next diff, updated to
+  the just-saved value on success, and resynced from `commitUpdate()`'s own
+  return value on "Update now" rather than waiting on the prop. Both
+  instruction writes and the notes edit are plain pending events — visible
+  in the pending-change footer immediately, folded into the committed
+  `plant.care_instructions`/`plant.notes_user` only after Update, same
+  split as hero selection. Self-verified in a real browser tab: added an
+  instruction (pending banner, correctly absent from the committed list
+  until Update, then appeared with date/"You" attribution); edited notes
+  (dirty→"Save note"→"saved and waiting"→Update, textarea never reverted to
+  stale state); and deleted the instruction, including an accidental
+  double-delete on the same `instruction_id` from a double-click, which
+  `applyInstructionOp` resolved idempotently rather than erroring.
+
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
@@ -259,19 +284,16 @@ as of this commit (only the one known pre-existing failure noted above).
 
 ## What's next, in order
 
-1. **Capture, continued**: photo capture/gallery/hero is done (see above).
-   Left in Capture: both notes lanes (`notes_user` is still read-only on
-   More about this plant — the delete/add/replace machinery `derive.ts`
-   already folds for `care_instructions` has no UI writer yet either) and
-   recording (mic + wake lock). Recording is where the owner's actual
-   iPhone is required for testing — mic permission and wake-lock behavior
-   can't be verified from a desktop browser, and testing it at all needs
-   the app hosted somewhere with real HTTPS first (a one-time account
-   step, flag it plainly rather than assume). Note that `Prepare review
-   package` already writes honest empty placeholders for
-   `transcript.txt`/`markers.json` — once recording exists, that's the
-   file to come back to and wire real data through instead of the
-   placeholder strings.
+1. **Capture, continued**: photo capture/gallery/hero and both notes lanes
+   are done (see above). Left in Capture: recording (mic + wake lock) — the
+   last piece. Recording is where the owner's actual iPhone is required for
+   testing — mic permission and wake-lock behavior can't be verified from a
+   desktop browser, and testing it at all needs the app hosted somewhere
+   with real HTTPS first (a one-time account step, flag it plainly rather
+   than assume). Note that `Prepare review package` already writes honest
+   empty placeholders for `transcript.txt`/`markers.json` — once recording
+   exists, that's the file to come back to and wire real data through
+   instead of the placeholder strings.
 2. The desk console (laptop-only, deliberately last).
 3. Smaller loose ends, whenever convenient rather than as their own steps:
    the mock's fuller inline Care-calendar preview on Plant Detail (the
