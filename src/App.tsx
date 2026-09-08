@@ -165,6 +165,7 @@ export default function App() {
           onNavigate={(plant_id) => nav.replace({ kind: 'detail', plant_id })}
           onLogCare={() => nav.push({ kind: 'care', plant_id: plant.plant_id }, plant.name)}
           onHistory={() => nav.push({ kind: 'history', plant_id: plant.plant_id }, plant.name)}
+          onCareCalendar={() => nav.push({ kind: 'calendar', plant_id: plant.plant_id }, plant.name)}
           onMoreAbout={() => nav.push({ kind: 'more', plant_id: plant.plant_id }, plant.name)}
           onInfo={() => nav.push({ kind: 'info', plant_id: plant.plant_id }, plant.name)}
         />

@@ -43,6 +43,11 @@ export interface PlantDetailProps {
   onLogCare: () => void;
   /** Opens this plant's entry-log History screen. */
   onHistory: () => void;
+  /** Opens this plant's Care calendar directly — the mock shows the calendar
+      embedded inline here with a live preview; this is the plain-link version
+      of that until the fuller inline grid is worth the added weight on an
+      already dense screen. */
+  onCareCalendar: () => void;
   /** Opens the soil / care-instructions / notes screen for this plant. */
   onMoreAbout: () => void;
   /** Opens the identity / placement / care-spec display for this plant. */
@@ -77,7 +82,7 @@ function trimSeasonNote(text: string): string {
 
 export default function PlantDetail({
   plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
-  onHistory, onMoreAbout, onInfo,
+  onHistory, onCareCalendar, onMoreAbout, onInfo,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -204,6 +209,9 @@ export default function PlantDetail({
         </dl>
       </section>
 
+      <button type="button" className="detail-linkrow" onClick={onCareCalendar}>
+        Care calendar <span aria-hidden="true">›</span>
+      </button>
       <button type="button" className="detail-linkrow" onClick={onMoreAbout}>
         More about this plant <span aria-hidden="true">›</span>
       </button>
