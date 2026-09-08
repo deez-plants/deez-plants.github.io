@@ -1,11 +1,13 @@
 # Deez Plants — handoff to the next session
 
-Written 2026-09-07, end of a session that built Care calendar/All months,
-Adherence history, Rooms and planters, More about this plant/Info and
-settings (later made fully editable), Health history, and the Add-a-plant
-write flow. This conversation is being closed deliberately (session budget);
-a fresh one continues from here. **Read this file first, before anything
-else.**
+Written 2026-09-07, end of a long session that built Care calendar/All
+months, Adherence history, Rooms and planters, More about this
+plant/Info and settings (later made fully editable), Health history, the
+Add-a-plant write flow, a direct Care-calendar link on Plant Detail, and —
+the big one — export/import (Prepare review package + Apply AI update, the
+full section-11 validation chain). This conversation is being closed
+deliberately (session budget); a fresh one continues from here. **Read this
+file first, before anything else.**
 
 ## Read in this order
 
@@ -28,7 +30,7 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## What's built and committed
 
-As of commit `678d462` (`git log --oneline` will show newer ones by the time
+As of commit `0d889ca` (`git log --oneline` will show newer ones by the time
 you read this):
 
 Everything the previous handoff listed (event log/derive, ratings, nav shell,
@@ -151,6 +153,72 @@ this session's screens:
   `<InfoSettings>` now carries `key={plant.plant_id}` so Prev/Next remounts
   cleanly instead of carrying stale form state to the next plant.
 
+- **Care calendar link on Plant Detail** (`src/pages/PlantDetail.tsx`) — a
+  plain link row (matching the More about/Info rows) so the calendar is
+  reachable directly from Detail, not just via Detail → History → "Care
+  calendar ›". The mock's fuller inline 3-month preview embedded on Detail
+  itself is still not built — lower priority than this link, not on the
+  near-term list.
+- **Export/import** (`src/package/{export,validate,import}.ts`,
+  `src/db/counters.ts`, `src/pages/{PrepareReviewPackage,ApplyAIUpdate}.tsx`,
+  screens 19/20) — the other half of the AI review loop
+  (`FIELD_DEFINITIONS.md` sections 7–11), and the biggest single build item
+  this project had left.
+  - **Prepare review package** builds the real review set: a manifest of
+    every active plant's fields (`ManifestPlant` in the new
+    `types/package.ts` — deliberately its own type, not a reuse of
+    `DerivedPlant`, since the manifest must never carry bookkeeping like
+    `pending_event_ids`), every event not already carried by a prior
+    package (a union over past `PackageRecord.event_ids`, not a date
+    cutoff — a backdated entry is never silently skipped), and honest
+    `transcript.txt`/`markers.json` placeholders since recording isn't
+    built yet. Zipped with `jszip`, downloaded via a real `<a download>`
+    (this is the actual app, not a sandboxed artifact — that restriction
+    doesn't apply here), and a `PackageRecord` is saved so validation can
+    later check provenance and block double-apply. `PKG-YYYY-MM-DD-N` and
+    (later) `INS-YYYY-MM-DD-N` ids are minted through a new shared
+    `db/counters.ts`, reusing `AppMeta.package_counter` with a `PREFIX-date`
+    key rather than a schema migration.
+  - **Apply AI update** runs the full section-11 chain — provenance
+    (package_id actually exported, not already applied), referential (plant
+    exists and isn't archived, field is real and specifically AI-editable,
+    `notes_user`/`collection_notes_user` rejected under any circumstances,
+    `collection_care_instructions` explicitly punted this pass rather than
+    half-supported), value (type/range per field via `fieldCodec.ts`'s
+    `FIELD_KINDS`, health 1–10, water intervals 1–60), and completeness
+    (every manifest plant addressed or listed as unaddressed) — **before
+    showing anything**, matching the spec's own "rejected whole, with the
+    reason named" framing exactly. A file that passes renders a review
+    table: every row defaults to **unapproved** (no select-all control
+    exists anywhere, rule 4), and a row whose field the user edited after
+    the package's export date is flagged inline (rule 13) rather than
+    silently overwritten. `health` changes become `Rate` events (`source:
+    'ai'`) — live immediately, same exemption `Rate` already had — and
+    `care_instructions` changes mint a real `instruction_id` through the
+    same counter; every other field is a plain pending `Edit`, identical to
+    a logged care round.
+  - **Self-verified past the happy path, in a real browser tab**: built an
+    actual package and got real plant/event counts back; pasted a file
+    naming `notes_user` and watched it get rejected with that exact named
+    reason; pasted a valid file and got a review table with correct
+    current→proposed values pulled from live state; approved two rows and
+    applied them, confirming the health change went live immediately with
+    an `AI` provenance badge while the water-interval edit stayed pending
+    until Update; and confirmed a second apply of the same package_id was
+    rejected as already applied. One real bug found and fixed along the
+    way: "Try another file" after a rejection didn't clear the pasted
+    textarea, so retyping inserted into old text instead of replacing it.
+  - **Important process note for future sessions**: `npm run check` only
+    typechecks a short, explicit file list in `check/tsconfig.check.json`
+    (`db/derive.ts`, `fieldCodec.ts`, `seed.ts`, `lib/dates.ts`,
+    `care/careRound.ts`, `care/rate.ts`, `score/score.ts`) — it has **never**
+    covered `App.tsx` or any page component, including every screen built
+    earlier this session. `npm run build` (`tsc -b` against the real
+    project tsconfig, then `vite build`) is the actual whole-app typecheck,
+    and `npm run lint` (oxlint) is instant and clean. Both are clean as of
+    this commit, but run `npm run build` alongside `npm run check` from now
+    on — `npm run check` alone will not catch a broken page.
+
 One pre-existing, unrelated test failure remains and is not a regression:
 `check/care.check.cjs`'s "groups: shared planter first, then rooms..."
 assertion expects `careRound.ts`'s `selectionGroups` to also group by room,
@@ -158,36 +226,36 @@ which it doesn't currently do. Confirmed present before this multi-session
 thread's work started. Not touched — flagging it here so it isn't mistaken
 for new breakage.
 
-All five new screens were self-verified: ran the app in a real browser tab,
-clicked through every new nav path (Home → Adherence history; Plant detail →
-More about this plant / Info and settings; History → Care calendar → All 12
-months; the All-pages sheet → Rooms and planters, including a live "Add a
-room" write), and confirmed `npm run check` still shows only the one known
-failure.
+Every screen above was self-verified in a real browser tab, not just typechecked
+— see each bullet for the specific paths clicked through and, for
+export/import, the specific rejection/approval/double-apply scenarios
+exercised. `npm run check`, `npm run build` and `npm run lint` are all clean
+as of this commit (only the one known pre-existing failure noted above).
 
 ## What's next, in order
 
-1. **Care calendar link on Plant Detail** — the mock shows a live 3-month
-   calendar preview embedded directly on Plant Detail (below Quick Care),
-   with its own "View all ›". Right now the calendar is only reachable one
-   level deeper, via Detail → History → "Care calendar ›". The owner asked
-   about this gap mid-session; the agreed plan is to fold in at minimum a
-   direct link row on Detail (matching the More about/Info rows already
-   there) next time Detail is being touched for other work — not a
-   standalone step, and the fuller inline-grid embed is lower priority than
-   a plain link.
-2. Export/import + the full validation chain (section 11), the review table
-   with per-row approval.
-3. Capture: photos, both notes lanes, recording (mic + wake lock). This is
-   where the owner's actual iPhone is required for testing — it cannot be
-   verified from here.
-4. The desk console (laptop-only, deliberately last).
+1. **Capture**: photos, both notes lanes, recording (mic + wake lock). This
+   is where the owner's actual iPhone is required for testing — it cannot
+   be verified from here. Note that `Prepare review package` already writes
+   honest empty placeholders for `transcript.txt`/`markers.json`/session
+   counts — once Capture exists, that's the file to come back to and wire
+   real data through instead of the placeholder strings.
+2. The desk console (laptop-only, deliberately last).
+3. Smaller loose ends, whenever convenient rather than as their own steps:
+   the mock's fuller inline Care-calendar preview on Plant Detail (the
+   plain link there now is the interim version); the "AI proposes, both
+   sides disagree" flagged-conflict UI could use a real screenshot-driven
+   pass once there's a live update file to test it against; and
+   `collection_care_instructions` in an update file is currently rejected
+   outright (see the export/import bullet above) — worth a real look once
+   there's a "collection notes" screen for it to attach to.
 
 Work in long, self-contained stretches per step above. Self-verify each
 piece — run the app in a real browser tab (`npm run dev`, drive it with
-the browser tool, screenshot it, compare against `screenshots/`) and run
-`npm run check` — before reporting it done. Commit at every stable,
-checks-passing checkpoint.
+the browser tool, screenshot it, compare against `screenshots/`), run
+`npm run check`, **and run `npm run build`** (see the process note above —
+`check` alone does not typecheck pages) — before reporting it done. Commit
+at every stable, checks-passing checkpoint.
 
 ## Published status page
 
