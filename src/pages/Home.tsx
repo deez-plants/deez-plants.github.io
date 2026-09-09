@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PlantId } from '../types/ids';
-import type { DerivedPlant, DerivedState } from '../types/derived';
+import type { DerivedPlant, DerivedState, Snapshot } from '../types/derived';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore, healthBand } from '../score/score';
 import { Icon } from '../components/Icon';
+import { openDeezPlants } from '../db/schema';
+import { formatDayMonth } from '../lib/dates';
+import type { ISODate } from '../types/ids';
 import './Home.css';
 
 /**
@@ -14,13 +17,9 @@ import './Home.css';
  * Left out of this pass, and why:
  * - The catch-up banner needs a stored "last opened" timestamp, which nothing
  *   writes yet.
- * - The health sparkline is still left off Home itself, though the data gap
- *   that used to block it is gone: Health history (reached from this
- *   screen's own "History ›") now reads the real `snapshots` store the same
- *   way Adherence history does. Adding a compact version here is a follow-up,
- *   not blocked on anything.
- * - The handoff log still isn't here; export/import exists now, so this is a
- *   follow-up rather than a blocker.
+ * - The health sparkline and the handoff log are both here as of 2026-09-08.
+ *   Each reads real stored history and draws nothing when there is none —
+ *   a collection rated once today has one bar, not an invented trend.
  * - The reference's "1 session held on this device only · Back up now" row is
  *   deliberately absent until backup itself exists. A button that cannot back
  *   anything up would be worse than no row — and the row is the reminder that
@@ -32,6 +31,8 @@ import './Home.css';
 
 export interface HomeProps {
   state: DerivedState;
+  /** Oldest first. Frozen collection averages, one per Update commit. */
+  snapshots: readonly Snapshot[];
   onOpenPlant: (plant_id: PlantId) => void;
   onCare: () => void;
   onPlaceholder: (title: string, subtitle?: string) => void;
@@ -44,11 +45,20 @@ export interface HomeProps {
   onBackup: () => void;
 }
 
+/** One line per package sent or update applied, newest first. */
+interface HandoffEntry {
+  id: string;
+  kind: 'sent' | 'applied';
+  date: ISODate;
+  detail: string;
+}
+
+const HANDOFF_CAP = 4;
 const NEEDS_ATTENTION_CAP = 6;
 const MOST_URGENT_CAP = 6;
 
 export default function Home({
-  state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
+  state, snapshots, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
   onPreparePackage, onApplyUpdate, onBackup,
 }: HomeProps) {
   const active = useMemo(
@@ -74,6 +84,48 @@ export default function Home({
   const dueTotal = pastInterval.length + dueToday.length + dueThisWeek.length;
 
   const needsAttention = state.collection.needs_attention.map((id) => state.plants[id]);
+
+  // Every saved collection average, oldest first. Snapshots with no rating in
+  // them are dropped rather than plotted as zero — an unrated collection has
+  // no average, and inventing one would be rule 1 by the back door.
+  // The handoff log reads the `packages` and `applied_updates` stores, which
+  // no derived state carries — they are bookkeeping about the round-trip, not
+  // about plants. Empty until a package has actually been built.
+  const [handoff, setHandoff] = useState<HandoffEntry[]>([]);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const db = await openDeezPlants();
+        const [packages, applied] = await Promise.all([
+          db.getAll('packages'),
+          db.getAll('applied_updates'),
+        ]);
+        const rows: HandoffEntry[] = [
+          ...packages.map((p): HandoffEntry => ({
+            id: `pkg-${p.package_id}`,
+            kind: 'sent',
+            date: p.generated,
+            detail: `${p.plant_ids.length} plants · ${p.event_ids.length} entries`,
+          })),
+          ...applied.map((a): HandoffEntry => ({
+            id: `upd-${a.package_id}`,
+            kind: 'applied',
+            date: a.applied,
+            detail: `${a.accepted_count} of ${a.accepted_count + a.rejected_count} approved`,
+          })),
+        ].sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0));
+        if (live) setHandoff(rows);
+      } catch {
+        // The log is a convenience. A read failure must not take Home down.
+      }
+    })();
+    return () => { live = false; };
+  }, [state]);
+
+  const sparkline = snapshots
+    .map((s) => s.state.collection.average_health)
+    .filter((v): v is number => v !== null);
 
   const mostUrgent = [...pastInterval, ...dueToday]
     .sort((a, b) => (b.adherence.days_past ?? 0) - (a.adherence.days_past ?? 0));
@@ -119,6 +171,21 @@ export default function Home({
             {unratedCount > 0 && staleCount > 0 && ' · '}
             {staleCount > 0 && <>{staleCount} not looked at in three months</>}
           </p>
+        )}
+        {/* The sparkline. One bar per saved snapshot, oldest at the left —
+            the collection average frozen at each Update. Two bars are the
+            minimum worth drawing: a single reading is a dot, not a shape,
+            and section 3 forbids rendering a trend line over ratings. */}
+        {sparkline.length > 1 && (
+          <div className="home-spark" aria-hidden="true">
+            {sparkline.map((v, i) => (
+              <span
+                key={i}
+                className={`home-spark-bar ${healthBand(v)}`}
+                style={{ height: `${10 + v * 4}px` }}
+              />
+            ))}
+          </div>
         )}
         <button type="button" className="home-link" onClick={onHealthHistory}>
           History ›
@@ -241,6 +308,23 @@ export default function Home({
       <button type="button" className="home-care" onClick={onCare}>
         Log care
       </button>
+
+      {handoff.length > 0 && (
+        <section className="home-card">
+          <span className="home-label">HANDOFF LOG</span>
+          <ul className="home-handoff">
+            {handoff.slice(0, HANDOFF_CAP).map((h) => (
+              <li key={h.id}>
+                <span className={`home-handoff-kind ${h.kind}`}>
+                  {h.kind === 'sent' ? 'Package sent' : 'Update applied'}
+                </span>
+                <span className="home-handoff-detail">{h.detail}</span>
+                <span className="home-handoff-date">{formatDayMonth(h.date)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="home-utility">
         {/* Section 8. The reference has always had this row; it was waiting

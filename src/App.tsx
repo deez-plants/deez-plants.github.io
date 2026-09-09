@@ -130,6 +130,7 @@ export default function App() {
     body = (
       <Home
         state={state}
+        snapshots={snapshots}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Home')}
         onCare={() => nav.push({ kind: 'care' }, 'Home')}
         onPlaceholder={(title, subtitle) => placeholder(title, subtitle, 'Home')}
