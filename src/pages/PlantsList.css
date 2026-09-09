@@ -106,8 +106,8 @@
 
 .plants-thumb {
   flex: none;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 10px;
   object-fit: cover;
   background: var(--panel-raised);
@@ -119,27 +119,59 @@
 
 .plants-row-id {
   display: block;
-  font: 600 22px/1 var(--mono);
+  font: 600 20px/1 var(--mono);
   letter-spacing: 0.04em;
-  color: var(--ink-50);
+  color: var(--ink-45);
 }
 
 .plants-row-name {
   display: block;
   margin-top: 4px;
-  font: 600 26px/1.25 var(--sans);
+  font: 600 26px/1.2 var(--sans);
   color: var(--ink);
   text-wrap: pretty;
 }
 
-.plants-row-meta {
-  display: block;
-  margin-top: 2px;
-  font: 400 22px/1 var(--sans);
-  color: var(--ink-50);
+/* The pill and its state word, right-aligned — DESIGN_REFERENCE.md screen 02.
+   Deliberately not the ScoreBlock: see the note at the top of PlantsList.tsx
+   and the amendment in FIELD_DEFINITIONS.md section 3b. */
+.plants-row-state {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 60px;
 }
 
-.plants-row-score { display: block; margin-top: 10px; }
+.plants-pill {
+  min-width: 40px;
+  padding: 5px 10px;
+  border-radius: 11px;
+  font: 700 24px/1.1 var(--sans);
+  text-align: center;
+  color: var(--on-accent);
+}
+
+.plants-pill.good { background: var(--accent); }
+.plants-pill.holding { background: var(--amber); }
+.plants-pill.struggling { background: var(--warn); }
+
+/* No rating is a permanent, legitimate answer (rule 1) — an outline, not a
+   filled pill, so it never reads as a low score. */
+.plants-pill.none {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-40);
+}
+
+.plants-word {
+  font: 600 19px/1 var(--sans);
+  color: var(--ink-45);
+}
+
+.plants-word.slip { color: var(--amber); }
+.plants-word.behind { color: var(--warn); }
 
 .plants-row-chev {
   flex: none;

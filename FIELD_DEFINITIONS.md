@@ -103,6 +103,40 @@ HEALTH
 | 2 | current value, large · `/10` · the date it was confirmed |
 | 3 | previous value, dim · its date · the delta · elapsed time between the two readings |
 
+**Line 1 is contextual (amended 2026-09-08).** As first written, this section
+required the label wherever a health figure appears. The design it describes
+does not do that: on plant detail the score sits beside the plant's photo as
+`8 / 10` with no label, and in the plants list it is a compact chip carrying
+the number alone. The spec and the design contradicted each other and the
+build followed the spec, which put the word `HEALTH` in two places the owner
+never intended it.
+
+The rule is now: **carry the label where the block is one card among several
+and would otherwise be an unidentifiable number — Home, health history, the
+review table. Drop it where the surrounding screen already says what the
+number is — beside the plant's own photo on plant detail.**
+
+Lines 2 and 3 are unchanged in both cases and remain identical on every
+screen that shows the block. That is what rule 6 protects: a score is read
+the same way everywhere. A heading that repeats what the page already says is
+not part of reading the score.
+
+**The plants list is a separate, larger exception.** `DESIGN_REFERENCE.md`
+screen 02 specifies its rows as "thumbnail, ID in mono, name, the health
+figure in a **coloured pill**, and a state word beneath it" — not this block
+at all. The build previously put the full three-line block in every row,
+which made rows tall enough to trip the reference's own "lessons already
+learned once — plant list cards were previously too tall… prefer compact
+rows." Twenty-two of those do not fit a phone.
+
+So a plants-list row shows the **pill**: the integer alone, coloured by band,
+with the adherence state word beneath. No `/10`, no date, no line 3. This is
+a genuine departure from "one block everywhere" and is recorded here as a
+decision rather than left to drift. It is safe because a pill cannot be
+mistaken for the full reading — it is a way to *find* a plant, not to *read*
+its score. The moment you open the plant, the real block is there. A rating
+with no value shows an empty pill, never a computed stand-in (rule 1).
+
 **The delta always carries elapsed time.** `+0.3` over six weeks and `+0.3` over
 six days are different news, and a delta without its interval is misleading.
 Format is the shortest honest unit: `6d`, `3wk`, `4mo`. Written as `+0.5 · 7wk`.

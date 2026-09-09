@@ -18,6 +18,16 @@ import './ScoreBlock.css';
  *     7.4 /10        Aug 14
  *     6.9   Jun 28   +0.5 · 7wk
  *
+ * **The one exception, added 2026-09-08** (see section 3b, and the audit
+ * section of `NEXT_SESSION_HANDOFF.md`): `label={null}` drops line 1. The
+ * spec originally required the label everywhere, but the design it was
+ * written from omits it on plant detail — where the score sits beside the
+ * plant's photo — and in the plants list, where it is a compact chip. The
+ * two contradicted each other; the owner resolved it in favour of the
+ * design. The label earns its place where the block is one card among
+ * several and would otherwise be an unlabelled number. Lines 2 and 3 are
+ * still untouchable, and that is what rule 6 exists to protect.
+ *
  * Rule 1 governs what may be passed in: the app never computes health. Every
  * number reaching this component came from a `Rate` event, or is the mean of
  * numbers that did. Build the props with an adapter in `./score`, never by
@@ -35,7 +45,7 @@ export function ScoreBlock({
 }: ScoreBlockProps) {
   return (
     <div className="score">
-      <div className="score-label">{label}</div>
+      {label !== null && <div className="score-label">{label}</div>}
 
       {current === null || confirmed === null ? (
         // Line 2 for an unrated plant. Rule 1: nothing computes a stand-in, and

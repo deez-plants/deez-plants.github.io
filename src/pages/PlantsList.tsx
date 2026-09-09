@@ -1,18 +1,35 @@
 import { useMemo, useState } from 'react';
 import type { PlantId } from '../types/ids';
 import type { DerivedPlant, DerivedState } from '../types/derived';
-import { ScoreBlock } from '../score/ScoreBlock';
-import { plantScore } from '../score/score';
+import type { Adherence } from '../types/plant';
+import { healthBand } from '../score/score';
 import './PlantsList.css';
+
+/** The state word under the pill. Rule 2: a word about what happened, never a
+    score; rule 9: never an instruction to act. */
+const STATE_WORD: Record<Adherence, string> = {
+  on: 'Kept',
+  slip: 'Slipping',
+  behind: 'Behind',
+};
 
 /**
  * The plants list. Search over name and species; archived plants never appear
  * here or in the count — both read `state.collection.active_count` /
  * `state.order`, never a hardcoded 22 (rule: derived, not written into code).
  *
- * Rows keep the full `ScoreBlock`, never the mock's compact colour-pill
- * (DESIGN_REFERENCE.md's own note: the pill predates section 3b's
- * cross-screen consistency rule and is the known exception, not a target).
+ * Rows follow DESIGN_REFERENCE.md screen 02 exactly: thumbnail, ID in mono,
+ * name, the health figure in a coloured pill, and the adherence state word
+ * beneath it. Chevron.
+ *
+ * They previously carried the full three-line `ScoreBlock` and the room, on
+ * the grounds that rule 6 admits no compact variant. That was wrong twice
+ * over: the reference specifies the pill outright, and the resulting rows
+ * were tall enough to hit its own "lessons already learned once — plant list
+ * cards were previously too tall… prefer compact rows". The pill is recorded
+ * as a deliberate exception in FIELD_DEFINITIONS.md section 3b. A pill is
+ * how you *find* a plant; the full block, on the plant's own page, is how you
+ * *read* its score.
  */
 
 export interface PlantsListProps {
@@ -92,17 +109,25 @@ export default function PlantsList({ state, thumbs, onOpen, onCare }: PlantsList
   const row = (p: DerivedPlant) => {
     const hero = p.hero ?? p.photos[0];
     const url = hero ? thumbs.get(hero) : undefined;
+    const health = p.health.current;
     return (
       <li key={p.plant_id}>
         <button type="button" className="plants-row" onClick={() => onOpen(p.plant_id)}>
           {url
-            ? <img className="plants-thumb" src={url} alt="" width={56} height={56} />
+            ? <img className="plants-thumb" src={url} alt="" width={64} height={64} />
             : <span className="plants-thumb plants-thumb-empty" />}
           <span className="plants-row-body">
             <span className="plants-row-id">{p.plant_id}</span>
             <span className="plants-row-name">{p.name}</span>
-            <span className="plants-row-meta">{p.room}</span>
-            <span className="plants-row-score"><ScoreBlock {...plantScore(p)} /></span>
+          </span>
+          <span className="plants-row-state">
+            {/* An unrated plant gets an empty pill, never a stand-in number
+                (rule 1) — DESIGN_REFERENCE.md screen 02's own "a plant with
+                no rating (the pill shows no number)" state. */}
+            <span className={health === null ? 'plants-pill none' : `plants-pill ${healthBand(health)}`}>
+              {health ?? '—'}
+            </span>
+            <span className={`plants-word ${p.adherence.state}`}>{STATE_WORD[p.adherence.state]}</span>
           </span>
           <span className="plants-row-chev" aria-hidden="true">›</span>
         </button>

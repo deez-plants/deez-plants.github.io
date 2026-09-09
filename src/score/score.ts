@@ -18,8 +18,18 @@ export interface ScoreReading {
 }
 
 export interface ScoreBlockProps {
-  /** Line 1. Mono caps, dim. `HEALTH` unless the subject needs naming. */
-  label?: string;
+  /**
+   * Line 1. Mono caps, dim. `HEALTH` unless the subject needs naming.
+   *
+   * `null` omits the line — see the amendment recorded in
+   * `FIELD_DEFINITIONS.md` section 3b (2026-09-08). The label is carried
+   * where the block is one card among several and would otherwise be
+   * unidentifiable; it is dropped where the surrounding screen already says
+   * what the number is — beside the plant's own photo on plant detail, and
+   * in a plants-list row. Lines 2 and 3 never change, which is what rule 6
+   * is actually protecting.
+   */
+  label?: string | null;
   /** Null is a legitimate, permanent state — the block then reads `Not rated`. */
   current: number | null;
   /** When the current value was last confirmed. */
