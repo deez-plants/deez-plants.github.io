@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { boot, refresh, type Booted } from './boot';
 import { useNav } from './nav/useNav';
+import type { PlantScopedKind, Screen } from './nav/types';
 import { TabBar } from './nav/TabBar';
-import { AllPagesSheet, type AllPagesItem } from './nav/AllPagesSheet';
+import AllPages, { type AllPagesGroup } from './nav/AllPages';
+import PlantPicker from './nav/PlantPicker';
+import { screenTitle } from './nav/screenTitle';
 import Placeholder from './nav/Placeholder';
 import Home from './pages/Home';
 import PlantsList from './pages/PlantsList';
@@ -28,12 +31,23 @@ import { enterScreen } from './capture/screenLog';
 import './App.css';
 
 /**
- * The nav shell: one stack, a fixed four-item tab bar (Home/Plants/Rec/More),
- * and the All-pages sheet, per DESIGN_REFERENCE.md section 1. Rec and every
- * All-pages item other than Log care and plant detail resolve to a named
- * placeholder until their own build steps land, so the full nav map is
- * navigable end to end even though most of its destinations aren't built yet.
+ * The nav shell: one stack and a fixed four-item tab bar (Home/Plants/Rec/
+ * More), per DESIGN_REFERENCE.md section 1. `More` pushes the All-pages
+ * screen rather than opening the sheet the reference specifies — see the
+ * comment on `nav/AllPages.tsx` for why. The handful of All-pages rows whose
+ * screens aren't built yet still resolve to a named placeholder, so the nav
+ * map is navigable end to end.
  */
+
+/** What each plant-scoped All-pages row opens, for the picker's own subtitle:
+    "Opens this plant's photo gallery." rather than a bare list of plants. */
+const PICKER_DESTINATION: Record<PlantScopedKind, string> = {
+  detail: "that plant's page",
+  history: "that plant's history",
+  photos: "that plant's photo gallery",
+  more: 'more about that plant',
+  info: "that plant's info and settings",
+};
 
 type Load =
   | { status: 'loading' }
@@ -67,6 +81,16 @@ export default function App() {
     enterScreen(screenKind, screenPlant);
   }, [screenKind, screenPlant]);
 
+  // Changing screens starts at the top of the new one. Without this the window
+  // keeps whatever scroll offset the previous screen had, so a long screen
+  // opened from a scrolled-down one lands halfway through itself — All pages
+  // opening at "Info and settings" with its own title off screen is how this
+  // was noticed. Filter and search state inside a screen doesn't move it,
+  // because neither of these two values changes.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screenKind, screenPlant]);
+
   if (load.status === 'loading') return <main className="shell"><p className="dim">Opening…</p></main>;
   if (load.status === 'error') {
     return (
@@ -88,6 +112,19 @@ export default function App() {
   const placeholder = (title: string, subtitle: string | undefined, backLabel: string) =>
     nav.push({ kind: 'placeholder', title, subtitle }, backLabel);
 
+  // More pushes rather than clearing the stack, so its back button has to name
+  // whatever you were looking at (section 4 rule 3). For a plant-scoped screen
+  // that is the plant's own name, which is what the back button on every other
+  // screen pushed from there reads too.
+  const openAllPages = () => {
+    if (current.kind === 'all-pages') return;
+    const on = 'plant_id' in current && current.plant_id
+      ? state.plants[current.plant_id]
+      : undefined;
+    const label = on?.name ?? screenTitle(current);
+    nav.push({ kind: 'all-pages' }, label);
+  };
+
   // Active plants, in list order — the Prev/Next strip and the All-plants
   // picker on plant detail both walk this (DESIGN_REFERENCE.md screen 04,
   // locked per the original brief, section 6).
@@ -96,31 +133,56 @@ export default function App() {
     .filter((p) => !p.archived)
     .map((p) => ({ plant_id: p.plant_id, name: p.name }));
 
-  // DESIGN_REFERENCE.md section 1's 17 All-pages items, in order. Most targets
-  // aren't built — those go to a named placeholder rather than the generic
-  // build-target string, so the sheet reads the same before and after the
-  // screen behind it exists.
-  const menuItems: AllPagesItem[] = [
-    { label: 'Log care', subtitle: 'Water, feed, prune — logs as you tap', go: () => nav.push({ kind: 'care' }, 'All pages') },
-    { label: 'History', subtitle: 'Entry log and care calendar', go: () => placeholder('History', 'Per-plant entry log — open a plant from Plants to see its history.', 'All pages') },
-    { label: 'More about this plant', subtitle: 'Soil, care instructions, notes', go: () => placeholder('More about this plant', 'Open a plant from Plants — this menu has no plant of its own to open.', 'All pages') },
-    { label: 'Info and settings', subtitle: 'Identity, placement, care spec', go: () => placeholder('Info and settings', 'Open a plant from Plants — this menu has no plant of its own to open.', 'All pages') },
-    // The mock labels this "Photos" but points at the plant detail screen —
-    // a known flaw (DESIGN_REFERENCE.md section 5.1). Renamed per its own fix note.
-    { label: 'Plant detail', subtitle: 'Pick a plant from Plants for now.', go: () => placeholder('Plant detail', 'Open a plant from the Plants tab — this menu has no plant of its own to open yet.', 'All pages') },
-    { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => nav.push({ kind: 'add-plant' }, 'All pages') },
-    { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => nav.push({ kind: 'archive' }, 'All pages') },
-    { label: 'Photos', subtitle: 'Gallery and main photo', go: () => placeholder('Photos', 'Open a plant from Plants — this menu has no plant of its own to open.', 'All pages') },
-    { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => nav.push({ kind: 'rooms' }, 'All pages') },
-    { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => nav.push({ kind: 'recordings' }, 'All pages') },
-    { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders', undefined, 'All pages') },
-    { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => placeholder('Since last time', undefined, 'All pages') },
-    { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works', undefined, 'All pages') },
-    { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => nav.push({ kind: 'prepare-package' }, 'All pages') },
-    { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => nav.push({ kind: 'apply-update' }, 'All pages') },
-    { label: 'Back up', subtitle: 'Save your record, or restore one', go: () => nav.push({ kind: 'backup' }, 'All pages') },
-    { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => placeholder('Handoff log', undefined, 'All pages') },
-    { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works', undefined, 'All pages') },
+  // DESIGN_REFERENCE.md section 1 lists these as 17 flat rows. They are the
+  // same rows in the same reading order, grouped under four headers — see
+  // `nav/AllPages.tsx` for why the flat sheet did not survive this app's type
+  // sizes. `Back up` is an eighteenth, added with section 8's phone half.
+  const fromPages = (screen: Screen) => nav.push(screen, 'All pages');
+  const pick = (target: PlantScopedKind) => fromPages({ kind: 'plant-picker', target });
+
+  const menuGroups: AllPagesGroup[] = [
+    {
+      heading: 'This plant',
+      note: 'Each one asks which plant first.',
+      items: [
+        // The mock labels this "Photos" but points at plant detail — a known
+        // flaw (DESIGN_REFERENCE.md section 5.1). Renamed per its own fix note.
+        { label: 'Plant detail', subtitle: 'Score, care, photo, calendar', go: () => pick('detail') },
+        { label: 'History', subtitle: 'Entry log and care calendar', go: () => pick('history') },
+        { label: 'Photos', subtitle: 'Gallery and main photo', go: () => pick('photos') },
+        { label: 'More about this plant', subtitle: 'Soil, care instructions, notes', go: () => pick('more') },
+        { label: 'Info and settings', subtitle: 'Identity, placement, care spec', go: () => pick('info') },
+      ],
+    },
+    {
+      heading: 'The collection',
+      items: [
+        { label: 'Log care', subtitle: 'Water, feed, prune — logs as you tap', go: () => fromPages({ kind: 'care' }) },
+        { label: 'Add new plant', subtitle: 'New record with ID and suffix', go: () => fromPages({ kind: 'add-plant' }) },
+        { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => fromPages({ kind: 'archive' }) },
+        { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => fromPages({ kind: 'rooms' }) },
+        { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => fromPages({ kind: 'recordings' }) },
+        { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => placeholder('Since last time', undefined, 'All pages') },
+        { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works', undefined, 'All pages') },
+      ],
+    },
+    {
+      heading: 'AI round-trip',
+      note: 'Out to the AI, back again, and the record of both.',
+      items: [
+        { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => fromPages({ kind: 'prepare-package' }) },
+        { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => fromPages({ kind: 'apply-update' }) },
+        { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => placeholder('Handoff log', undefined, 'All pages') },
+      ],
+    },
+    {
+      heading: 'About',
+      items: [
+        { label: 'Back up', subtitle: 'Save your record, or restore one', go: () => fromPages({ kind: 'backup' }) },
+        { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders', undefined, 'All pages') },
+        { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works', undefined, 'All pages') },
+      ],
+    },
   ];
 
   const screen = current;
@@ -393,6 +455,28 @@ export default function App() {
         onChanged={reload}
       />
     );
+  } else if (screen.kind === 'all-pages') {
+    body = (
+      <AllPages
+        groups={menuGroups}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+      />
+    );
+  } else if (screen.kind === 'plant-picker') {
+    // `replace`, not `push`: the picker asked a question, and once it is
+    // answered it should not sit in the back stack for the owner to walk back
+    // through. Backing out of the plant lands on All pages, where they were.
+    body = (
+      <PlantPicker
+        state={state}
+        thumbs={thumbs}
+        destination={PICKER_DESTINATION[screen.target]}
+        backLabel={nav.backLabel ?? 'All pages'}
+        onBack={nav.back}
+        onPick={(plant_id) => nav.replace({ kind: screen.target, plant_id })}
+      />
+    );
   } else if (screen.kind === 'rooms') {
     body = (
       <RoomsPlanters
@@ -417,8 +501,7 @@ export default function App() {
   return (
     <>
       <div className="app-content">{body}</div>
-      <TabBar active={nav.activeTab} onTab={nav.goRoot} onMore={nav.openSheet} />
-      {nav.sheetOpen && <AllPagesSheet items={menuItems} onClose={nav.closeSheet} />}
+      <TabBar active={nav.activeTab} onTab={nav.goRoot} onMore={openAllPages} />
     </>
   );
 }

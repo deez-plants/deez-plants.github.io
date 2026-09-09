@@ -48,7 +48,20 @@ export type Screen =
   | { kind: 'recordings' }
   /** Section 8's phone half: export the record, or restore one. */
   | { kind: 'backup' }
+  /** The former All-pages sheet, now a screen on the stack. Seventeen flat
+      rows do not fit a 74%-height sheet at this app's type sizes, so it is
+      grouped under headers on a page of its own — a size-driven divergence
+      from DESIGN_REFERENCE.md section 1, which is the kind the precedence
+      rule in `CLAUDE.md` was actually written for. */
+  | { kind: 'all-pages' }
+  /** Which plant, for an All-pages row whose destination is plant-scoped.
+      The five such rows used to dead-end in a placeholder saying "open a
+      plant from Plants"; they ask here instead. */
+  | { kind: 'plant-picker'; target: PlantScopedKind }
   | { kind: 'placeholder'; title: string; subtitle?: string };
+
+/** The screens a plant picker can hand a plant to. */
+export type PlantScopedKind = 'detail' | 'history' | 'photos' | 'more' | 'info';
 
 export type RootTab = 'home' | 'plants' | 'record';
 
