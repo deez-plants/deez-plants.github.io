@@ -740,9 +740,15 @@ about/Info and settings, and Health history.
 A companion page, **the Deez Plants Playbook**
 (https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
 step-by-step guide for the owner: how to start a session, what to expect
-while Claude works, the three things that need them, and exact prompts for
+while Claude works, the four things that need them, and exact prompts for
 each. It's mostly static — only touch it if the actual workflow changes,
 not per build step.
+
+Its 2026-09-08 rewrite corrected a section that had gone actively wrong: it
+told the owner their ratings could only ever be typed in on the phone and
+that Claude could not enter them. Backup changed that, and the page now says
+so. It also leads with the per-origin storage rule, since that is what cost
+the owner an evening.
 
 ## Other files worth knowing about
 
