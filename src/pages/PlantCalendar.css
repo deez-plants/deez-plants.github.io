@@ -38,9 +38,13 @@
 
 .cal-legend-dot {
   flex: none;
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-accent);
 }
 
 .cal-month {
@@ -108,15 +112,17 @@
   gap: 2px;
 }
 
+/* One per care type on a day, carrying that type's own icon. Sized so that
+   two or three fit a day cell at 390px without spilling into its neighbour —
+   the two-letter abbreviations they replaced could not. */
 .cal-dot {
   flex: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 700 10px/1 var(--mono);
   color: var(--on-accent);
 }
 

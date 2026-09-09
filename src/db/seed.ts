@@ -17,9 +17,15 @@ import type { StoredEvent } from '../types/event';
  *
  * Two deliberate divergences from section 6b, both decided 2026-09-02:
  *
- * - Seed photos are dated to the install date, not the plant's `acquired` date.
- *   Dating them to acquisition made `last_checked` read "Feb 2021" on a fresh
- *   install, which is true of the log and useless to look at.
+ * - Seed photos are dated to `_meta.photos_taken` in the seed file, which is
+ *   the day the owner actually photographed all 22 plants. This replaced an
+ *   install-date stamp on 2026-09-08. Dating them to `acquired` made
+ *   `last_checked` read "Feb 2021" on a fresh install; dating them to the
+ *   install day piled 26 photo marks onto whatever arbitrary day you first
+ *   opened the app, which is what made a phantom "watering" appear on two
+ *   devices at two different dates. The true date fixes both at once. The
+ *   files' EXIF capture dates are stripped, so this had to come from the
+ *   owner. Falls back to the install date if the field is absent.
  * - The seed sets each plant's hero. 6b says the hero is picked manually; a
  *   collection of 22 unheroed plants is not worth the purity.
  *
@@ -54,6 +60,8 @@ export interface SeedExtraPhoto {
 
 export interface SeedFile {
   planters: Record<string, { shared_water: boolean; members: string[]; note?: string }>;
+  /** `_meta.photos_taken` — when the seed photos were actually taken. */
+  _meta?: { photos_taken?: string };
   plants: SeedPlant[];
   extra_photos: SeedExtraPhoto[];
 }
@@ -119,6 +127,7 @@ function basename(path: string): string {
  */
 export function buildSeedPlan(file: SeedFile, opts: SeedOptions): SeedPlan {
   const { install_date, device_id } = opts;
+  const photo_date = (file._meta?.photos_taken ?? install_date) as ISODate;
 
   const baselines: PlantBaseline[] = file.plants.map((p) => ({
     plant_id: p.plant_id as PlantId,
@@ -157,11 +166,9 @@ export function buildSeedPlan(file: SeedFile, opts: SeedOptions): SeedPlan {
     source_file: string,
     labels: MediaLabel[],
   ): SeedPhotoJob => {
-    // Dated to the day they entered the record, not to `acquired`. Section 6b
-    // says the acquired date, but that made `last_checked` read "Feb 2021" on a
-    // brand new install — an honest answer to a question nobody asked. See the
-    // divergence note at the top of this file.
-    const date = install_date;
+    // The day the photographs were taken, per the seed file. Not the install
+    // date and not `acquired` — see the divergence note at the top.
+    const date = photo_date;
     const nn = nextIndex(plant_id);
     return {
       // Section 6b: once imported they follow the app convention,
@@ -213,7 +220,11 @@ export function buildSeedPlan(file: SeedFile, opts: SeedOptions): SeedPlan {
       field: 'hero_media',
       from: null,
       to: ph.media_id,
-      date: install_date,
+      // Same day as the photographs themselves: choosing a hero is part of
+      // the same import, and dating it to the install day would leave
+      // `last_checked` reading the day the app was opened rather than the
+      // day the plants were actually looked at.
+      date: photo_date,
       time: HERO_TIME,
       source: 'seed',
       device_id,

@@ -3,6 +3,7 @@ import type { ISODate, PlantId } from '../types/ids';
 import type { CareEventType, StoredEvent } from '../types/event';
 import { daysInMonth, formatMonthFull, shiftMonths, weekdayOfMonthStart } from '../lib/dates';
 import { CARE_TYPE_ORDER, CARE_TYPE_STYLE } from '../lib/careTypeStyle';
+import { Icon } from './Icon';
 import '../pages/PlantCalendar.css';
 
 /**
@@ -13,7 +14,14 @@ import '../pages/PlantCalendar.css';
  *
  * The grid renders newest month first, and each month in normal date order —
  * a lesson `DESIGN_REFERENCE.md` section 6 records as already learned once:
- * do not reverse the days inside a month along with the month list.
+ * do not reverse the days inside a month along with the month list. Asked
+ * again on 2026-09-08 and settled again: reversing the days puts every date
+ * under the wrong weekday column, and the weekday axis is the whole point of
+ * drawing a grid rather than a list.
+ *
+ * Each day carries the icon for what was done, not a one- or two-letter
+ * abbreviation. The letters were a stand-in from before the icon set was
+ * recovered from the mock, and `Ph` for a photo was nobody's idea of legible.
  */
 
 const CARE_TYPES = new Set<string>(CARE_TYPE_ORDER);
@@ -81,7 +89,9 @@ export function CareMonths({ plant_id, events, as_of, monthCount }: CareMonthsPr
         <div className="cal-legend">
           {legendTypes.map((t) => (
             <span key={t} className="cal-legend-item">
-              <span className="cal-legend-dot" style={{ background: CARE_TYPE_STYLE[t].colorVar }} />
+              <span className="cal-legend-dot" style={{ background: CARE_TYPE_STYLE[t].colorVar }}>
+                <Icon name={CARE_TYPE_STYLE[t].icon} size={13} />
+              </span>
               {CARE_TYPE_STYLE[t].label}
             </span>
           ))}
@@ -111,7 +121,7 @@ export function CareMonths({ plant_id, events, as_of, monthCount }: CareMonthsPr
                             style={{ background: CARE_TYPE_STYLE[t].colorVar }}
                             title={CARE_TYPE_STYLE[t].label}
                           >
-                            {CARE_TYPE_STYLE[t].abbr}
+                            <Icon name={CARE_TYPE_STYLE[t].icon} size={13} />
                           </span>
                         ))}
                       </span>

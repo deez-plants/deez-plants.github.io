@@ -95,10 +95,21 @@ export function collectionScore(state: DerivedState): ScoreBlockProps {
     if (!p.health.stale) stale = false;
   }
 
+  // Line 3's "previous" must be a *different day's* reading. Snapshots are
+  // written per Update commit, so committing twice in one day would otherwise
+  // compare the collection to itself an hour earlier and print something like
+  // `+0.1 · 0d`. Section 3b's rule — "the delta always carries elapsed time,
+  // because +0.3 over six weeks and +0.3 over six days are different news" —
+  // has no meaning across zero elapsed days. With nothing older to compare
+  // against, line 3 falls back to `first record`, which is the honest reading
+  // for a collection rated once, today.
+  const previous = collection.average_previous;
+  const sameDay = previous !== null && confirmed !== null && previous.date === confirmed;
+
   return {
     current: collection.average_health,
     confirmed,
-    previous: collection.average_previous,
+    previous: sameDay ? null : previous,
     source: null,
     // Every rating in the collection has gone stale. Nobody has looked at
     // anything in three months, which is worth a marker on Home.

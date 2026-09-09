@@ -324,3 +324,18 @@
 }
 
 .detail-linkrow span { color: var(--ink-40); }
+
+/* The Placement block is a button into Info and settings. */
+.detail-card-button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.detail-card-edit {
+  font: 600 20px/1 var(--sans);
+  color: var(--accent);
+}

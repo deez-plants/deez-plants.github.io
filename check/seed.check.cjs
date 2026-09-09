@@ -23,6 +23,10 @@ const eq = (name, got, want) => {
 };
 
 const INSTALL = '2026-09-03';
+// `_meta.photos_taken` in SEED_PLANTS.json: the day the owner actually
+// photographed all 22 plants. Photos are dated to this, not to the install
+// day and not to `acquired` — see the divergence note in db/seed.ts.
+const SHOT = '2026-08-28';
 const opts = { install_date: INSTALL, device_id: 'DEV-TEST' };
 const plan = buildSeedPlan(file, opts);
 
@@ -86,11 +90,12 @@ eq('every photo event names exactly one media',
    photoEvents.every((e) => e.media.length === 1 && e.media_labels.length === 1), true);
 
 const monPhoto = plan.photos.find((p) => p.plant_id === '001-MON');
-// Dated to the install day, not to `acquired` — otherwise `last_checked` reads
+// Dated to the day the photographs were taken, not to `acquired` and not to
+// the install day. Dating to `acquired` made `last_checked` read
 // "Feb 2021" on a brand new install.
-eq('photo dated to install day', monPhoto.date, INSTALL);
-eq('every photo dated to install day', plan.photos.every((p) => p.date === INSTALL), true);
-eq('media id built from that date', monPhoto.media_id, `001-MON_${INSTALL}_0000_01.jpg`);
+eq('photo dated to the day it was taken', monPhoto.date, SHOT);
+eq('every photo dated to the day it was taken', plan.photos.every((p) => p.date === SHOT), true);
+eq('media id built from that date', monPhoto.media_id, `001-MON_${SHOT}_0000_01.jpg`);
 eq('event id derived from the plant', monPhoto.event_id, 'EV-SEED-001-MON-01');
 
 /* --- hero --- */
@@ -99,7 +104,7 @@ eq('one hero choice per plant', heroEvents.length, 22);
 eq('hero events target hero_media', heroEvents.every((e) => e.field === 'hero_media'), true);
 eq('hero events name no media of their own', heroEvents.every((e) => !e.media), true);
 eq("every hero points at that plant's own portrait",
-   heroEvents.every((e) => e.to === `${e.plant_id}_${INSTALL}_0000_01.jpg`), true);
+   heroEvents.every((e) => e.to === `${e.plant_id}_${SHOT}_0000_01.jpg`), true);
 eq('hero event ids deterministic',
    heroEvents.find((e) => e.plant_id === '001-MON').event_id, 'EV-SEED-001-MON-HERO');
 eq('hero lands after the photo it names',
@@ -180,9 +185,11 @@ eq('every plant unrated and unwatered',
 eq('every plant has a hero on day one',
    once.order.every((id) => once.plants[id].hero !== null), true);
 eq("the hero is the plant's own portrait",
-   once.plants['001-MON'].hero, `001-MON_${INSTALL}_0000_01.jpg`);
-eq('last_checked reads today, not the acquisition date',
-   once.order.every((id) => once.plants[id].last_checked === INSTALL), true);
+   once.plants['001-MON'].hero, `001-MON_${SHOT}_0000_01.jpg`);
+// Not the acquisition date ("Feb 2021" on a brand-new install), and no longer
+// the install day either — the day the photographs were actually taken.
+eq('last_checked reads the day the photos were taken',
+   once.order.every((id) => once.plants[id].last_checked === SHOT), true);
 eq('shared soil flag reaches derived state', once.plants['015-PTH'].planter_shared_water, true);
 eq('decorative planter does not', once.plants['019-SNK'].planter_shared_water, false);
 

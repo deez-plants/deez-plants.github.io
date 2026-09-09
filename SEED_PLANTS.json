@@ -10,7 +10,9 @@
     "verify": [
       "species values are botanical names inferred from the common names, not read from the master list. Check 022-CAC in particular.",
       "names are taken from the photo filenames, which differ from the design mock in five places (014, 017, 018, 019, 022). The filenames are treated as authoritative."
-    ]
+    ],
+    "photos_taken": "2026-08-28",
+    "photos_taken_note": "The day the owner photographed all 22 plants — the same day they watered everything. Seed photos are dated to this rather than to the install date or to `acquired`, because it is simply the truth and it makes both `last_checked` and the care calendar read correctly. EXIF capture dates were stripped from the files, so this could not be recovered from the images."
   },
   "planters": {
     "Glass Planter": {

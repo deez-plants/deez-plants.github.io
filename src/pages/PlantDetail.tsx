@@ -286,9 +286,15 @@ export default function PlantDetail({
       </div>
 
       {/* Not in the reference. Added by the build, and the owner asked for it
-          to stay — recorded in the 2026-09-08 audit. */}
-      <section className="detail-card">
-        <span className="detail-card-label">PLACEMENT</span>
+          to stay — recorded in the 2026-09-08 audit. It is a button rather
+          than a panel because tapping the block that shows your room and pot
+          and having nothing happen is a dead end; editing lives in Info and
+          settings, so it goes there. */}
+      <button type="button" className="detail-card detail-card-button" onClick={onInfo}>
+        <div className="detail-card-head">
+          <span className="detail-card-label">PLACEMENT</span>
+          <span className="detail-card-edit">Edit ›</span>
+        </div>
         <dl className="detail-spec">
           <div><dt>Room</dt><dd>{plant.room}</dd></div>
           <div><dt>Pot</dt><dd>{plant.pot}</dd></div>
@@ -304,7 +310,7 @@ export default function PlantDetail({
             </div>
           )}
         </dl>
-      </section>
+      </button>
 
       <button type="button" className="detail-linkrow" onClick={onPhotos}>
         Photos{plant.photos.length > 0 && ` · ${plant.photos.length}`} <span aria-hidden="true">›</span>
