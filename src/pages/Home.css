@@ -247,3 +247,28 @@
   padding: 14px 16px;
   cursor: pointer;
 }
+
+/* Added 2026-09-08: the reference gives CARE ADHERENCE a count headline and
+   the same stacked bar HEALTH already had. Rule 2 — "16 of 22" counts plants
+   on schedule; it is not a mark out of ten. */
+.home-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+
+.home-headline {
+  font: 600 30px/1 var(--sans);
+  color: var(--ink);
+}
+
+/* The registry rows carry the owner's own icons again. */
+.home-row-icon {
+  flex: none;
+  display: block;
+  color: var(--accent);
+}
+
+.home-row-icon.quiet { color: var(--ink-45); }

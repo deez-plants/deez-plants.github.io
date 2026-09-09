@@ -3,6 +3,7 @@ import type { PlantId } from '../types/ids';
 import type { DerivedPlant, DerivedState } from '../types/derived';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore, healthBand } from '../score/score';
+import { Icon } from '../components/Icon';
 import './Home.css';
 
 /**
@@ -18,9 +19,12 @@ import './Home.css';
  *   screen's own "History ›") now reads the real `snapshots` store the same
  *   way Adherence history does. Adding a compact version here is a follow-up,
  *   not blocked on anything.
- * - The handoff log and the "session held on this device" notice both belong
- *   to export/import and capture, neither built yet — showing them here would
- *   mean inventing zeros.
+ * - The handoff log still isn't here; export/import exists now, so this is a
+ *   follow-up rather than a blocker.
+ * - The reference's "1 session held on this device only · Back up now" row is
+ *   deliberately absent until backup itself exists. A button that cannot back
+ *   anything up would be worse than no row — and the row is the reminder that
+ *   backup was always part of this design, not a later idea.
  * - `feed` is free text on every plant (FIELD_DEFINITIONS.md section 4), not
  *   an interval with a due date the way `water` is. So DUE and Do next are
  *   water-only here, honestly, rather than a fabricated feed schedule.
@@ -121,7 +125,19 @@ export default function Home({
       </section>
 
       <section className="home-card">
-        <span className="home-label">CARE ADHERENCE</span>
+        <div className="home-card-head">
+          <span className="home-label">CARE ADHERENCE</span>
+          {/* Rule 2: counts, never a score. "16 of 22" is how many plants are
+              on schedule — a count of plants, not a mark out of ten. */}
+          <span className="home-headline">{onSchedule} of {active.length}</span>
+        </div>
+        {active.length > 0 && (
+          <div className="home-bands" aria-hidden="true">
+            {onSchedule > 0 && <span className="home-band home-band-good" style={{ flexGrow: onSchedule }} />}
+            {slipping > 0 && <span className="home-band home-band-holding" style={{ flexGrow: slipping }} />}
+            {behind > 0 && <span className="home-band home-band-struggling" style={{ flexGrow: behind }} />}
+          </div>
+        )}
         <p className="home-card-line">
           {onSchedule} on schedule · {slipping} slipping · {behind} behind
         </p>
@@ -227,18 +243,21 @@ export default function Home({
 
       <div className="home-utility">
         <button type="button" className="home-util-row" onClick={onAddPlant}>
+          <span className="home-row-icon add"><Icon name="add" size={22} /></span>
           <span className="home-row-body">
             <span className="home-row-name">Add a new plant</span>
           </span>
           <span className="home-row-chev" aria-hidden="true">›</span>
         </button>
         <button type="button" className="home-util-row" onClick={onPreparePackage}>
+          <span className="home-row-icon"><Icon name="pkg" size={22} /></span>
           <span className="home-row-body">
             <span className="home-row-name">Prepare review package</span>
           </span>
           <span className="home-row-chev" aria-hidden="true">›</span>
         </button>
         <button type="button" className="home-util-row" onClick={onApplyUpdate}>
+          <span className="home-row-icon"><Icon name="apply" size={22} /></span>
           <span className="home-row-body">
             <span className="home-row-name">Apply AI update</span>
           </span>
@@ -249,6 +268,7 @@ export default function Home({
           className="home-util-row"
           onClick={onArchived}
         >
+          <span className="home-row-icon quiet"><Icon name="pot" size={22} /></span>
           <span className="home-row-body">
             <span className="home-row-name">Archived plants</span>
             <span className="home-row-sub">{state.collection.archived_count} plants</span>

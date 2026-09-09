@@ -25,3 +25,7 @@ dist-ssr
 
 # Compiled output for the derive checks
 check/build
+
+# Review packages and session exports the app produces while testing.
+# These are outputs, not source; gpt-prompt.txt is the owner's and stays.
+*.zip
