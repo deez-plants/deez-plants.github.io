@@ -170,6 +170,55 @@ below, sorted into what was genuinely wrong and what only looked wrong.
   plant. They should open a plant picker; plant detail already has one that
   can be reused.
 
+### Decisions taken on the evening of 2026-09-08 (settled — do not relitigate)
+
+Written **before** the work they describe, deliberately, so that a session
+interrupted mid-flight still inherits every decision.
+
+1. **The care calendar is left exactly as it is.** The owner asked whether
+   each month could run backwards (last day at the top) with the newest month
+   still first, so dates flow continuously down the page. It is a coherent
+   idea for a *list* and wrong for a *grid*: reversing the days puts every
+   date under the wrong weekday column, and fixing that means flipping the
+   column headers too, so each week reads right-to-left. The grid's whole
+   value is the weekday axis — "I always water at weekends" as a vertical
+   stripe. `DESIGN_REFERENCE.md` section 6 already lists this under
+   do-not-reintroduce. A flowing chronological *list* for the three-month
+   preview was offered as an alternative and declined. **Leave it alone.**
+2. **Rooms are a fixed list of five**: Living Room, Bedroom, 2nd Bedroom,
+   Balcony, Kitchen. Everything after the comma in the old strings becomes a
+   free-text `spot` the owner fills in by hand ("bookshelf", "by the window",
+   "hutch", "on the dresser", "on the fireplace mantel", "shelf").
+3. **`gpt-prompt.txt` is a real project asset and is now committed.** It is
+   the prompt the owner wrote for the AI that reviews packages — the JSON
+   shape it must return and the rule that it never guesses. It is the working
+   version of section 14, "Notes for whoever prompts the AI". An earlier pass
+   of this file called it clutter; that was wrong, and written without
+   reading it.
+4. **Seed photos are dated 2026-08-28**, because that is the day the owner
+   actually took all 26 of them — the same day they watered everything. This
+   replaces the install-date stamp, which had been chosen because dating them
+   to `acquired` made `last_checked` read "Feb 2021" on a fresh install. The
+   true date fixes both readings at once, so the trade-off disappears. Their
+   EXIF dates are stripped, so the file itself could not have told us.
+   `SEED_PLANTS.json` carries the date now, so a fresh install is right too.
+   **Devices seeded before this change keep the old dates** and need a wipe or
+   a restore to pick it up.
+5. **Backup is two buttons**: a fast "save my record" (JSON only, the
+   irreplaceable part) and an occasional "save everything" with photos and
+   audio.
+6. **The six new fields keep these names**: Environment · Repotting & roots ·
+   Pruning & support · Pests & disease · Season & growth · Propagation.
+7. **The ME / AI badge stays.** The owner asked whether it earns its place if
+   only they can change a rating. It does, because the AI *can* — section 11
+   rule 10 allows a `health` change carrying a visual observation, and Apply
+   AI update writes those as `Rate` events with `source: 'ai'`. Approving a
+   number is not the same as forming it, and rule 1 only means something if
+   you can tell which readings are yours.
+8. **Deferred by the owner, on purpose:** adding their two new plants, the
+   Archive action (the dead Spider Plant stays in the active list for now),
+   and any redesign of the two web guides beyond bringing them up to date.
+
 ### One number worth checking
 
 After the ratings landed, Home's score block reads `6.2 /10` with a previous
