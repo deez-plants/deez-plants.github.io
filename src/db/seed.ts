@@ -39,6 +39,8 @@ export interface SeedPlant {
   name: string;
   species: string;
   room: string;
+  /** Optional in the file: added 2026-09-08 when `room` was split. */
+  spot?: string;
   pot: string;
   planter: string | null;
   acquired: string | null;
@@ -60,6 +62,8 @@ export interface SeedExtraPhoto {
 
 export interface SeedFile {
   planters: Record<string, { shared_water: boolean; members: string[]; note?: string }>;
+  /** The canonical room list. Added 2026-09-08 with the room/spot split. */
+  rooms?: string[];
   /** `_meta.photos_taken` — when the seed photos were actually taken. */
   _meta?: { photos_taken?: string };
   plants: SeedPlant[];
@@ -137,6 +141,13 @@ export function buildSeedPlan(file: SeedFile, opts: SeedOptions): SeedPlan {
     room: p.room,
     pot: p.pot,
     planter: p.planter,
+    spot: p.spot ?? '',
+    environment: null,
+    repotting: null,
+    pruning: null,
+    pests: null,
+    season: null,
+    propagation: null,
     water_interval_days: p.water_interval_days,
     water_interval_days_winter: p.water_interval_days_winter,
     feed: p.feed,
@@ -233,7 +244,12 @@ export function buildSeedPlan(file: SeedFile, opts: SeedOptions): SeedPlan {
 
   const events: StoredEvent[] = [...photoEvents, ...heroEvents];
 
-  const rooms: string[] = [];
+  // The registry's rooms come from the seed file's own list, not from what
+  // the 22 plants happen to occupy. The owner has five rooms; only two of
+  // them currently hold a plant, and an empty room still has to be pickable
+  // or nothing could ever be moved into it. Any room a plant names that the
+  // list somehow missed is appended rather than lost.
+  const rooms: string[] = [...(file.rooms ?? [])];
   for (const p of file.plants) if (!rooms.includes(p.room)) rooms.push(p.room);
 
   const registry: Registry = {

@@ -191,12 +191,25 @@ reused.
 | Field | Type | Allowed values | editable_by |
 |---|---|---|---|
 | `room` | string | a room name from the registry | user |
+| `spot` | string | free text, ≤ 60 chars, e.g. `bookshelf` | user |
 | `pot` | string | free text, e.g. `12" terracotta` | user |
 | `planter` | string | a planter name, or `None — own pot` | user |
 
 Placement is yours. The AI may comment on it in a change `reason` but may not
 propose a value — it cannot see where things physically are. Rooms and planters
 are a user-editable registry, not a fixed enum.
+
+**`room` and `spot` were one field until 2026-09-08.** The seed put the whole
+description in `room`, which gave a registry of seven "rooms" of which five
+were *Living room, by the window*, *Living room hutch*, *Living room shelf*,
+*Living room bookshelf* and *Living room, on the fireplace mantel*. Nothing
+could then answer "how are the living room plants doing", because the app did
+not know they were the same room.
+
+`room` is now the room — one of a short list — and `spot` is where in it, in
+the owner's own words. The 22 seeded plants were split by taking everything
+after the room name as the spot, written as ordinary `Edit` events so the
+history is intact and nothing was overwritten.
 
 **The planter registry carries `shared_water: boolean.**
 
@@ -230,6 +243,37 @@ These are the fields an AI update exists to refine.
 Two intervals because the same soak takes far longer to dry out in winter. The
 summer figure is in force from March to October, the winter figure from November
 to February. The app shows which is active and why.
+
+### Reference (added 2026-09-08)
+
+Six longer free-text fields behind "More about this plant". They exist because
+the mock's own version of that screen had eight topics and only two of them —
+soil and notes — corresponded to a field that existed. Rather than six rows
+permanently reading "not tracked", the screen was collapsed to what was real.
+The owner then asked for the other six for real.
+
+| Field | Type | Allowed values | editable_by |
+|---|---|---|---|
+| `environment` | string | free text, ≤ 600 chars | both |
+| `repotting` | string | free text, ≤ 600 chars | both |
+| `pruning` | string | free text, ≤ 600 chars | both |
+| `pests` | string | free text, ≤ 600 chars | both |
+| `season` | string | free text, ≤ 600 chars | both |
+| `propagation` | string | free text, ≤ 600 chars | both |
+
+**These are the one place the AI is asked for knowledge rather than
+judgement.** Most of what belongs here is true of the species, not of your
+plant: how a Monstera propagates, when a Thanksgiving cactus flowers, what
+light a Haworthia wants natively, where it comes from. That is stable
+reference material, the AI is good at it, and writing it breaks none of the
+rules — rule 1 forbids the app computing *health*, not the AI knowing botany.
+
+Observations about *your* plant — when yours actually flowered, how it
+responded to being moved — belong here too, and only you can write those.
+
+`editable_by: both`, so the AI proposes and you approve row by row like any
+other change (rule 4). Empty is a normal, permanent state: a field nobody has
+filled reads as empty, never as invented content.
 
 ### Status
 

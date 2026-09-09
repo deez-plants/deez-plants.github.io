@@ -60,7 +60,17 @@ eq('glass planter shares soil',
    plan.registry.planters.find((p) => p.name === 'Glass Planter').shared_water, true);
 eq('star wars planter does not',
    plan.registry.planters.find((p) => p.name === 'Star Wars Decorative Planter').shared_water, false);
-eq('six rooms, in collection order', plan.registry.rooms.length, 6);
+// The registry carries the owner's five rooms, not just the ones currently
+// occupied — an empty room still has to be pickable. Added with the
+// room/spot split on 2026-09-08.
+eq('the five rooms from the seed file', plan.registry.rooms,
+   ['Living Room', 'Bedroom', '2nd Bedroom', 'Balcony', 'Kitchen']);
+eq('every plant sits in one of them',
+   plan.baselines.every((b) => plan.registry.rooms.includes(b.room)), true);
+eq('room and spot are separate', plan.baselines.find((b) => b.plant_id === '003-SNK').room, 'Bedroom');
+eq('spot carries the rest', plan.baselines.find((b) => b.plant_id === '003-SNK').spot, 'on the dresser');
+eq('21 plants in the living room',
+   plan.baselines.filter((b) => b.room === 'Living Room').length, 21);
 eq('rooms de-duplicated', new Set(plan.registry.rooms).size, plan.registry.rooms.length);
 
 // The file states planter membership twice, once per direction. They must agree,

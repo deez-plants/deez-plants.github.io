@@ -106,6 +106,7 @@ export interface DerivedPlant {
   species: string;
   acquired: string | null;
   room: string;
+  spot: string;
   pot: string;
   planter: string | null;
   /** True when the planter's registry entry says one soak serves the group. */
@@ -115,6 +116,12 @@ export interface DerivedPlant {
   feed: string | null;
   light: string | null;
   soil: string | null;
+  environment: string | null;
+  repotting: string | null;
+  pruning: string | null;
+  pests: string | null;
+  season: string | null;
+  propagation: string | null;
   notes_user: string;
   status_label: StatusLabel | null;
   do_next: string | null;

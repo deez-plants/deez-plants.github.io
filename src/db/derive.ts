@@ -38,6 +38,7 @@ interface WorkingFields {
   species: string;
   acquired: string | null;
   room: string;
+  spot: string;
   pot: string;
   planter: string | null;
   water_interval_days: number;
@@ -45,6 +46,12 @@ interface WorkingFields {
   feed: string | null;
   light: string | null;
   soil: string | null;
+  environment: string | null;
+  repotting: string | null;
+  pruning: string | null;
+  pests: string | null;
+  season: string | null;
+  propagation: string | null;
   notes_user: string;
   status_label: StatusLabel | null;
   do_next: string | null;
@@ -92,6 +99,7 @@ function newWorking(base: PlantBaseline): Working {
       species: base.species,
       acquired: base.acquired,
       room: base.room,
+      spot: base.spot,
       pot: base.pot,
       planter: base.planter,
       water_interval_days: base.water_interval_days,
@@ -99,6 +107,12 @@ function newWorking(base: PlantBaseline): Working {
       feed: base.feed,
       light: base.light,
       soil: base.soil,
+      environment: base.environment,
+      repotting: base.repotting,
+      pruning: base.pruning,
+      pests: base.pests,
+      season: base.season,
+      propagation: base.propagation,
       notes_user: base.notes_user,
       status_label: base.status_label,
       do_next: base.do_next,
@@ -212,11 +226,19 @@ function applyEdit(w: Working, e: EditEvent): void {
     case 'species': if (typeof v === 'string') w.fields.species = v; break;
     case 'acquired': if (v === null || typeof v === 'string') w.fields.acquired = v; break;
     case 'room': if (typeof v === 'string') w.fields.room = v; break;
+    case 'spot': if (typeof v === 'string') w.fields.spot = v; break;
     case 'pot': if (typeof v === 'string') w.fields.pot = v; break;
     case 'planter': if (v === null || typeof v === 'string') w.fields.planter = v; break;
     case 'feed': if (v === null || typeof v === 'string') w.fields.feed = v; break;
     case 'light': if (v === null || typeof v === 'string') w.fields.light = v; break;
     case 'soil': if (v === null || typeof v === 'string') w.fields.soil = v; break;
+    // Section 4, Reference. Free text, mostly species knowledge the AI writes.
+    case 'environment': if (v === null || typeof v === 'string') w.fields.environment = v; break;
+    case 'repotting': if (v === null || typeof v === 'string') w.fields.repotting = v; break;
+    case 'pruning': if (v === null || typeof v === 'string') w.fields.pruning = v; break;
+    case 'pests': if (v === null || typeof v === 'string') w.fields.pests = v; break;
+    case 'season': if (v === null || typeof v === 'string') w.fields.season = v; break;
+    case 'propagation': if (v === null || typeof v === 'string') w.fields.propagation = v; break;
     case 'notes_user': if (typeof v === 'string') w.fields.notes_user = v; break;
     case 'do_next': if (v === null || typeof v === 'string') w.fields.do_next = v; break;
     case 'hero_media':

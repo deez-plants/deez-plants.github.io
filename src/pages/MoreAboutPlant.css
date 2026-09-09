@@ -193,3 +193,22 @@
   color: var(--accent);
   cursor: pointer;
 }
+
+/* The six reference fields (section 4, Reference). */
+.more-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.more-icon {
+  flex: none;
+  display: block;
+  color: var(--accent);
+}
+
+.more-line.empty {
+  color: var(--ink-45);
+  font-style: italic;
+}

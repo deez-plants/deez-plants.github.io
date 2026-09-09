@@ -35,6 +35,9 @@ export interface PlantBaseline {
   /** `MMM YYYY`. Null when unknown. */
   acquired: string | null;
   room: string;
+  /** Where in the room, in the owner's own words — "bookshelf", "by the
+      window". Split out of `room` on 2026-09-08; see section 4, Placement. */
+  spot: string;
   pot: string;
   /** A key into the planter registry. Null means own pot. */
   planter: string | null;
@@ -43,6 +46,15 @@ export interface PlantBaseline {
   feed: string | null;
   light: string | null;
   soil: string | null;
+  /** Section 4, Reference. Six longer free-text fields behind "More about
+      this plant" — mostly species knowledge the AI can propose, which is why
+      they are `editable_by: both`. Null until somebody fills them. */
+  environment: string | null;
+  repotting: string | null;
+  pruning: string | null;
+  pests: string | null;
+  season: string | null;
+  propagation: string | null;
   notes_user: string;
   status_label: StatusLabel | null;
   do_next: string | null;
@@ -98,6 +110,12 @@ export const AI_EDITABLE_FIELDS = [
   'feed',
   'light',
   'soil',
+  'environment',
+  'repotting',
+  'pruning',
+  'pests',
+  'season',
+  'propagation',
   'health',
   'status_label',
   'do_next',
@@ -110,6 +128,7 @@ export const USER_ONLY_FIELDS = [
   'name',
   'acquired',
   'room',
+  'spot',
   'pot',
   'planter',
   'notes_user',

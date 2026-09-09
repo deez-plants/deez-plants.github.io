@@ -145,8 +145,9 @@ export interface NewPlantInput {
  * is `add`, not `put`: a collision would mean the ID-allocation logic on the
  * screen is broken, and silently overwriting an existing plant would be far
  * worse than a thrown error surfacing that. Everything the Add-a-plant
- * screen doesn't ask for (pot, feed, light, soil, acquired) starts empty and
- * is filled in later from Info and settings, same as any other field.
+ * screen doesn't ask for (spot, pot, feed, light, soil, acquired and the six
+ * reference fields) starts empty and is filled in later from Info and
+ * settings, or proposed by the AI, same as any other field.
  */
 export async function addPlant(input: NewPlantInput, as_of: ISODate): Promise<void> {
   const db = await openDeezPlants();
@@ -157,6 +158,7 @@ export async function addPlant(input: NewPlantInput, as_of: ISODate): Promise<vo
     species: input.species,
     acquired: null,
     room: input.room,
+    spot: '',
     pot: '',
     planter: input.planter,
     water_interval_days: input.water_interval_days,
@@ -164,6 +166,12 @@ export async function addPlant(input: NewPlantInput, as_of: ISODate): Promise<vo
     feed: null,
     light: null,
     soil: null,
+    environment: null,
+    repotting: null,
+    pruning: null,
+    pests: null,
+    season: null,
+    propagation: null,
     notes_user: '',
     status_label: null,
     do_next: null,

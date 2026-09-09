@@ -6,6 +6,7 @@ import { openDeezPlants } from '../db/schema';
 import { commitUpdate } from '../db/events';
 import { addCareInstruction, deleteCareInstruction } from '../notes/careInstructions';
 import { setNotesUser } from '../notes/notesUser';
+import { Icon } from '../components/Icon';
 import { PlantChrome } from '../components/PlantChrome';
 import './MoreAboutPlant.css';
 
@@ -45,6 +46,16 @@ export interface MoreAboutPlantProps {
   onNavigate: (plant_id: PlantId) => void;
   onChanged: () => Promise<void> | void;
 }
+
+/** The six reference fields, in the order the mock's own topic list had them. */
+const REFERENCE_FIELDS = [
+  { field: 'environment', label: 'ENVIRONMENT', icon: 'environment' },
+  { field: 'repotting', label: 'REPOTTING & ROOTS', icon: 'repot' },
+  { field: 'pruning', label: 'PRUNING & SUPPORT', icon: 'support' },
+  { field: 'pests', label: 'PESTS & DISEASE', icon: 'pest' },
+  { field: 'season', label: 'SEASON & GROWTH', icon: 'feed' },
+  { field: 'propagation', label: 'PROPAGATION', icon: 'prune' },
+] as const;
 
 export default function MoreAboutPlant({
   plant, as_of, backLabel, onBack, allPlants, onNavigate, onChanged,
@@ -144,6 +155,22 @@ export default function MoreAboutPlant({
         <span className="more-label">SOIL &amp; MEDIUM</span>
         <p className="more-line">{plant.soil ?? 'Not set.'}</p>
       </section>
+
+      {/* Section 4, Reference — added 2026-09-08. Mostly species knowledge,
+          which is why these are `editable_by: both`: ask the AI in a review
+          round and they come back filled. Empty is a normal state and reads
+          as empty; nothing here is ever invented to fill a gap. */}
+      {REFERENCE_FIELDS.map(({ field, label, icon }) => (
+        <section key={field} className="more-card">
+          <div className="more-card-head">
+            <span className="more-icon"><Icon name={icon} size={20} /></span>
+            <span className="more-label">{label}</span>
+          </div>
+          <p className={plant[field] ? 'more-line' : 'more-line empty'}>
+            {plant[field] ?? 'Nothing recorded. Ask the AI for this in your next review.'}
+          </p>
+        </section>
+      ))}
 
       {error && <p className="more-error">{error}</p>}
 

@@ -37,6 +37,7 @@ interface FormState {
   species: string;
   acquired: string;
   room: string;
+  spot: string;
   pot: string;
   planter: string;
   water_interval_days: string;
@@ -54,6 +55,7 @@ interface PlantFields {
   species: string;
   acquired: string | null;
   room: string;
+  spot: string;
   pot: string;
   planter: string | null;
   water_interval_days: number;
@@ -69,6 +71,7 @@ function toForm(p: PlantFields): FormState {
     species: p.species,
     acquired: p.acquired ?? '',
     room: p.room,
+    spot: p.spot,
     pot: p.pot,
     planter: p.planter ?? '',
     water_interval_days: String(p.water_interval_days),
@@ -79,11 +82,19 @@ function toForm(p: PlantFields): FormState {
   };
 }
 
-function TextField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function TextField({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
   return (
     <label className="info-field">
       <span className="info-field-label">{label}</span>
-      <input type="text" className="info-field-value" value={value} onChange={(e) => onChange(e.target.value)} />
+      <input
+        type="text"
+        className="info-field-value"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </label>
   );
 }
@@ -133,6 +144,7 @@ export default function InfoSettings({
         species: form.species.trim(),
         acquired: form.acquired.trim() || null,
         room: form.room,
+        spot: form.spot.trim(),
         pot: form.pot.trim(),
         planter: form.planter || null,
         water_interval_days: water,
@@ -214,6 +226,12 @@ export default function InfoSettings({
           ))}
         </div>
       </div>
+      <TextField
+        label="Spot in the room"
+        value={form.spot}
+        onChange={(v) => set('spot', v)}
+        placeholder="bookshelf, by the window, hutch…"
+      />
       <TextField label="Pot" value={form.pot} onChange={(v) => set('pot', v)} />
       <label className="info-field">
         <span className="info-field-label">Shared planter</span>

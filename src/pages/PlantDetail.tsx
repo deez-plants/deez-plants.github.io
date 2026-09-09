@@ -297,6 +297,7 @@ export default function PlantDetail({
         </div>
         <dl className="detail-spec">
           <div><dt>Room</dt><dd>{plant.room}</dd></div>
+          {plant.spot && <div><dt>Spot</dt><dd>{plant.spot}</dd></div>}
           <div><dt>Pot</dt><dd>{plant.pot}</dd></div>
           {plant.planter && (
             <div>
