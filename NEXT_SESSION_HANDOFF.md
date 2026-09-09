@@ -178,17 +178,16 @@ below, sorted into what was genuinely wrong and what only looked wrong.
   reachable from the More sheet. Not missing, just hard to find, which is
   its own finding (below).
 
-### Still open, agreed but not yet built
+### Was open here, now built
 
-- **The More sheet should become a real page.** Seventeen flat items do not
-  fit a sheet at the owner's type sizes — the "All pages" header scrolling
-  through them is the symptom. As a page it can group under headers (*This
-  plant · The collection · AI round-trip · About*). **This is a legitimate
-  size-driven divergence — the kind the precedence rule was actually for.**
-- **Five of its items are dead ends** (History, More about this plant, Info
-  and settings, Plant detail, Photos) because they are plant-scoped with no
-  plant. They should open a plant picker; plant detail already has one that
-  can be reused.
+- ~~**The More sheet should become a real page.**~~ Built 2026-09-09; see item
+  11 below. The reasoning is kept because it is the precedent: seventeen flat
+  items do not fit a sheet at the owner's type sizes — the "All pages" header
+  scrolling through them was the symptom — and **this is a legitimate
+  size-driven divergence, the kind the precedence rule was actually for.**
+- ~~**Five of its items are dead ends**~~ (History, More about this plant,
+  Info and settings, Plant detail, Photos) because they are plant-scoped with
+  no plant. They open a plant picker now.
 
 ### Decisions taken on the evening of 2026-09-08 (settled — do not relitigate)
 
@@ -676,9 +675,23 @@ so the reasoning stays attached to the work.
     and never destroys; verified idempotent on both paths. **This is the
     unlock for everything else** — it is how the owner's record gets from the
     laptop onto the phone, and the first thing to demonstrate to them.
-11. **The More sheet becomes a page**, grouped, with plant pickers replacing
-    the five dead ends.
-12. **Web app manifest, icons, iOS meta tags.** `CLAUDE.md`'s first sentence
+11. ~~**The More sheet becomes a page.**~~ Done — `src/nav/AllPages.tsx`,
+    grouped under *This plant · The collection · AI round-trip · About*, with
+    `src/nav/PlantPicker.tsx` replacing the five dead ends. The picker
+    `replace`s itself with the destination rather than pushing, so backing out
+    of the plant lands on All pages and not on the question again. `More`
+    pushes rather than clearing the stack, so it still returns you where you
+    were the way the sheet did, and `nav/screenTitle.ts` gives its back button
+    the name of the screen underneath. Turned up one shell-wide bug on the
+    way: **the window kept the previous screen's scroll offset across a
+    navigation**, so a long screen opened from a scrolled-down one landed
+    halfway through itself. Fixed in `App.tsx` for every screen, not just
+    this one.
+12. **Web app manifest, icons, iOS meta tags.** *Blocked on the owner's icon
+    — they are designing one and dropping it at `icons/source.png` (a square
+    1024x1024 PNG, no transparency, not pre-rounded). Generate every size
+    from it; do not invent a placeholder icon and ship it, because the icon
+    is the thing they will see on the home screen forever.* `CLAUDE.md`'s first sentence
     is "installed to an iPhone home screen" and §6 says recording is
     materially more stable installed — but none of it exists, so the iPhone
     test would not be testing what §6 describes. Also helps protect stored
