@@ -110,12 +110,13 @@ eq('toggle on', R.toggle(['a'], 'b'), ['a', 'b']);
 eq('toggle off', R.toggle(['a', 'b'], 'a'), ['b']);
 eq('addAll does not duplicate', R.addAll(['a', 'b'], ['b', 'c']), ['a', 'b', 'c']);
 
-eq('groups: shared planter first, then rooms, singletons dropped',
+// Planters only: rooms were dropped as groups deliberately (see the comment on
+// selectionGroups) because most of the collection shares one room, so a room
+// chip would just be a second "All". Groups of one are dropped too.
+eq('groups: shared planters only, singletons dropped',
   R.selectionGroups(plants, registry),
   [
     { name: 'Star Wars planter', ids: ['001-MON', '002-SNK'], shared_water: true },
-    { name: 'Living room', ids: ['001-MON', '002-SNK'], shared_water: false },
-    { name: 'Kitchen', ids: ['006-FER', '009-SPD'], shared_water: false },
   ]);
 
 /* ---------------------------------------------------------- the row line -- */
