@@ -46,6 +46,8 @@ export type Screen =
   | { kind: 'rooms' }
   /** Screen 15: walks held on this device, and the Whisper hand-off. */
   | { kind: 'recordings' }
+  /** Section 8's phone half: export the record, or restore one. */
+  | { kind: 'backup' }
   | { kind: 'placeholder'; title: string; subtitle?: string };
 
 export type RootTab = 'home' | 'plants' | 'record';

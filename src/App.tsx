@@ -23,6 +23,7 @@ import InfoSettings from './pages/InfoSettings';
 import CareRoundPage from './pages/CareRoundPage';
 import RecordSession from './pages/RecordSession';
 import Recordings from './pages/Recordings';
+import Backup from './pages/Backup';
 import { enterScreen } from './capture/screenLog';
 import './App.css';
 
@@ -117,6 +118,7 @@ export default function App() {
     { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works', undefined, 'All pages') },
     { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => nav.push({ kind: 'prepare-package' }, 'All pages') },
     { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => nav.push({ kind: 'apply-update' }, 'All pages') },
+    { label: 'Back up', subtitle: 'Save your record, or restore one', go: () => nav.push({ kind: 'backup' }, 'All pages') },
     { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => placeholder('Handoff log', undefined, 'All pages') },
     { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works', undefined, 'All pages') },
   ];
@@ -137,6 +139,7 @@ export default function App() {
         onAddPlant={() => nav.push({ kind: 'add-plant' }, 'Home')}
         onPreparePackage={() => nav.push({ kind: 'prepare-package' }, 'Home')}
         onApplyUpdate={() => nav.push({ kind: 'apply-update' }, 'Home')}
+        onBackup={() => nav.push({ kind: 'backup' }, 'Home')}
       />
     );
   } else if (screen.kind === 'record') {
@@ -152,6 +155,15 @@ export default function App() {
     );
   } else if (screen.kind === 'recordings') {
     body = <Recordings backLabel={nav.backLabel ?? 'Record'} onBack={nav.back} />;
+  } else if (screen.kind === 'backup') {
+    body = (
+      <Backup
+        as_of={as_of}
+        backLabel={nav.backLabel ?? 'Home'}
+        onBack={nav.back}
+        onChanged={reload}
+      />
+    );
   } else if (screen.kind === 'plants') {
     body = (
       <PlantsList

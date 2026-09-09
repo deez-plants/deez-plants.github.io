@@ -41,6 +41,7 @@ export interface HomeProps {
   onAddPlant: () => void;
   onPreparePackage: () => void;
   onApplyUpdate: () => void;
+  onBackup: () => void;
 }
 
 const NEEDS_ATTENTION_CAP = 6;
@@ -48,7 +49,7 @@ const MOST_URGENT_CAP = 6;
 
 export default function Home({
   state, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
-  onPreparePackage, onApplyUpdate,
+  onPreparePackage, onApplyUpdate, onBackup,
 }: HomeProps) {
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
@@ -242,6 +243,18 @@ export default function Home({
       </button>
 
       <div className="home-utility">
+        {/* Section 8. The reference has always had this row; it was waiting
+            on there being something behind it. */}
+        <button type="button" className="home-util-row backup" onClick={onBackup}>
+          <span className="home-row-icon"><Icon name="apply" size={22} /></span>
+          <span className="home-row-body">
+            <span className="home-row-name">Back up now</span>
+            <span className="home-row-sub">
+              {active.length} plants held on this device only
+            </span>
+          </span>
+          <span className="home-row-chev" aria-hidden="true">›</span>
+        </button>
         <button type="button" className="home-util-row" onClick={onAddPlant}>
           <span className="home-row-icon add"><Icon name="add" size={22} /></span>
           <span className="home-row-body">

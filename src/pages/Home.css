@@ -272,3 +272,9 @@
 }
 
 .home-row-icon.quiet { color: var(--ink-45); }
+
+/* Section 8's "held on this device only" row. */
+.home-util-row.backup {
+  background: var(--panel-on);
+  border-color: var(--accent-line);
+}
