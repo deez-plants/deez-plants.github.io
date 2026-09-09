@@ -29,23 +29,43 @@ Do not re-read `HANDOFF.md` section 6 as live instruction — it's marked
 superseded in place. The build order in its section 2 still roughly holds;
 the phase-gated pacing and "live-test for weeks before continuing" does not.
 
-## Start here: a design audit on 2026-09-08 found real drift
+## Start here: what to do first
 
-The owner looked at the built app on their own phone against `screenshots/`
-for the first time on 2026-09-08 and found a lot of divergence. **Most of it
-was real drift and it is being fixed now.** Before doing anything else, read
-"The 2026-09-08 audit" section below — it carries the findings, the
-decisions the owner made, and the work list that came out of it. That list
-supersedes the ordering in "What's next" until it is finished.
+**Show the owner backup.** It is the thing they have been blocked by without
+knowing it, and it is now built. Their real record — 22 ratings and two
+watering rounds they actually did — lives in **one** store: this laptop's
+`localhost`. Their phone has none of it. Back up → *Save my record* produces
+a ~60KB file; opening it on the phone through Back up → *Restore* brings the
+lot across. That is the demonstration to lead with.
 
-**The root cause, so it does not happen again.** `CLAUDE.md` says that where
-the built app differs from `DESIGN_REFERENCE.md`, the app is right and the
-reference is stale. That rule was written about **hand-tuned type sizes** —
-so nobody would shrink the owner's text back down. It was over-applied as
-cover for structural drift: whole blocks the reference specifies (`Do next`,
-`Your ratings over time`, the inline care calendar, every icon) were simply
-never built, and the precedence rule was allowed to excuse it. **The rule
-covers sizing only.** A missing section is not a stale reference.
+**Then read "The 2026-09-08 audit" below** before touching any screen. It
+carries the drift found, the decisions the owner made (twice — a settled
+decision list and an evening decision list, both marked do-not-relitigate),
+and a work list of which items 1–10 are now done.
+
+**Storage is per-origin, and this trips everyone.** `localhost:5173`, a LAN
+address like `192.168.1.195:5173`, and any hosted URL are **three separate
+databases with no server between them** — and two of those three are on the
+same laptop, in the same browser. Data entered in one never appears in
+another. The owner lost an evening to this; do not repeat it. Backup is the
+only bridge.
+
+### The root cause of the drift, so it does not happen again
+
+`CLAUDE.md` says that where the built app differs from `DESIGN_REFERENCE.md`,
+the app is right and the reference is stale. That rule was written about
+**hand-tuned type sizes** — so nobody would shrink the owner's text back
+down. It was over-applied as cover for structural drift: whole blocks the
+reference specifies (`Do next`, `Your ratings over time`, the inline care
+calendar, every icon) were simply never built, and the precedence rule was
+allowed to excuse it. **The rule covers sizing only.** A missing section is
+not a stale reference.
+
+**And check citations.** The old plants-list code justified its deviation by
+citing "a note in `DESIGN_REFERENCE.md` that the pill predates section 3b".
+No such note exists; screen 02 specifies the pill outright. A comment in this
+codebase that justifies itself by pointing at a document is worth verifying
+against the document.
 
 ## Recording is built — hosting still needs the owner
 
@@ -627,30 +647,35 @@ so the reasoning stays attached to the work.
 5. ~~**Plant detail rebuilt.**~~ Done. The grids were extracted into
    `components/CareMonths.tsx` so the inline three-month preview and the full
    Care calendar screen draw the same component and cannot disagree.
-6. **Home** — partly done. The adherence count headline, its stacked bar, and
-   the registry-row icons are in. **Still missing: the health sparkline, the
-   handoff-log section, the catch-up banner, and Due's `22 water · 12 feed`
-   split.** Note the health *stacked bar and legend were already built* and
-   only looked absent because nothing was rated — check before rebuilding.
+6. ~~**Home.**~~ Done, apart from two things left on purpose. The adherence
+   count headline and stacked bar, the registry-row icons, the health
+   sparkline, the handoff log and the `Back up now` row are all in. **Still
+   absent: the catch-up banner** (needs a stored "last opened", which nothing
+   writes) **and Due's `22 water · 12 feed` split** (feed is free text on
+   every plant, not an interval, so there is no feed due-count to show —
+   the honest note on the card says so). Note the health *stacked bar and
+   legend were already built* and only looked absent because nothing was
+   rated — check before rebuilding anything here.
 7. ~~**Housekeeping.**~~ Done; `*.zip` is ignored. `gpt-prompt.txt` left alone.
-8. **Room + spot spec change.** Splits `room` (short controlled list) from a
-   new free-text `spot` ("by the window", "bookshelf", "hutch"). Touches
-   `FIELD_DEFINITIONS.md` §4, the codec, validation, the manifest, and
-   re-homes all 22 plants as `Edit` events. **Do this with the owner
-   present** — the room list wants sanity-checking before 44 events land.
-9. **Six new "More about this plant" fields** — Environment, Repotting,
+8. ~~**Room + spot.**~~ Done. `db/migrateRoomSpot.ts` catches up a store
+   seeded before the split, writing `Edit` events rather than rewriting
+   baselines, and is idempotent. Run against the owner's record: 44 events,
+   21 plants to Living Room, 1 to Bedroom. **Any other device still holds the
+   old strings** and needs either the migration run against it or a restore
+   from a migrated device.
+9. ~~**Six new "More about this plant" fields.**~~ Done. Kept for reference: — Environment, Repotting,
    Pruning & support, Pests & disease, Season/growth, Propagation. The owner
    wants these, is happy for them to sit empty, and specifically wants the
    AI able to fill the species-knowledge ones (how to propagate, when it
    flowers, what light it wants natively). Mark them `editable_by: both` so
    the AI proposes and the owner approves per row (rule 4). **Do this in the
    same spec pass as item 8** — one §4 change, not two.
-10. **Backup / export–import.** Insurance *and* the laptop-to-phone
-    migration path for the owner's setup work. Home already has the row for
-    it. Suggested shape: a small, instant "save my record" (JSON only — the
-    irreplaceable part) plus an occasional "save everything" zip with photos
-    and audio. Restore is safe by construction: events merge by union and
-    collide on `event_id`, which is what append-only bought us.
+10. ~~**Backup / export–import.**~~ Done — `src/sync/stateTransfer.ts` and
+    the Back up screen, reachable from Home's own row and the More sheet.
+    Two exports (record ~60KB, everything ~6.3MB with photos). Restore merges
+    and never destroys; verified idempotent on both paths. **This is the
+    unlock for everything else** — it is how the owner's record gets from the
+    laptop onto the phone, and the first thing to demonstrate to them.
 11. **The More sheet becomes a page**, grouped, with plant pickers replacing
     the five dead ends.
 12. **Web app manifest, icons, iOS meta tags.** `CLAUDE.md`'s first sentence
@@ -658,8 +683,8 @@ so the reasoning stays attached to the work.
     materially more stable installed — but none of it exists, so the iPhone
     test would not be testing what §6 describes. Also helps protect stored
     data, since installed apps are treated better than ordinary sites.
-13. **Handoff rewritten and model switched.** Everything from item 14 down is
-    fast-model work.
+13. **Model switch — safe now.** Everything left is fast-model work. The two
+    items that warranted care (the spec change and backup) are done.
 14. Screens **22** (How this app works — static copy, trivial), **21**
     (Handoff log — reads `packages`/`applied_updates`, nearly a pure
     render), **17** (Since last time — reads `snapshots`), **18** (What
