@@ -29,7 +29,25 @@ Do not re-read `HANDOFF.md` section 6 as live instruction — it's marked
 superseded in place. The build order in its section 2 still roughly holds;
 the phase-gated pacing and "live-test for weeks before continuing" does not.
 
-## Start here: recording is built — the next step needs the owner
+## Start here: a design audit on 2026-09-08 found real drift
+
+The owner looked at the built app on their own phone against `screenshots/`
+for the first time on 2026-09-08 and found a lot of divergence. **Most of it
+was real drift and it is being fixed now.** Before doing anything else, read
+"The 2026-09-08 audit" section below — it carries the findings, the
+decisions the owner made, and the work list that came out of it. That list
+supersedes the ordering in "What's next" until it is finished.
+
+**The root cause, so it does not happen again.** `CLAUDE.md` says that where
+the built app differs from `DESIGN_REFERENCE.md`, the app is right and the
+reference is stale. That rule was written about **hand-tuned type sizes** —
+so nobody would shrink the owner's text back down. It was over-applied as
+cover for structural drift: whole blocks the reference specifies (`Do next`,
+`Your ratings over time`, the inline care calendar, every icon) were simply
+never built, and the precedence rule was allowed to excuse it. **The rule
+covers sizing only.** A missing section is not a stale reference.
+
+## Recording is built — hosting still needs the owner
 
 **Capture is complete.** Recording landed in commit `dc397b4` (see "Walk
 recording" below), which closes out the whole of Capture and, with it,
@@ -64,6 +82,107 @@ on top of it.
 
 If the owner would rather keep building than test now, the desk console
 (step 2 below) is the honest next thing.
+
+## The 2026-09-08 audit
+
+The owner reviewed the app on their phone against `screenshots/`. Findings
+below, sorted into what was genuinely wrong and what only looked wrong.
+
+### Decisions the owner made (these are settled — do not relitigate)
+
+1. **The score block's label line is contextual.** `FIELD_DEFINITIONS.md`
+   §3b says the block is three lines and line 1 is the `HEALTH` label,
+   "wherever a health figure appears." But the owner's own mock omits that
+   label on plant detail (the score sits beside the photo as `8 / 10` with a
+   `ME` badge) and in the plants list (a compact coloured chip). **The spec
+   and the mock contradicted each other and the build followed the spec.**
+   The owner chose to amend §3b rather than leave the contradiction: the
+   label is **required** where the score is one card among several (Home),
+   and **dropped** where it is the page's hero beside the plant photo
+   (detail) or a compact chip in a list. Rule 6 still holds — the block is
+   still one component, it now has a documented labelled/unlabelled variant.
+   §3b has been updated in place.
+2. **Plant names stay as they are.** The owner refers to plants by the
+   mock's names ("Left Coconut-Bowl Pothos Cutting", "Compact Snake Plant"),
+   which differ from the app's. But `DESIGN_REFERENCE.md` §5 says the mock's
+   sample data is invented, and `CLAUDE.md` names `SEED_PLANTS.json` as the
+   source for the 22 real plants. **The app's names are the real ones.** No
+   change. If a future session sees the owner use a mock name, translate,
+   don't rename.
+3. **Plants list rows match the reference exactly**: thumbnail · plant ID
+   (small mono) · name · score chip · `Kept`/`Behind` · chevron. The room
+   comes out — it was making the row heavy, and the plant page has it.
+4. **Room is being split into room + spot** (see the work list). The picker
+   currently offers seven rooms of which five are "Living room" something,
+   which is why this is worth doing.
+5. **`PLACEMENT` on plant detail is not in the reference** — it was added by
+   the build. The owner likes it. It stays.
+
+### Real drift, being fixed
+
+- **Every icon in the app is missing.** The owner drew a full icon set; it
+  lives in `Deez Plants.dc.html` as SVG path data (`icRoute`, `icBatch` and
+  friends — a `{c, s, f, sw}` lookup per icon). `CLAUDE.md` says never port
+  the mock's *code*; icon path data is treated here as an **asset**, which
+  is the owner's own design, not the mock's implementation. Some icons were
+  lost during commit `fd4c149`'s type-size pass, which correctly dropped
+  filler sub-labels and incorrectly took icons with them.
+- **Plant detail is the worst screen and needs a rebuild, not a patch.**
+  Missing against `screenshots/04-plant-detail.png`: the photo in the score
+  header, `DO NEXT` (the `do_next` field is real, wired, and AI-editable —
+  it was simply never rendered), `YOUR RATINGS OVER TIME`, the `Record note`
+  action, `Quick care` as icon cards, and the inline three-month care
+  calendar with its colour legend. Button order is wrong and the photo is
+  too small.
+- **Home is missing most of its richness**: the health sparkline, the
+  stacked bar and legend on both HEALTH and CARE ADHERENCE, the comparison
+  line, Due's `22 water · 12 feed` breakdown, icons on the registry row, the
+  `HANDOFF LOG` section — and **`1 session held on this device only · Back
+  up now`**. That last one matters: **backup was always in the design and
+  already has a home on screen.** It is not a new idea.
+
+### Looked wrong, actually correct — leave alone
+
+- **Empty health/adherence figures** — the collection was unrated, so there
+  was nothing to draw. Fixed by the owner's ratings now being entered, not
+  by code.
+- **Care adherence wording** — rule 2 forbids a score out of ten; counts and
+  days is the honest form.
+- **Due wording** — rule 9 forbids presenting an elapsed interval as proof
+  care is needed.
+- **Health history's empty months** — correct by design; a month with no
+  snapshot draws an empty bar rather than an invented number.
+- **The record screen's fewer buttons** — the owner was on the READY state,
+  which has nothing to pause or delete. Working as designed.
+- **"Missing" Rooms and planters / Adherence history** — both are built and
+  reachable from the More sheet. Not missing, just hard to find, which is
+  its own finding (below).
+
+### Still open, agreed but not yet built
+
+- **The More sheet should become a real page.** Seventeen flat items do not
+  fit a sheet at the owner's type sizes — the "All pages" header scrolling
+  through them is the symptom. As a page it can group under headers (*This
+  plant · The collection · AI round-trip · About*). **This is a legitimate
+  size-driven divergence — the kind the precedence rule was actually for.**
+- **Five of its items are dead ends** (History, More about this plant, Info
+  and settings, Plant detail, Photos) because they are plant-scoped with no
+  plant. They should open a plant picker; plant detail already has one that
+  can be reused.
+
+### The owner's real data, entered 2026-09-08
+
+Ratings for all 22 plants, plus two watering rounds the owner actually did:
+**all 22 on Fri 2026-08-28**, and **all except the four Star Wars planter
+plants on Sun 2026-09-06**. This is real history, not test data — it is
+append-only and must not be "cleaned up". It lives on the laptop copy only
+until backup/transfer exists; see the storage note below.
+
+**Storage is per-origin.** The laptop's `localhost`, the phone's dev-server
+address, and any hosted URL are three separate stores with no server between
+them. Data entered in one never appears in another. This is why backup moved
+up the list: it is the migration path for the owner's setup work, not just
+insurance.
 
 ## What's built and committed
 
@@ -418,11 +537,69 @@ as of this commit (only the one known pre-existing failure noted above).
 
 ## What's next, in order
 
-1. **Hosting, then the iPhone test.** See "Start here" above — this is the
-   owner's step, not a build step, and it gates the three questions about
-   recording a laptop cannot answer. Capture itself is done.
-2. The desk console (laptop-only, deliberately last). The honest thing to
-   build if the owner would rather keep going than test now.
+This list came out of the 2026-09-08 audit and supersedes the old ordering
+until it is done. Items are ordered so that anything touching the data model
+lands before real data accumulates.
+
+1. **The owner's ratings and watering history** — done 2026-09-08.
+2. **§3b amendment + the HEALTH label** — decision 1 above.
+3. **Icon extraction** from `Deez Plants.dc.html` into real components.
+4. **Plants list rows** rebuilt to match `screenshots/02-plants.png`.
+5. **Plant detail rebuilt** against `screenshots/04-plant-detail.png`. The
+   biggest single piece, and the screen the owner uses most.
+6. **Home's missing blocks**, including the `Back up now` row.
+7. **Housekeeping** — the loose zips and a `.gitignore` rule. Note:
+   `gpt-prompt.txt` is the **owner's own file** — ask before touching it.
+8. **Room + spot spec change.** Splits `room` (short controlled list) from a
+   new free-text `spot` ("by the window", "bookshelf", "hutch"). Touches
+   `FIELD_DEFINITIONS.md` §4, the codec, validation, the manifest, and
+   re-homes all 22 plants as `Edit` events. **Do this with the owner
+   present** — the room list wants sanity-checking before 44 events land.
+9. **Six new "More about this plant" fields** — Environment, Repotting,
+   Pruning & support, Pests & disease, Season/growth, Propagation. The owner
+   wants these, is happy for them to sit empty, and specifically wants the
+   AI able to fill the species-knowledge ones (how to propagate, when it
+   flowers, what light it wants natively). Mark them `editable_by: both` so
+   the AI proposes and the owner approves per row (rule 4). **Do this in the
+   same spec pass as item 8** — one §4 change, not two.
+10. **Backup / export–import.** Insurance *and* the laptop-to-phone
+    migration path for the owner's setup work. Home already has the row for
+    it. Suggested shape: a small, instant "save my record" (JSON only — the
+    irreplaceable part) plus an occasional "save everything" zip with photos
+    and audio. Restore is safe by construction: events merge by union and
+    collide on `event_id`, which is what append-only bought us.
+11. **The More sheet becomes a page**, grouped, with plant pickers replacing
+    the five dead ends.
+12. **Web app manifest, icons, iOS meta tags.** `CLAUDE.md`'s first sentence
+    is "installed to an iPhone home screen" and §6 says recording is
+    materially more stable installed — but none of it exists, so the iPhone
+    test would not be testing what §6 describes. Also helps protect stored
+    data, since installed apps are treated better than ordinary sites.
+13. **Handoff rewritten and model switched.** Everything from item 14 down is
+    fast-model work.
+14. Screens **22** (How this app works — static copy, trivial), **21**
+    (Handoff log — reads `packages`/`applied_updates`, nearly a pure
+    render), **17** (Since last time — reads `snapshots`), **18** (What
+    works — real logic, no new data). Plus the **Archive action** (there is
+    an archived *list* but seemingly no way to archive a plant, which is why
+    009-SPD is still active), the **replay button** on coverage failures
+    (§6 specifies it; it was not built), and **audio playback** in
+    Recordings.
+15. **Screen 16 (Reminders)** — the only one of the five with a real
+    dependency: nowhere to store the toggles, and iOS web push needs an
+    installed app. Do it after item 12.
+16. **Hosting on GitHub Pages, guides updated, then the iPhone test.** The
+    owner chose Pages over Netlify. Note Vite needs a `base` setting for a
+    sub-path deploy or every asset 404s. **Pick the host once** — storage is
+    per-origin, so moving later strands the data.
+17. The desk console (laptop-only, deliberately last).
+
+**Offline / service worker was considered and deliberately dropped.** The
+owner's reasoning: no internet means no AI round-trip anyway, so the app
+being unusable offline costs little. The counter-argument (a service worker
+also makes an installed app launch reliably on a flaky connection) was
+raised and judged not worth the staleness cost. Do not revisit without
+asking.
 3. Smaller loose ends, whenever convenient rather than as their own steps:
    the mock's fuller inline Care-calendar preview on Plant Detail (the
    plain link there now is the interim version); the "AI proposes, both
