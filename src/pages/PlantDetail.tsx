@@ -8,20 +8,35 @@ import { rowStatus } from '../care/careRound';
 import { ratePlant } from '../care/rate';
 import { openDeezPlants } from '../db/schema';
 import { ScoreBlock } from '../score/ScoreBlock';
-import { confirmationLine, plantScore } from '../score/score';
+import { confirmationLine, healthBand, plantScore } from '../score/score';
 import { RateSheet } from '../components/RateSheet';
 import { PlantChrome } from '../components/PlantChrome';
 import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
+import { CareMonths } from '../components/CareMonths';
+import { Icon } from '../components/Icon';
 import './PlantDetail.css';
 
 /**
- * Plant detail: hero, the one score block, adherence as counts and days, care
- * spec, placement, last checked, and a "Take photo" quick-capture action.
+ * Plant detail — DESIGN_REFERENCE.md screen 04, rebuilt 2026-09-08 after the
+ * design audit found this the furthest-drifted screen in the app.
+ *
+ * The reference's order is followed: photo and score, the status line, DO
+ * NEXT, care adherence, your ratings over time, the four actions, Quick care,
+ * the link rows, then the inline three-month calendar.
+ *
+ * Two things here are not in the reference and are deliberate. PLACEMENT was
+ * added by the build and the owner asked to keep it. And the score block drops
+ * its label (`label={null}`) because the score sits beside the plant's own
+ * photo on a page already titled with the plant's name — the amendment to
+ * section 3b recorded on 2026-09-08.
+ *
+ * `do_next` and `status_label` were real, wired, AI-editable fields that this
+ * screen simply never rendered. That was the single biggest omission found.
  */
 
 export interface PlantDetailProps {
   plant: DerivedPlant;
-  /** The raw log — `rowStatus` reads it for the interval line. */
+  /** The raw log — `rowStatus`, the rating history and the calendar read it. */
   events: readonly StoredEvent[];
   /** media_id -> object URL. */
   thumbs: Map<string, string>;
@@ -43,10 +58,11 @@ export interface PlantDetailProps {
   onLogCare: () => void;
   /** Opens this plant's entry-log History screen. */
   onHistory: () => void;
-  /** Opens this plant's Care calendar directly — the mock shows the calendar
-      embedded inline here with a live preview; this is the plain-link version
-      of that until the fuller inline grid is worth the added weight on an
-      already dense screen. */
+  /** Opens the walk recorder. The reference puts `Record note` in the action
+      grid here; there is one recorder for the whole app, so this reaches the
+      same Record screen the tab bar does, not a per-plant recording. */
+  onRecordNote: () => void;
+  /** Opens the full Care calendar screen — the inline preview's "View all". */
   onCareCalendar: () => void;
   /** Opens the soil / care-instructions / notes screen for this plant. */
   onMoreAbout: () => void;
@@ -73,7 +89,19 @@ function adherenceBadge(a: DerivedAdherence): { text: string; tone: 'on' | 'slip
   if (!a.last_water) return { text: 'Not watered yet', tone: 'quiet' };
   if (a.state === 'behind') return { text: 'Behind', tone: 'behind' };
   if (a.state === 'slip') return { text: 'Slipping', tone: 'slip' };
-  return { text: 'On track', tone: 'on' };
+  return { text: 'On schedule', tone: 'on' };
+}
+
+/**
+ * Every rating this plant has had, oldest first. Read off the raw log rather
+ * than derived state, which carries only the current value and the one before
+ * it. Rule 1 still holds: each of these is a number a human typed.
+ */
+function ratingHistory(plant_id: PlantId, events: readonly StoredEvent[]): { date: ISODate; value: number }[] {
+  return events
+    .filter((e) => e.plant_id === plant_id && e.type === 'Rate')
+    .map((e) => ({ date: e.date, value: (e as { to: Health }).to as number }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
 /** Care spec is a quick reference, not the full record — drop the trailing
@@ -84,7 +112,7 @@ function trimSeasonNote(text: string): string {
 
 export default function PlantDetail({
   plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
-  onHistory, onCareCalendar, onMoreAbout, onInfo, onPhotos,
+  onHistory, onRecordNote, onCareCalendar, onMoreAbout, onInfo, onPhotos,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -97,6 +125,7 @@ export default function PlantDetail({
   // not appear here, only the interval and how far past it the date is.
   const interval = rowStatus('Water', plant, events, as_of);
   const confirmation = confirmationLine(plant.health);
+  const ratings = ratingHistory(plant.plant_id, events);
 
   const openSheet = () => { setError(null); setSheetOpen(true); };
   const closeSheet = () => { if (!busy) setSheetOpen(false); };
@@ -130,35 +159,85 @@ export default function PlantDetail({
 
       <div className="detail-top">
         {heroUrl
-          ? <img className="detail-hero" src={heroUrl} alt="" width={118} height={118} />
+          ? <img className="detail-hero" src={heroUrl} alt="" width={150} height={150} />
           : <div className="detail-hero detail-hero-empty" />}
         <div className="detail-score">
-          <ScoreBlock {...plantScore(plant, openSheet)} />
+          <ScoreBlock {...plantScore(plant, openSheet)} label={null} />
           {confirmation && <p className="detail-confirmation">{confirmation}</p>}
         </div>
       </div>
 
       <p className="detail-checked">
+        <span className={`detail-state detail-state-${badge.tone}`}>{badge.text}</span>
         {plant.last_checked
-          ? <>Last checked <span className="detail-checked-date">{formatDayMonth(plant.last_checked)}</span></>
-          : 'No events logged yet'}
+          ? <> · Checked <span className="detail-checked-date">{formatDayMonth(plant.last_checked)}</span></>
+          : <> · No events logged yet</>}
       </p>
 
-      <PhotoCaptureButton
-        plant_id={plant.plant_id}
-        plant_name={plant.name}
-        as_of={as_of}
-        className="detail-take-photo"
-        label="Take photo"
-        onSaved={() => void onChanged()}
-      />
+      {(plant.do_next || plant.status_label) && (
+        <section className="detail-donext">
+          <div className="detail-card-head">
+            <span className="detail-card-label">DO NEXT</span>
+            {plant.status_label && <span className="detail-status">{plant.status_label}</span>}
+          </div>
+          {plant.do_next
+            ? <p className="detail-donext-body">{plant.do_next}</p>
+            : <p className="detail-card-sub">Nothing set.</p>}
+        </section>
+      )}
+
+      <section className="detail-card">
+        <div className="detail-card-head">
+          <span className="detail-card-label">CARE ADHERENCE</span>
+          <span className={`detail-badge detail-badge-${badge.tone}`}>{badge.text}</span>
+        </div>
+        <p className="detail-card-line">{adherenceLine(plant.adherence)}</p>
+        <p className="detail-card-sub">{interval.text}</p>
+      </section>
+
+      {/* One bar per rating, oldest at the left. The reference buckets these
+          into fortnights with a schedule band beneath; that is not built —
+          this shows the ratings themselves, which is the honest subset rather
+          than an invented shape. */}
+      {ratings.length > 0 && (
+        <section className="detail-card">
+          <span className="detail-card-label">YOUR RATINGS OVER TIME</span>
+          <div className="detail-ratings">
+            {ratings.map((r, i) => (
+              <span key={`${r.date}-${i}`} className="detail-rating-col">
+                <span className="detail-rating-num">{r.value}</span>
+                <span
+                  className={`detail-rating-bar ${healthBand(r.value)}`}
+                  style={{ height: `${8 + r.value * 7}px` }}
+                />
+              </span>
+            ))}
+          </div>
+          <p className="detail-card-sub">
+            {ratings.length} rating{ratings.length === 1 ? '' : 's'}
+            {ratings.length > 1 && <> · low {Math.min(...ratings.map((r) => r.value))}, high {Math.max(...ratings.map((r) => r.value))}</>}
+            {plant.health.confirmed && <> · you rated it {formatDayMonth(plant.health.confirmed)}</>}
+          </p>
+        </section>
+      )}
 
       <div className="detail-actions">
-        <button type="button" className="detail-log-care" onClick={onLogCare}>
-          Log care
+        <PhotoCaptureButton
+          plant_id={plant.plant_id}
+          plant_name={plant.name}
+          as_of={as_of}
+          className="detail-action"
+          label={<><Icon name="photo" size={22} /> Take photo</>}
+          onSaved={() => void onChanged()}
+        />
+        <button type="button" className="detail-action" onClick={onRecordNote}>
+          <Icon name="mic" size={22} /> Record note
         </button>
-        <button type="button" className="detail-history" onClick={onHistory}>
-          History
+        <button type="button" className="detail-action primary" onClick={onLogCare}>
+          <Icon name="water" size={22} /> Log care
+        </button>
+        <button type="button" className="detail-action" onClick={onHistory}>
+          <Icon name="history" size={22} /> History
         </button>
       </div>
 
@@ -173,34 +252,41 @@ export default function PlantDetail({
         />
       )}
 
-      <section className="detail-card">
-        <div className="detail-card-head">
-          <span className="detail-card-label">CARE ADHERENCE</span>
-          <span className={`detail-badge detail-badge-${badge.tone}`}>{badge.text}</span>
+      <h2 className="detail-section">Quick care</h2>
+      <div className="detail-quick">
+        <div className="detail-quick-row">
+          <span className="detail-quick-icon water"><Icon name="water" size={22} /></span>
+          <span className="detail-quick-label">WATER</span>
+          <span className="detail-quick-value">
+            Every {plant.water_interval_days} days
+            {plant.water_interval_days_winter !== null && <> · {plant.water_interval_days_winter} in winter</>}
+          </span>
         </div>
-        <p className="detail-card-line">{adherenceLine(plant.adherence)}</p>
-        <p className="detail-card-sub">{interval.text}</p>
-      </section>
+        <div className="detail-quick-row">
+          <span className="detail-quick-icon feed"><Icon name="feed" size={22} /></span>
+          <span className="detail-quick-label">FEED</span>
+          <span className="detail-quick-value">
+            {plant.feed ? trimSeasonNote(plant.feed) : <span className="detail-unset">Not set</span>}
+          </span>
+        </div>
+        <div className="detail-quick-row">
+          <span className="detail-quick-icon light"><Icon name="light" size={22} /></span>
+          <span className="detail-quick-label">LIGHT</span>
+          <span className="detail-quick-value">
+            {plant.light || <span className="detail-unset">Not set</span>}
+          </span>
+        </div>
+        <div className="detail-quick-row">
+          <span className="detail-quick-icon soil"><Icon name="pot" size={22} /></span>
+          <span className="detail-quick-label">SOIL</span>
+          <span className="detail-quick-value">
+            {plant.soil || <span className="detail-unset">Not set</span>}
+          </span>
+        </div>
+      </div>
 
-      <section className="detail-card">
-        <span className="detail-card-label">CARE SPEC</span>
-        <dl className="detail-spec">
-          <div>
-            <dt>Water</dt>
-            <dd>
-              every {plant.water_interval_days}d
-              {plant.water_interval_days_winter !== null && <> · {plant.water_interval_days_winter}d winter</>}
-            </dd>
-          </div>
-          <div>
-            <dt>Feed</dt>
-            <dd>{plant.feed ? trimSeasonNote(plant.feed) : <span className="detail-unset">Not set</span>}</dd>
-          </div>
-          <div><dt>Light</dt><dd>{plant.light || <span className="detail-unset">Not set</span>}</dd></div>
-          <div><dt>Soil</dt><dd>{plant.soil || <span className="detail-unset">Not set</span>}</dd></div>
-        </dl>
-      </section>
-
+      {/* Not in the reference. Added by the build, and the owner asked for it
+          to stay — recorded in the 2026-09-08 audit. */}
       <section className="detail-card">
         <span className="detail-card-label">PLACEMENT</span>
         <dl className="detail-spec">
@@ -223,15 +309,20 @@ export default function PlantDetail({
       <button type="button" className="detail-linkrow" onClick={onPhotos}>
         Photos{plant.photos.length > 0 && ` · ${plant.photos.length}`} <span aria-hidden="true">›</span>
       </button>
-      <button type="button" className="detail-linkrow" onClick={onCareCalendar}>
-        Care calendar <span aria-hidden="true">›</span>
-      </button>
       <button type="button" className="detail-linkrow" onClick={onMoreAbout}>
         More about this plant <span aria-hidden="true">›</span>
       </button>
       <button type="button" className="detail-linkrow" onClick={onInfo}>
         Info and settings <span aria-hidden="true">›</span>
       </button>
+
+      {/* The inline three-month preview the reference shows here. It was a
+          plain link until the grids were extracted into CareMonths. */}
+      <div className="detail-cal-head">
+        <h2 className="detail-section">Care calendar</h2>
+        <button type="button" className="detail-viewall" onClick={onCareCalendar}>View all ›</button>
+      </div>
+      <CareMonths plant_id={plant.plant_id} events={events} as_of={as_of} monthCount={3} />
     </main>
   );
 }

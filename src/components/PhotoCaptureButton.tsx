@@ -19,7 +19,8 @@ export interface PhotoCaptureButtonProps {
   plant_name: string;
   as_of: ISODate;
   className: string;
-  label: string;
+  /** Accepts a node so callers can put an icon beside the text. */
+  label: React.ReactNode;
   onSaved: (media_id: MediaId) => void;
 }
 

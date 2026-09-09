@@ -90,22 +90,3 @@ export function Icon({ name, size = 20, className }: IconProps) {
     </svg>
   );
 }
-
-/**
- * The nine care types map onto the set. `careTypeStyle.ts` already owns their
- * colours; this owns their shapes, so the two stay independently editable.
- */
-export const CARE_ICON: Record<string, IconName> = {
-  Water: 'water',
-  Feed: 'feed',
-  Prune: 'prune',
-  Repot: 'repot',
-  Photo: 'photo',
-  Inspect: 'inspect',
-  Support: 'support',
-  'Pest treat': 'pest',
-  Other: 'other',
-  Rate: 'trend',
-  Edit: 'other',
-  Archive: 'pot',
-};
