@@ -170,6 +170,18 @@ below, sorted into what was genuinely wrong and what only looked wrong.
   plant. They should open a plant picker; plant detail already has one that
   can be reused.
 
+### One number worth checking
+
+After the ratings landed, Home's score block reads `6.2 /10` with a previous
+value of `6.1` and an elapsed time of `0d`. Both are computed from the same
+22 ratings on the same day — the snapshot `commitUpdate` takes of the state
+it replaced came out 0.1 lower than the state that replaced it. It is
+cosmetic and nobody has chased it, but a same-day delta of `+0.1 · 0d` is
+exactly the kind of misleading movement §3b's "the delta always carries
+elapsed time" rule exists to prevent. Worth a look: either a rounding
+difference between the pre-fold and post-fold derivations, or `movement()`
+should read `no change` when the elapsed time is zero.
+
 ### The owner's real data, entered 2026-09-08
 
 Ratings for all 22 plants, plus two watering rounds the owner actually did:
@@ -541,15 +553,37 @@ This list came out of the 2026-09-08 audit and supersedes the old ordering
 until it is done. Items are ordered so that anything touching the data model
 lands before real data accumulates.
 
-1. **The owner's ratings and watering history** — done 2026-09-08.
-2. **§3b amendment + the HEALTH label** — decision 1 above.
-3. **Icon extraction** from `Deez Plants.dc.html` into real components.
-4. **Plants list rows** rebuilt to match `screenshots/02-plants.png`.
-5. **Plant detail rebuilt** against `screenshots/04-plant-detail.png`. The
-   biggest single piece, and the screen the owner uses most.
-6. **Home's missing blocks**, including the `Back up now` row.
-7. **Housekeeping** — the loose zips and a `.gitignore` rule. Note:
-   `gpt-prompt.txt` is the **owner's own file** — ask before touching it.
+Items 1–7 were done on 2026-09-08 and are struck through; they are kept here
+so the reasoning stays attached to the work.
+
+1. ~~**The owner's ratings and watering history.**~~ Done. Also removed nine
+   test events left in the local store by earlier build verification (two
+   care-round tests on 2026-09-03, and the photo/edit/water tests on
+   2026-09-07), plus the test session, package and snapshots. The 26 seed
+   Photo events with historic dates are real and were kept. **Nothing else in
+   this database is test data — treat what is there as the owner's record.**
+2. ~~**§3b amendment + the HEALTH label.**~~ Done; the amendment is written
+   into `FIELD_DEFINITIONS.md` §3b, and it turned out to need a second,
+   larger clause for the plants list (see below).
+3. ~~**Icon extraction.**~~ Done — `src/components/Icon.tsx`, 22 icons.
+   `careTypeStyle.ts` now carries an `icon` per care type so colour and shape
+   stay independently editable.
+4. ~~**Plants list rows.**~~ Done. Note what this turned up: the old code
+   justified putting the full score block in every row by citing "a note in
+   `DESIGN_REFERENCE.md` that the pill predates section 3b". **That note does
+   not exist.** Screen 02 specifies the pill outright, and the reference's own
+   "lessons already learned once" warns against exactly the tall rows the
+   block produced. Be suspicious of comments in this codebase that justify a
+   deviation by citing a document — check the citation.
+5. ~~**Plant detail rebuilt.**~~ Done. The grids were extracted into
+   `components/CareMonths.tsx` so the inline three-month preview and the full
+   Care calendar screen draw the same component and cannot disagree.
+6. **Home** — partly done. The adherence count headline, its stacked bar, and
+   the registry-row icons are in. **Still missing: the health sparkline, the
+   handoff-log section, the catch-up banner, and Due's `22 water · 12 feed`
+   split.** Note the health *stacked bar and legend were already built* and
+   only looked absent because nothing was rated — check before rebuilding.
+7. ~~**Housekeeping.**~~ Done; `*.zip` is ignored. `gpt-prompt.txt` left alone.
 8. **Room + spot spec change.** Splits `room` (short controlled list) from a
    new free-text `spot` ("by the window", "bookshelf", "hutch"). Touches
    `FIELD_DEFINITIONS.md` §4, the codec, validation, the manifest, and
