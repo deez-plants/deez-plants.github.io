@@ -1,0 +1,63 @@
+# Builds the app and publishes it to https://deez-plants.github.io.
+#
+# The repo is named `deez-plants.github.io`, which GitHub serves at the root
+# of that subdomain rather than under a `/repo-name/` path. That is why there
+# is no `base` set in `vite.config.ts` — and why adding one later would break
+# every asset URL. It is also why the storage origin is the whole subdomain:
+# see the per-origin warning in NEXT_SESSION_HANDOFF.md before moving this
+# anywhere else.
+#
+# `npm run check` runs before the build on purpose. A deploy that ships a
+# state the check suite rejects is worse than a deploy that does not happen,
+# and one of those checks had already been failing silently for weeks.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race. Queue rather than cancel: an in-flight deploy
+# that gets cancelled can leave Pages serving a half-published build.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
