@@ -31,16 +31,22 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## Start here: what to do first
 
-**Hosting, and it starts with the owner, not with you.** Every decision it
-needed is settled — see "The hosting decisions" below. What remains is four
-steps in order: the owner creates the free org `deez-plants` and an empty
-repo inside it named `deez-plants.github.io`; you add the remote, the deploy
-workflow and push; the owner flips Settings → Pages to "GitHub Actions"; you
-verify the live URL, icon and manifest. Then the iPhone test.
+**The app is live at https://deez-plants.github.io.** Hosting is done — see
+"Hosting, as built" below for what actually happened, including the manual
+step that turned out not to be needed. The repo now has a remote and the
+code is backed up off the laptop for the first time.
 
-**Push early even if the rest stalls.** This repo has no remote — every
-commit lives only on the owner's laptop, which has restarted mid-session
-once already. The push is the first backup this code has ever had.
+**What is left is the iPhone test, and it is the owner's to run.** It is
+the last thing blocking the desk console and the remaining screens, because
+if backgrounding kills a recording the fix belongs in `capture/recording.ts`
+before anything else is built on top of it. The steps are written out under
+"The iPhone test" below.
+
+**The live site shows `Not rated · 22 not rated yet`, and that is correct.**
+It is a new origin with an empty database. The owner's real record is still
+only on the laptop's `localhost`. Moving it across is step 1 of the test —
+**and the owner has never had their record in two places at once, so do not
+treat the transfer as a formality.**
 
 **Then show the owner backup.** It is the thing they have been blocked by without
 knowing it, and it is now built. Their real record — 22 ratings and two
@@ -298,16 +304,72 @@ because the alternatives will look tempting again later.
    me". Their ratings and care log are **not** in the repo and never leave
    the device.
 
+### Hosting, as built (2026-09-10)
+
+Live at **https://deez-plants.github.io**, deployed by
+`.github/workflows/deploy.yml` on every push to `main`.
+
+- **The org, repo and public setting all went in as decided.** Owner is the
+  `deez-plants` organization, not `604drw`, so the URL carries no username.
+- **The local branch was renamed `master` → `main`** to match the branch the
+  repo was created with, rather than leaving the default branch empty.
+- **The workflow runs `npm run check` before `npm run build`.** A deploy that
+  ships a state the checks reject is worse than one that does not happen —
+  and one of those checks had been failing silently for weeks before it was
+  caught on 2026-09-09.
+- **No Vite `base` is set, and none should be.** The repo name
+  `deez-plants.github.io` serves at the root of the subdomain. Adding a
+  `base` later would break every asset URL.
+- **The "set Pages source to GitHub Actions" step turned out to be
+  unnecessary** — `actions/configure-pages@v5` sets it itself on first run.
+  The owner was told to expect a manual toggle and did not need it. GitHub's
+  legacy Jekyll builder (`pages-build-deployment`) also fires on a repo named
+  `*.github.io` and runs alongside; it is harmless and the Actions deploy
+  wins. Do not try to disable it.
+- **Verified live, not just deployed:** the page serves hashed Vite bundles
+  rather than source, boots, seeds 22 plants, renders Home, and logs no
+  console errors. Manifest and all four icons serve with correct content
+  types.
+
+### The iPhone test — the owner's, and the last real unknown
+
+Everything a desktop browser can prove about recording has been proved. These
+three cannot be, and all three need the phone:
+
+1. Does a recording survive backgrounding on iOS Safari?
+2. Is it materially better installed to the home screen than in a tab?
+3. Does real iPhone audio through Whisper produce a transcript the coverage
+   gate accepts?
+
+The order to run it in:
+
+1. On the laptop, Back up → *Save my record* (~60KB).
+2. Get that file to the phone — AirDrop, email, anything.
+3. On the phone, open https://deez-plants.github.io in Safari → Share →
+   **Add to Home Screen**. The green plant icon and "Deez Plants" should
+   appear.
+4. Launch from the home screen. **No Safari address bar means the manifest
+   is working.**
+5. Back up → *Restore*, pick the file. This is the first time the owner's
+   record exists in two places.
+6. Start a walk, talk for a minute, switch apps for 30 seconds, come back.
+   **That answer decides what gets built next.**
+
 ### What was found while checking, and still matters
 
 - **The owner's GitHub account is `604drw`** — not `604dr`, which is what
   the local git config says and which is not a GitHub account at all. The
   account is real but was created 2026-09-10 and holds **no repos and no
   organizations**.
-- **This repository has no git remote.** `git remote -v` is empty. Every
-  commit exists only on the owner's laptop, which restarted mid-session once
-  already. **Pushing is the first backup this code has ever had**, and that
-  is a better reason to do item 16 than the hosting is.
+- ~~**This repository has no git remote.**~~ Fixed 2026-09-10: `origin` is
+  `https://github.com/deez-plants/deez-plants.github.io.git` and the full
+  history is pushed. Until then every commit existed only on the owner's
+  laptop, which had restarted mid-session once already.
+- **The owner authorised the first-party GitHub OAuth app** during that first
+  push, via Git Credential Manager. That is the normal browser sign-in for
+  pushing over HTTPS from this machine — not a new integration and not
+  something this project asked for beyond the push. Later pushes reuse it and
+  will not prompt again.
 
 ### The owner's real data, entered 2026-09-08
 
@@ -773,12 +835,11 @@ so the reasoning stays attached to the work.
 15. **Screen 16 (Reminders)** — the only one of the five with a real
     dependency: nowhere to store the toggles, and iOS web push needs an
     installed app. Do it after item 12.
-16. **Hosting on GitHub Pages, guides updated, then the iPhone test.**
-    **This is the next thing to do, and it starts with the owner.** Every
-    decision it needed was settled on 2026-09-09 — see "The hosting decisions"
-    below, which also records what was checked and what is still unknown. The
-    `base` warning that used to sit here no longer applies: the chosen repo
-    name serves at the root, so there is no sub-path and no `base` to set.
+16. **Hosting on GitHub Pages** — ~~done 2026-09-10~~, live at
+    https://deez-plants.github.io; see "Hosting, as built" above. **Still
+    open: the guides, and the iPhone test.** The two web guides both describe
+    an app that only runs on a dev server and need the real URL written into
+    them. The iPhone test is the owner's and is written out above.
     **Pick the host once** — storage is per-origin, so moving later strands
     the data.
 17. The desk console (laptop-only, deliberately last).
