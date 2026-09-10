@@ -3,8 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0e130d" />
+
+    <!--
+      Installed to an iPhone home screen is the app's first sentence
+      (CLAUDE.md), and DESIGN_REFERENCE.md section 6 says walk recording is
+      materially more stable installed than in a Safari tab. None of that is
+      true of a page without these four lines.
+
+      `apple-mobile-web-app-capable` is what actually drops Safari's chrome on
+      launch; `mobile-web-app-capable` is the same switch under its modern
+      name, for everything that isn't iOS. The status bar is set to `black`
+      rather than `black-translucent` on purpose: translucent puts page
+      content underneath the clock and battery, and would need a top
+      safe-area inset on every screen to stay readable. Black gives the same
+      near-black band the app's own ground is, without that.
+
+      `apple-mobile-web-app-title` is the name under the icon. Left off, iOS
+      uses the <title>, which is the same string today but would drift the
+      moment the tab title gains anything.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Deez Plants" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -1,0 +1,16 @@
+{
+  "name": "Deez Plants",
+  "short_name": "Deez Plants",
+  "description": "Plant care, health ratings and walks — local to this device.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e130d",
+  "theme_color": "#0e130d",
+  "icons": [
+    { "src": "./icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "./icon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "./icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}
