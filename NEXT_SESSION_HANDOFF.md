@@ -687,11 +687,16 @@ so the reasoning stays attached to the work.
     navigation**, so a long screen opened from a scrolled-down one landed
     halfway through itself. Fixed in `App.tsx` for every screen, not just
     this one.
-12. **Web app manifest, icons, iOS meta tags.** *Blocked on the owner's icon
-    — they are designing one and dropping it at `icons/source.png` (a square
-    1024x1024 PNG, no transparency, not pre-rounded). Generate every size
-    from it; do not invent a placeholder icon and ship it, because the icon
-    is the thing they will see on the home screen forever.* `CLAUDE.md`'s first sentence
+12. ~~**Web app manifest, icons, iOS meta tags.**~~ Done 2026-09-09. The
+    owner's render is `Icons/App Icon 1 3D final png.png` — 1254x1254, fully
+    opaque, square corners, artwork inset. Those four facts are why it needed
+    no flattening, padding or un-rounding, and
+    `Icons/generate-icons.ps1` records them so a replacement source gets
+    checked rather than trusted. Manifest paths are relative and survive a
+    sub-path base; index.html's are root-relative, which Vite rewrites with
+    that base. **Not installable in Chrome** — that wants a service worker,
+    which was deliberately dropped (see the note below the list). iOS's *Add
+    to Home Screen* needs none, and iOS is the target. `CLAUDE.md`'s first sentence
     is "installed to an iPhone home screen" and §6 says recording is
     materially more stable installed — but none of it exists, so the iPhone
     test would not be testing what §6 describes. Also helps protect stored
