@@ -31,7 +31,18 @@ the phase-gated pacing and "live-test for weeks before continuing" does not.
 
 ## Start here: what to do first
 
-**Show the owner backup.** It is the thing they have been blocked by without
+**Hosting, and it starts with the owner, not with you.** Every decision it
+needed is settled — see "The hosting decisions" below. What remains is four
+steps in order: the owner creates the free org `deez-plants` and an empty
+repo inside it named `deez-plants.github.io`; you add the remote, the deploy
+workflow and push; the owner flips Settings → Pages to "GitHub Actions"; you
+verify the live URL, icon and manifest. Then the iPhone test.
+
+**Push early even if the rest stalls.** This repo has no remote — every
+commit lives only on the owner's laptop, which has restarted mid-session
+once already. The push is the first backup this code has ever had.
+
+**Then show the owner backup.** It is the thing they have been blocked by without
 knowing it, and it is now built. Their real record — 22 ratings and two
 watering rounds they actually did — lives in **one** store: this laptop's
 `localhost`. Their phone has none of it. Back up → *Save my record* produces
@@ -249,6 +260,54 @@ exactly the kind of misleading movement §3b's "the delta always carries
 elapsed time" rule exists to prevent. Worth a look: either a rounding
 difference between the pre-fold and post-fold derivations, or `movement()`
 should read `no change` when the elapsed time is zero.
+
+### The hosting decisions (2026-09-09, settled — do not relitigate)
+
+Taken across a long back-and-forth with the owner. The reasoning is kept
+because the alternatives will look tempting again later.
+
+1. **GitHub Pages, not Netlify.** Pages has run since 2008 and its free tier
+   has never meaningfully moved; Netlify's has. The deciding argument was
+   origins, though: on Pages the origin is the `*.github.io` host and the repo
+   name is not part of it, so renaming the repo cannot strand the owner's
+   data. On Netlify the site name *is* the subdomain, so a rename would.
+2. **No custom domain.** `deezplants.com` was checked and is genuinely
+   available (verified against Verisign's RDAP, not a reseller's search box),
+   as are `.app`, `.net` and `.org`. The owner declined it: a domain is the
+   only part of this project that costs money and the only part that can
+   lapse, and letting it lapse strands the origin. **`.co` and `.io` were
+   checked but the result is worthless** — those registries do not answer
+   RDAP, so known-registered domains came back "available" too. If anyone
+   revisits this, do not trust that check.
+3. **A free GitHub organization, not the owner's personal account.** The
+   owner's requirement was a URL with no username in it. An org is free,
+   needs no second login, and gets its own `*.github.io` subdomain — which is
+   also its own storage origin, unlike `604drw.github.io`, which would be
+   shared with anything else they ever publish. Orgs are unlimited, so a
+   future app gets its own org and its own origin rather than sharing this
+   one.
+4. **The org is `deez-plants`; the repo inside it is `deez-plants.github.io`.**
+   Both names were checked available on 2026-09-09 (`deezplants`,
+   `deez-plants-app` and `deezplantsapp` were too, if one is taken by the
+   time this runs). A repo named exactly `<org>.github.io` serves at the
+   root, so the URL is `https://deez-plants.github.io` with no sub-path —
+   which is why item 16 no longer needs a Vite `base`.
+5. **The repo will be public.** Free-tier Pages requires it. The owner was
+   told plainly, twice, that this publishes `SEED_PLANTS.json` and the 26
+   photos in `seed-photos/`, and accepts it — "useless info to anyone but
+   me". Their ratings and care log are **not** in the repo and never leave
+   the device.
+
+### What was found while checking, and still matters
+
+- **The owner's GitHub account is `604drw`** — not `604dr`, which is what
+  the local git config says and which is not a GitHub account at all. The
+  account is real but was created 2026-09-10 and holds **no repos and no
+  organizations**.
+- **This repository has no git remote.** `git remote -v` is empty. Every
+  commit exists only on the owner's laptop, which restarted mid-session once
+  already. **Pushing is the first backup this code has ever had**, and that
+  is a better reason to do item 16 than the hosting is.
 
 ### The owner's real data, entered 2026-09-08
 
@@ -714,10 +773,14 @@ so the reasoning stays attached to the work.
 15. **Screen 16 (Reminders)** — the only one of the five with a real
     dependency: nowhere to store the toggles, and iOS web push needs an
     installed app. Do it after item 12.
-16. **Hosting on GitHub Pages, guides updated, then the iPhone test.** The
-    owner chose Pages over Netlify. Note Vite needs a `base` setting for a
-    sub-path deploy or every asset 404s. **Pick the host once** — storage is
-    per-origin, so moving later strands the data.
+16. **Hosting on GitHub Pages, guides updated, then the iPhone test.**
+    **This is the next thing to do, and it starts with the owner.** Every
+    decision it needed was settled on 2026-09-09 — see "The hosting decisions"
+    below, which also records what was checked and what is still unknown. The
+    `base` warning that used to sit here no longer applies: the chosen repo
+    name serves at the root, so there is no sub-path and no `base` to set.
+    **Pick the host once** — storage is per-origin, so moving later strands
+    the data.
 17. The desk console (laptop-only, deliberately last).
 
 **Offline / service worker was considered and deliberately dropped.** The
