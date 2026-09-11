@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { openDeezPlants } from '../db/schema';
 import {
   attachTranscript,
@@ -9,7 +9,7 @@ import {
   totalAudioBytes,
   type SessionSummary,
 } from '../capture/sessions';
-import { clearFinished, deleteSession, formatDuration, getPhase, subscribe } from '../capture/recording';
+import { clearFinished, deleteSession, formatDuration, getPhase, readSessionAudio, subscribe } from '../capture/recording';
 import { saveBlob } from '../package/export';
 import type { SessionId } from '../types/ids';
 import './Recordings.css';
@@ -46,6 +46,71 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
   const [confirmDelete, setConfirmDelete] = useState<SessionId | null>(null);
   const [transcribing, setTranscribing] = useState<SessionId | null>(null);
   const [draft, setDraft] = useState('');
+
+  /**
+   * Listening back, and the replay button FIELD_DEFINITIONS.md section 6 asks
+   * for: "any failure is flagged with a replay button at that offset."
+   *
+   * Those turn out to be one feature. A coverage failure says "nothing was
+   * transcribed at 4:12" — and the only way to judge whether that is a bad
+   * transcript or genuinely silent audio is to hear 4:12. So the failure rows
+   * are seek buttons into the same player.
+   *
+   * One player at a time, holding one object URL. Audio is tens of megabytes;
+   * keeping a URL per session alive would pin every one of them in memory.
+   *
+   * **Untested against real iPhone audio.** In Chrome on the build machine the
+   * player mounts and the blob loads, but the fragmented-MP4 these test
+   * recordings are never reaches `readyState > 0` — chunk 0 is a 641-byte init
+   * segment and the rest are fragments, which Safari writes and reads happily
+   * and Chrome's own `<audio>` will not decode back. Nothing here is wrong;
+   * the question is whether the owner's Safari-recorded walks play, and only
+   * their phone can answer it. Whisper reads fMP4 through ffmpeg regardless,
+   * so the export path is unaffected either way.
+   */
+  const [playing, setPlaying] = useState<SessionId | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
+
+  const openPlayer = async (session_id: SessionId): Promise<boolean> => {
+    if (playing === session_id && audioUrl) return true;
+    setError(null);
+    try {
+      const db = await openDeezPlants();
+      const blob = await readSessionAudio(db, session_id);
+      if (!blob) { setError('No audio stored for this walk.'); return false; }
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      setAudioUrl(URL.createObjectURL(blob));
+      setPlaying(session_id);
+      return true;
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+      return false;
+    }
+  };
+
+  const closePlayer = () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioUrl(null);
+    setPlaying(null);
+  };
+
+  /** Jump to the moment a coverage failure names. */
+  const replayAt = async (session_id: SessionId, offset_s: number) => {
+    const ready = playing === session_id && audioUrl ? true : await openPlayer(session_id);
+    if (!ready) return;
+    // The element only exists after the render that the state change causes.
+    setTimeout(() => {
+      const el = audioRef.current;
+      if (!el) return;
+      // A few seconds before the offset: the interesting thing is what leads
+      // into the gap, and landing exactly on it tells you nothing.
+      el.currentTime = Math.max(0, offset_s - 3);
+      void el.play().catch(() => { /* the controls are right there */ });
+    }, 0);
+  };
 
   // A walk being recorded right now writes its record and its audio as it
   // goes, so it is already in this list. Re-read when the recorder's phase
@@ -221,14 +286,38 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                 <ul className="recs-failures">
                   {s.coverage.failures.map((f, i) => (
                     <li key={i}>
-                      <span className="recs-failure-at">{formatDuration(f.offset_s)}</span>
-                      <span className="recs-failure-detail">{f.detail}</span>
+                      <button
+                        type="button"
+                        className="recs-failure"
+                        disabled={s.audio_bytes === 0}
+                        onClick={() => void replayAt(s.session_id, f.offset_s)}
+                      >
+                        <span className="recs-failure-at">{formatDuration(f.offset_s)}</span>
+                        <span className="recs-failure-detail">{f.detail}</span>
+                        {s.audio_bytes > 0 && <span className="recs-failure-play">Listen</span>}
+                      </button>
                     </li>
                   ))}
                 </ul>
               )}
 
+              {playing === s.session_id && audioUrl && (
+                <div className="recs-player">
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  <audio ref={audioRef} className="recs-audio" src={audioUrl} controls preload="auto" />
+                  <button type="button" className="recs-action" onClick={closePlayer}>Close player</button>
+                </div>
+              )}
+
               <div className="recs-actions">
+                <button
+                  type="button"
+                  className="recs-action"
+                  disabled={s.audio_bytes === 0}
+                  onClick={() => (playing === s.session_id ? closePlayer() : void openPlayer(s.session_id))}
+                >
+                  {playing === s.session_id ? 'Hide player' : 'Listen'}
+                </button>
                 <button
                   type="button"
                   className="recs-action"

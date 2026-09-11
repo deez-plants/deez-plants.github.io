@@ -300,3 +300,45 @@
   color: var(--ink-50);
   text-wrap: pretty;
 }
+
+/* Listening back. One player at a time — audio runs to tens of megabytes and
+   an object URL per session would pin every one of them in memory. */
+.recs-player {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--panel-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+}
+
+.recs-audio { width: 100%; }
+
+/* A coverage failure names a moment; the only way to judge whether it is a bad
+   transcript or genuinely silent audio is to hear it. So the row is a button
+   that seeks there. */
+.recs-failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.recs-failure:disabled { cursor: default; }
+
+.recs-failure-play {
+  margin-left: auto;
+  font: 600 19px/1 var(--mono);
+  color: var(--accent);
+}
+
+.recs-failure:disabled .recs-failure-play { display: none; }
