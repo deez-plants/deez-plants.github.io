@@ -27,6 +27,8 @@ import CareRoundPage from './pages/CareRoundPage';
 import RecordSession from './pages/RecordSession';
 import Recordings from './pages/Recordings';
 import Backup from './pages/Backup';
+import HowItWorks from './pages/HowItWorks';
+import HandoffLog from './pages/HandoffLog';
 import { enterScreen } from './capture/screenLog';
 import { getPhase, startSession } from './capture/recording';
 import './App.css';
@@ -184,7 +186,7 @@ export default function App() {
       items: [
         { label: 'Prepare review package', subtitle: 'Bundle for Claude or GPT', go: () => fromPages({ kind: 'prepare-package' }) },
         { label: 'Apply AI update', subtitle: 'Paste the returned changes', go: () => fromPages({ kind: 'apply-update' }) },
-        { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => placeholder('Handoff log', undefined, 'All pages') },
+        { label: 'Handoff log', subtitle: 'Every package sent and update applied', go: () => fromPages({ kind: 'handoff' }) },
       ],
     },
     {
@@ -192,7 +194,7 @@ export default function App() {
       items: [
         { label: 'Back up', subtitle: 'Save your record, or restore one', go: () => fromPages({ kind: 'backup' }) },
         { label: 'Reminders', subtitle: 'What the app tells you about', go: () => placeholder('Reminders', undefined, 'All pages') },
-        { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => placeholder('How this app works', undefined, 'All pages') },
+        { label: 'How this app works', subtitle: 'What the app, you and the AI each decide', go: () => fromPages({ kind: 'how' }) },
       ],
     },
   ];
@@ -467,6 +469,10 @@ export default function App() {
         onChanged={reload}
       />
     );
+  } else if (screen.kind === 'how') {
+    body = <HowItWorks backLabel={nav.backLabel ?? 'All pages'} onBack={nav.back} />;
+  } else if (screen.kind === 'handoff') {
+    body = <HandoffLog backLabel={nav.backLabel ?? 'All pages'} onBack={nav.back} />;
   } else if (screen.kind === 'all-pages') {
     body = (
       <AllPages

@@ -48,6 +48,10 @@ export type Screen =
   | { kind: 'recordings' }
   /** Section 8's phone half: export the record, or restore one. */
   | { kind: 'backup' }
+  /** Screen 22: what the app, the owner and the AI each decide. */
+  | { kind: 'how' }
+  /** Screen 21: the audit trail for the AI round trip. */
+  | { kind: 'handoff' }
   /** The former All-pages sheet, now a screen on the stack. Seventeen flat
       rows do not fit a 74%-height sheet at this app's type sizes, so it is
       grouped under headers on a page of its own — a size-driven divergence
