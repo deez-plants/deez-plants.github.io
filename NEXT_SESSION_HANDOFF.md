@@ -140,9 +140,16 @@ if (plant_id) markPlantOpen(plant_id);   // fires the instant you arrive
 So the rule got applied to the log and skipped for the markers — and the
 markers are the thing the AI actually reads. The owner found this by flicking
 between plants during a walk and watching "Detected on route" fill up with
-plants they had not looked at. **Fix: hold the marker for the same five
-seconds and place it only if still on that plant.** Their 5-minute run
-confirms markers otherwise work, so this is narrowly about fast switching.
+plants they had not looked at. Their 5-minute run confirms markers otherwise
+work, so this was narrowly about fast switching.
+
+~~Fix: hold the marker for the same five seconds.~~ **Done 2026-09-11.** The
+marker is held in `scheduleMark()` and placed only if that plant is still on
+screen; the offset is captured at arrival and threaded through
+`markPlantOpen(plant_id, at_offset_s)`, so a held marker still lands where the
+page opened rather than five seconds later. `check/browser/markers.html`
+covers it, and was run against the old code first — it reproduced the owner's
+exact symptom, four flicked-past plants on the route.
 
 ### 2. Resume an interrupted walk — the owner's design, not the first proposal
 
