@@ -18,7 +18,10 @@ import type { PlantId } from '../types/ids';
  * render edge:
  *
  * - **Pass-through visits are dropped.** A screen open for under five seconds
- *   was navigation, not looking, and is never written at all.
+ *   was navigation, not looking, and is never written at all. **The same rule
+ *   governs the `plant_open` marker**, which used to be placed the instant you
+ *   arrived: flicking through plants during a walk left a route full of plants
+ *   nobody had looked at, and the markers are the half of this the AI reads.
  * - **It is evidence, not fact.** Nothing here claims a plant was discussed,
  *   only that its page was open — see the note the export carries alongside it.
  *
@@ -36,6 +39,9 @@ interface Visit {
 }
 
 let visit: Visit | null = null;
+/** Set while a `plant_open` marker is waiting out its five seconds. Cancelled
+    if the screen changes first — that is the whole filter. */
+let pendingMark: ReturnType<typeof setTimeout> | null = null;
 /** What is on screen now, kept separately from the timing so a page that goes
     to the background and comes back can start a fresh visit on the same screen. */
 let showing: { screen: string; plant_id?: PlantId } | null = null;
@@ -48,10 +54,34 @@ let listening = false;
 export function enterScreen(screen: string, plant_id?: PlantId): void {
   if (showing && showing.screen === screen && showing.plant_id === plant_id && visit) return;
   void closeVisit();
+  cancelPendingMark();
   showing = { screen, plant_id };
   openVisit();
-  if (plant_id) markPlantOpen(plant_id);
+  if (plant_id) scheduleMark(plant_id);
   listen();
+}
+
+/**
+ * Hold the marker for the same five seconds the log holds an entry for, and
+ * place it only if that plant is still on screen when the time is up.
+ *
+ * The offset is captured now rather than when the timer fires, so the marker
+ * lands at the moment the page opened. Someone who arrives and starts talking
+ * straight away would otherwise have their first sentence attributed to the
+ * plant they came from.
+ */
+function scheduleMark(plant_id: PlantId): void {
+  const at = sessionStamp()?.offset_s;
+  pendingMark = setTimeout(() => {
+    pendingMark = null;
+    if (showing?.plant_id !== plant_id) return;
+    markPlantOpen(plant_id, at);
+  }, SCREEN_LOG_MIN_DWELL_S * 1000);
+}
+
+function cancelPendingMark(): void {
+  if (pendingMark !== null) clearTimeout(pendingMark);
+  pendingMark = null;
 }
 
 function openVisit(): void {

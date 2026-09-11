@@ -1,0 +1,79 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>markers: the five-second rule</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  The five-second dwell rule, applied to `plant_open` markers.
+  Run with the dev server up:
+    http://localhost:5173/check/browser/markers.html
+
+  Why a browser: the rule is a real timer over real navigation, and the
+  markers live on the recorder singleton. Node cannot hold either.
+
+  The owner found this by flicking between plants mid-walk and watching
+  "Detected on route" fill with plants they had never looked at. The rule was
+  implemented for the screen LOG and skipped for the MARKERS — and the markers
+  are the half the AI reads.
+
+  The mic is faked with Web Audio, so this prompts for nothing.
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+navigator.mediaDevices.getUserMedia = async () => dest.stream;
+
+const rec = await import('/src/capture/recording.ts');
+const { enterScreen } = await import('/src/capture/screenLog.ts');
+
+await rec.startSession('2026-09-11');
+const plants = () => rec.getSnapshot().markers.filter((m) => m.type === 'plant_open').map((m) => m.plant_id);
+
+// Flicking through four plants, well under five seconds each.
+enterScreen('detail', '001-MON');
+await new Promise(r => setTimeout(r, 400));
+enterScreen('detail', '002-SNK');
+await new Promise(r => setTimeout(r, 400));
+enterScreen('detail', '003-SNK');
+await new Promise(r => setTimeout(r, 400));
+enterScreen('detail', '006-FER');
+await new Promise(r => setTimeout(r, 400));
+
+check('flicking through leaves no markers', plants(), []);
+
+// Now actually stop and look at one.
+const arrived = rec.getSnapshot().elapsed_s;
+enterScreen('detail', '011-HOL');
+await new Promise(r => setTimeout(r, 6200));
+
+check('staying put places one marker', plants(), ['011-HOL']);
+
+const m = rec.getSnapshot().markers.find((x) => x.type === 'plant_open');
+const drift = Math.abs(m.offset_s - arrived);
+check('marker sits at arrival, not five seconds later (drift <= 1s)', drift <= 1, true);
+
+// Leaving before the five seconds are up must cancel, not queue.
+enterScreen('plants');
+await new Promise(r => setTimeout(r, 300));
+enterScreen('detail', '004-MNY');
+await new Promise(r => setTimeout(r, 900));
+enterScreen('plants');
+await new Promise(r => setTimeout(r, 5500));
+
+check('a cancelled marker never lands late', plants(), ['011-HOL']);
+
+await rec.endSession();
+log(fails === 0 ? '\nALL PASSED' : `\n${fails} FAILED`);
+</script>
+</body></html>

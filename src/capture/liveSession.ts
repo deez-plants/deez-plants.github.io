@@ -20,8 +20,11 @@ export interface SessionStamp {
 
 export interface LiveSession {
   stamp(): SessionStamp;
-  /** The recorder fills in `offset_s` — only it knows the elapsed time. */
-  mark(marker: Omit<SessionMarker, 'offset_s'>): void;
+  /** The recorder fills in `offset_s` — only it knows the elapsed time.
+      `at_offset_s` overrides that for a marker held back before being placed,
+      so it lands at the moment it describes rather than the moment it was
+      written. See `markPlantOpen`. */
+  mark(marker: Omit<SessionMarker, 'offset_s'>, at_offset_s?: number): void;
 }
 
 let live: LiveSession | null = null;
@@ -43,8 +46,15 @@ export function sessionStamp(): SessionStamp | null {
  * care logged, photos taken." These three are the call sites. Each is a no-op
  * when no walk is being recorded, which is why the callers never have to ask.
  */
-export function markPlantOpen(plant_id: PlantId): void {
-  live?.mark({ type: 'plant_open', plant_id });
+/**
+ * `at_offset_s` exists because this marker is held back five seconds — see
+ * `screenLog.ts`. The marker still belongs at the moment the page opened, not
+ * five seconds later: someone who arrives and immediately starts talking about
+ * the plant would otherwise have their first sentence attributed to wherever
+ * they came from.
+ */
+export function markPlantOpen(plant_id: PlantId, at_offset_s?: number): void {
+  live?.mark({ type: 'plant_open', plant_id }, at_offset_s);
 }
 
 export function markCareLogged(plant_id: PlantId, event_id: EventId): void {

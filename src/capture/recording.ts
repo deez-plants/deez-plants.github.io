@@ -205,7 +205,7 @@ function stopTicker(): void {
 /* Markers                                                                     */
 /* -------------------------------------------------------------------------- */
 
-function pushMarker(marker: Omit<SessionMarker, 'offset_s'>): void {
+function pushMarker(marker: Omit<SessionMarker, 'offset_s'>, at_offset_s?: number): void {
   if (phase !== 'recording' && phase !== 'paused' && phase !== 'saving') return;
   // Section 6's markers exist to answer "which plant was on screen when". Two
   // `plant_open` markers in a row for the same plant answer nothing, and the
@@ -213,7 +213,7 @@ function pushMarker(marker: Omit<SessionMarker, 'offset_s'>): void {
   const last = [...markers].reverse().find((m) => m.type === 'plant_open');
   if (marker.type === 'plant_open' && last?.plant_id === marker.plant_id) return;
 
-  markers = [...markers, { ...marker, offset_s: elapsedSeconds() }];
+  markers = [...markers, { ...marker, offset_s: at_offset_s ?? elapsedSeconds() }];
   notify();
   void persistProgress();
 }
