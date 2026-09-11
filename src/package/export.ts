@@ -3,6 +3,7 @@ import type { DeezDB, PackageRecord, SessionRecord, TranscriptTier } from '../db
 import { mintDatedId } from '../db/counters';
 import { SCREEN_LOG_NOTE, sidecarFor } from '../capture/sessions';
 import { readScreenLog } from '../capture/screenLog';
+import { routeMarkerCount } from '../capture/liveSession';
 import type { DerivedPlant, DerivedState } from '../types/derived';
 import type { ISODate, PackageId } from '../types/ids';
 import type { Manifest, ManifestPlant } from '../types/package';
@@ -158,7 +159,7 @@ export async function previewReviewPackage(db: DeezDB, state: DerivedState): Pro
     session_count: sessions.length,
     transcribed_count: sessions.filter((s) => s.transcript).length,
     tier: packageTier(sessions),
-    marker_count: sessions.reduce((sum, s) => sum + s.markers.length, 0),
+    marker_count: sessions.reduce((sum, s) => sum + routeMarkerCount(s.markers), 0),
   };
 }
 

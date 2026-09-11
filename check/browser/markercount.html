@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>marker counts</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  What the app SHOWS as a marker count.
+
+  The owner finished a three-plant walk and read "5 markers · 3 plants on
+  route", then asked what the other two were. They were `session_start` and
+  `session_end` — bookkeeping the sidecar needs and the walker does not. The
+  count now reports only markers a person placed by walking around.
+
+  Run with the dev server up:
+    http://localhost:5173/check/browser/markercount.html
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+
+const { routeMarkerCount, isRouteMarker } = await import('/src/capture/liveSession.ts');
+
+const walk = [
+  { type: 'session_start', offset_s: 0 },
+  { type: 'plant_open', offset_s: 12, plant_id: '001-MON' },
+  { type: 'care_logged', offset_s: 40, plant_id: '001-MON' },
+  { type: 'plant_open', offset_s: 95, plant_id: '002-SNK' },
+  { type: 'gap', offset_s: 120, gap_s: 240 },
+  { type: 'photo', offset_s: 150, plant_id: '002-SNK' },
+  { type: 'session_end', offset_s: 200 },
+];
+
+check('only what the walker placed is counted', routeMarkerCount(walk), 4);
+check('an empty walk counts nothing', routeMarkerCount([]), 0);
+check('start, end and gap are all excluded',
+  ['session_start', 'session_end', 'gap'].map((type) => isRouteMarker({ type })),
+  [false, false, false]);
+check('plant, care and photo are all included',
+  ['plant_open', 'care_logged', 'photo'].map((type) => isRouteMarker({ type })),
+  [true, true, true]);
+
+// The owner's actual case: three plants opened, nothing else logged.
+const theirs = [
+  { type: 'session_start', offset_s: 0 },
+  { type: 'plant_open', offset_s: 20, plant_id: '001-MON' },
+  { type: 'plant_open', offset_s: 60, plant_id: '002-SNK' },
+  { type: 'plant_open', offset_s: 90, plant_id: '006-FER' },
+  { type: 'session_end', offset_s: 120 },
+];
+check('the walk that prompted this reads 3, not 5', routeMarkerCount(theirs), 3);
+
+log(fails === 0 ? '\nALL PASSED' : `\n${fails} FAILED`);
+</script>
+</body></html>

@@ -1,6 +1,6 @@
 import { openDeezPlants, type DeezDB, type SessionMarker, type SessionRecord } from '../db/schema';
 import { mintSessionId } from '../db/counters';
-import { registerLiveSession } from './liveSession';
+import { registerLiveSession, routeMarkerCount } from './liveSession';
 import { nowLocalStamp } from '../lib/dates';
 import type { ISODate, PlantId, SessionId } from '../types/ids';
 
@@ -592,7 +592,7 @@ export async function endSession(): Promise<SessionId | null> {
     // record, and `readSessionAudio` already falls back to them.
     try { await persistProgress(true); } catch { /* the chunks still stand */ }
   } finally {
-    saved = { session_id, duration_s: elapsedSeconds(), marker_count: markers.length };
+    saved = { session_id, duration_s: elapsedSeconds(), marker_count: routeMarkerCount(markers) };
     teardown();
     phase = 'finished';
     notify();

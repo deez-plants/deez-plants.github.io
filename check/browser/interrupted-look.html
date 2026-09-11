@@ -18,6 +18,10 @@ w.navigator.mediaDevices.getUserMedia = async () => stream;
 const btn = [...w.document.querySelectorAll('button')].find(x => /Start a walk/.test(x.getAttribute('aria-label') || ''));
 btn?.click();
 await new Promise(r => setTimeout(r, 4000));
-for (const t of stream.getAudioTracks()) { t.stop(); t.dispatchEvent(new Event('ended')); }
+// Stay on the record screen rather than interrupting: this viewer is now used
+// for looking at the live walk's own chrome too.
+if (!location.hash.includes('keep')) {
+  for (const t of stream.getAudioTracks()) { t.stop(); t.dispatchEvent(new Event('ended')); }
+}
 </script>
 </body></html>

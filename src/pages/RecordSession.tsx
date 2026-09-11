@@ -248,24 +248,35 @@ export default function RecordSession({
         </p>
       )}
 
-      <div className="rec-route-head">
-        <h2 className="rec-route-title">Detected on route</h2>
-        <span className="rec-route-count">{routePlants} plant{routePlants === 1 ? '' : 's'}</span>
-      </div>
-      <p className="rec-route-note">
-        Markers are placed automatically as you reach each plant. Tap one to
-        correct it — the time stays, only which plant it belongs to changes.
-      </p>
+      {/* Collapsed by default, at the owner's request. The markers exist for
+          the AI — they are what attaches a spoken sentence to the right plant,
+          and what the coverage gate checks the transcript against. The only
+          reason a person opens this is to fix one the app got wrong, which is
+          rare, so it reads as a count with the detail a tap away rather than a
+          list demanding to be studied. */}
+      <details className="rec-route">
+        <summary className="rec-route-summary">
+          <span className="rec-route-title">On route</span>
+          <span className="rec-route-count">
+            {routePlants} plant{routePlants === 1 ? '' : 's'}
+          </span>
+        </summary>
 
-      {listed.length === 0 && (
-        <p className="rec-route-empty">
-          {live
-            ? 'Nothing yet. Open a plant and a marker lands here.'
-            : 'Markers appear here once a walk is running.'}
+        <p className="rec-route-note">
+          Placed automatically as you reach each plant, and used to match what
+          you said to the plant you said it about. Tap one to correct it — the
+          time stays, only which plant it belongs to changes.
         </p>
-      )}
 
-      <div className="rec-markers">
+        {listed.length === 0 && (
+          <p className="rec-route-empty">
+            {live
+              ? 'Nothing yet. Stay on a plant for five seconds and it lands here.'
+              : 'Markers appear here once a walk is running.'}
+          </p>
+        )}
+
+        <div className="rec-markers">
         {listed.map(({ marker, index }) => (
           <div key={`${index}-${marker.offset_s}`} className="rec-marker-wrap">
             <button
@@ -303,7 +314,8 @@ export default function RecordSession({
             )}
           </div>
         ))}
-      </div>
+        </div>
+      </details>
 
       <p className="rec-foot">
         The phone records; the laptop transcribes. Audio never leaves the

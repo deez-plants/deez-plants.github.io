@@ -3,6 +3,7 @@ import type { DeezDB, ScreenLogEntry, SessionRecord } from '../db/schema';
 import { extensionFor, readSessionAudio } from './recording';
 import { checkCoverage, parseTranscript } from './coverage';
 import { screenLogForSession } from './screenLog';
+import { routeMarkerCount } from './liveSession';
 import type { SessionId } from '../types/ids';
 
 /**
@@ -31,7 +32,7 @@ export async function listSessions(db: DeezDB): Promise<SessionSummary[]> {
     summaries.push({
       ...record,
       audio_bytes: audio?.size ?? 0,
-      marker_count: record.markers.length,
+      marker_count: routeMarkerCount(record.markers),
       plant_count: new Set(
         record.markers.filter((m) => m.type === 'plant_open').map((m) => m.plant_id),
       ).size,

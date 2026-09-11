@@ -232,7 +232,7 @@
   text-wrap: pretty;
 }
 
-.rec-route-head {
+.rec-route-head-unused {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -390,4 +390,54 @@
   font: 400 20px/1.35 var(--sans);
   color: var(--ink-50);
   text-wrap: pretty;
+}
+
+/* The route, collapsed. A summary row that reads as a fact — "3 plants" —
+   with the correction tool behind it. */
+.rec-route {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 16px;
+  margin-top: 20px;
+}
+
+.rec-route-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.rec-route-summary::-webkit-details-marker { display: none; }
+
+.rec-route-summary::after {
+  content: '›';
+  margin-left: auto;
+  font: 400 24px/1 var(--sans);
+  color: var(--ink-40);
+  transition: transform 150ms ease;
+}
+
+.rec-route[open] .rec-route-summary::after { transform: rotate(90deg); }
+
+.rec-route .rec-route-title {
+  font: 600 24px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.rec-route .rec-route-count {
+  font: 600 21px/1 var(--mono);
+  color: var(--ink-50);
+}
+
+.rec-route .rec-route-note,
+.rec-route .rec-route-empty { margin-top: 0; }
+
+.rec-route .rec-markers { padding-bottom: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-route-summary::after { transition: none; }
 }

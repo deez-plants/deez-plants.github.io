@@ -27,6 +27,25 @@ export interface LiveSession {
   mark(marker: Omit<SessionMarker, 'offset_s'>, at_offset_s?: number): void;
 }
 
+/**
+ * The marker types a person actually placed by walking around: opening a
+ * plant, logging care, taking a photo.
+ *
+ * `session_start`, `session_end` and `gap` are bookkeeping. They belong in the
+ * sidecar — the AI and the coverage gate both need them — but counting them on
+ * screen is the implementation leaking out. The owner met this as
+ * "5 markers · 3 plants on route" after a three-plant walk, asked what the
+ * other two were, and was right that they were not theirs.
+ */
+export function isRouteMarker(m: { type: SessionMarker['type'] }): boolean {
+  return m.type === 'plant_open' || m.type === 'care_logged' || m.type === 'photo';
+}
+
+/** How many markers to show for a walk. Never `markers.length`. */
+export function routeMarkerCount(markers: readonly { type: SessionMarker['type'] }[]): number {
+  return markers.filter(isRouteMarker).length;
+}
+
 let live: LiveSession | null = null;
 
 export function registerLiveSession(session: LiveSession | null): void {
