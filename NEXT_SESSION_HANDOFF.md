@@ -183,6 +183,30 @@ in.
 Safari re-asks for the microphone on resume. That is iOS; do not try to work
 around it.
 
+**Built 2026-09-11.** `interruptSession()` / `resumeInterrupted()` /
+`endInterrupted()` / `restoreInterrupted()` in `capture/recording.ts`, the
+held panel on the Record screen, and `restoreInterrupted()` wired into
+`boot.ts` so a force-quit walk comes back. Covered by
+`check/browser/resume.html` — 16 assertions including the force-quit path,
+which it simulates the way boot does. **Two things a later session must not
+undo:**
+
+1. **An interrupted walk's audio stays as chunks.** `endSession` assembles
+   them into one blob and deletes them; doing that on interrupt would strand
+   the resumed segment. Assembly happens only when the walk is finally ended.
+2. **`heldInterrupted` is module state, not an argument.** Chunk writes are
+   fire-and-forget and the last one lands *during* `stopRecorder()`, so a flag
+   passed into `persistProgress` was silently cleared by that write and the
+   walk came back unresumable. The browser test caught this; reasoning did
+   not.
+
+The coverage gate learned about gaps in the same pass. Its comment used to
+claim "the app writes no silence markers of its own" — now false. A silence
+explained by a `gap` marker passes assertion 2, and a `gap` marker is never
+itself reported under assertion 3. Without both, a resumed walk could never
+pass the gate, which would make resuming pointless. Four node checks in
+`check/coverage.check.cjs` hold that down.
+
 ### 3. The tab bar: the owner's picks, and what is still open
 
 **Chosen:** Home = `home` · Plants = `feed` (the leaf) · Rec = `mic` ·
