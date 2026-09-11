@@ -29,6 +29,8 @@ import Recordings from './pages/Recordings';
 import Backup from './pages/Backup';
 import HowItWorks from './pages/HowItWorks';
 import HandoffLog from './pages/HandoffLog';
+import SinceLastTime from './pages/SinceLastTime';
+import WhatWorks from './pages/WhatWorks';
 import { enterScreen } from './capture/screenLog';
 import { getPhase, startSession } from './capture/recording';
 import './App.css';
@@ -176,8 +178,8 @@ export default function App() {
         { label: 'Archived plants', subtitle: 'Kept out of the active list', go: () => fromPages({ kind: 'archive' }) },
         { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => fromPages({ kind: 'rooms' }) },
         { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => fromPages({ kind: 'recordings' }) },
-        { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => placeholder('Since last time', undefined, 'All pages') },
-        { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => placeholder('What works', undefined, 'All pages') },
+        { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => fromPages({ kind: 'since' }) },
+        { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => fromPages({ kind: 'works' }) },
       ],
     },
     {
@@ -467,6 +469,26 @@ export default function App() {
         backLabel={nav.backLabel ?? 'Home'}
         onBack={nav.back}
         onChanged={reload}
+      />
+    );
+  } else if (screen.kind === 'since') {
+    body = (
+      <SinceLastTime
+        state={state}
+        snapshots={snapshots}
+        backLabel={nav.backLabel ?? 'All pages'}
+        onBack={nav.back}
+        onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Since last time')}
+      />
+    );
+  } else if (screen.kind === 'works') {
+    body = (
+      <WhatWorks
+        state={state}
+        events={events}
+        backLabel={nav.backLabel ?? 'All pages'}
+        onBack={nav.back}
+        onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'What works')}
       />
     );
   } else if (screen.kind === 'how') {

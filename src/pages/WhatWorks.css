@@ -1,0 +1,181 @@
+.works {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.works-back {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 10px 8px 10px 0;
+  margin-bottom: 4px;
+  font: 600 24px/1 var(--sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.works-title {
+  margin: 2px 0 8px;
+  font: 400 44px/1.08 var(--serif);
+  color: var(--ink);
+}
+
+.works-dek {
+  margin: 0 0 16px;
+  font: 400 24px/1.4 var(--sans);
+  color: var(--ink-60);
+  text-wrap: pretty;
+}
+
+/* Stated before any data, and styled to be read rather than skimmed past —
+   this screen's whole risk is looking more authoritative than it is. */
+.works-caveat {
+  margin: 0 0 18px;
+  padding: 4px 0 4px 16px;
+  border-left: 3px solid var(--amber);
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.works-caveat strong { color: var(--ink); font-weight: 600; }
+
+.works-count {
+  margin: 0 0 16px;
+  font: 600 21px/1 var(--mono);
+  color: var(--ink-50);
+}
+
+.works-empty {
+  margin: 0;
+  font: 400 23px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.works-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.works-item {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 15px 16px;
+}
+
+.works-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.works-plant {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: 600 24px/1.25 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+  text-wrap: pretty;
+}
+
+.works-date {
+  flex: none;
+  font: 600 20px/1 var(--mono);
+  color: var(--ink-45);
+}
+
+.works-what {
+  margin: 0 0 14px;
+  font: 400 22px/1.45 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.works-field { font-weight: 600; color: var(--ink); }
+.works-from { color: var(--ink-50); }
+.works-arrow { color: var(--ink-40); }
+.works-to { color: var(--ink); font-weight: 600; }
+
+.works-by {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--line-strong);
+  font: 600 17px/1 var(--mono);
+  color: var(--ink-50);
+  vertical-align: middle;
+}
+
+/* Two readings side by side, same shape, no arrow between them — an arrow
+   would be a claim, and the point of this screen is that it makes none. */
+.works-ratings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.works-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 13px;
+}
+
+.works-side-label {
+  font: 600 19px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.works-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  padding: 5px 9px;
+  border-radius: 9px;
+  font: 600 26px/1 var(--sans);
+  color: var(--on-accent);
+}
+
+.works-pill.good { background: var(--accent); }
+.works-pill.holding { background: var(--amber); }
+.works-pill.struggling { background: var(--warn); }
+
+.works-pill.none {
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-40);
+}
+
+.works-side-date {
+  font: 400 19px/1.2 var(--sans);
+  color: var(--ink-50);
+}
+
+.works-move {
+  margin: 12px 0 0;
+  font: 600 22px/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.works-move.open {
+  font-weight: 400;
+  color: var(--ink-50);
+  text-wrap: pretty;
+}

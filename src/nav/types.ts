@@ -48,6 +48,10 @@ export type Screen =
   | { kind: 'recordings' }
   /** Section 8's phone half: export the record, or restore one. */
   | { kind: 'backup' }
+  /** Screen 17: what changed against a saved state. */
+  | { kind: 'since' }
+  /** Screen 18: care changes with the ratings either side of them. */
+  | { kind: 'works' }
   /** Screen 22: what the app, the owner and the AI each decide. */
   | { kind: 'how' }
   /** Screen 21: the audit trail for the AI round trip. */

@@ -31,6 +31,8 @@ export function screenTitle(screen: Screen): string {
     case 'rooms': return 'Rooms and planters';
     case 'recordings': return 'Recordings';
     case 'backup': return 'Back up';
+    case 'since': return 'Since last time';
+    case 'works': return 'What works';
     case 'how': return 'How this app works';
     case 'handoff': return 'Handoff log';
     case 'all-pages': return 'All pages';
