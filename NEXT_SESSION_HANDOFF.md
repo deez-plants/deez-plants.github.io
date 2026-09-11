@@ -294,6 +294,25 @@ screen 03's "tap one to correct it".
 They kept the feature once they knew what it was for — do not read this as
 "the owner does not want markers."
 
+**Both built 2026-09-11.** `routeMarkerCount()` in `capture/liveSession.ts` is
+now the single definition of a marker worth showing, used by the Record
+screen, Recordings and the review package alike. **The stored markers array is
+untouched** — the AI and the coverage gate need every type, including `gap`.
+The route list is a `<details>`, collapsed. `check/browser/markercount.html`
+covers the counting, including the owner's actual three-plant walk reading 3
+rather than 5.
+
+### A trap that cost twenty minutes here
+
+**Orphaned Vite dev servers from earlier sessions were still holding ports
+5173–5175 and serving stale files.** A CSS change was on disk, passed the
+build, and simply did not appear in the browser — the page was being served
+by a months-dead process. `npm run dev` says "Port 5173 is in use, trying
+another one" and moves to 5176, which is easy to miss in a scrollback. **If
+an edit does not show up, check the port in the dev server's own output
+before doubting the edit**, and kill strays with
+`Get-NetTCPConnection -LocalPort 5173 -State Listen` then `Stop-Process`.
+
 ## Start here: what to do first
 
 **The app is live at https://deez-plants.github.io.** Hosting is done — see
