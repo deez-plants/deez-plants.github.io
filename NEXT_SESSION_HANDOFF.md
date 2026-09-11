@@ -1117,6 +1117,21 @@ taken back. Note there is no unarchive, on purpose: entries are append-only
 and `derive.ts` keeps the first Archive per plant, so reversing it needs its
 own event type and an interleaving rule.
 
+**All 25 screens now exist.** Screens 17 (Since last time) and 18 (What
+works) landed 2026-09-11, finishing the set. Two things about them that a
+later pass must not "improve":
+
+- **What works never ranks or concludes.** `score/whatWorks.ts` sorts newest
+  first, not by effect size, and computes no average. The reference's "not a
+  claim of causation — the ratings are shown, the inference is yours" is the
+  screen's whole design. Adding a "biggest improvement" sort, a summary, or a
+  badge on changes that "worked" would break it. The delta always carries its
+  elapsed days, for the same reason §3b requires it on the score block.
+- **Since last time never treats absence as a value.** Rated then, unrated
+  now is *not a fall* — it is a plant nobody looked at, and it says so.
+  Absent from the older snapshot is *new*, not improved. Folding either into
+  a number would make the screen quietly wrong.
+
 14. Screens **22** (How this app works — static copy, trivial), **21**
     (Handoff log — reads `packages`/`applied_updates`, nearly a pure
     render), **17** (Since last time — reads `snapshots`), **18** (What
