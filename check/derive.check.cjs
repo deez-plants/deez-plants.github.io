@@ -261,6 +261,32 @@ const run = (baselines, events, as_of, include_pending = false) =>
   eq('previous average dated when reached', s2.collection.average_previous,
      { value: 7, date: '2026-06-28' });
   eq('current average', s2.collection.average_health, 6);
+
+  // Rating the whole collection in one sitting is not movement. The running
+  // average passes through a value per plant on the way, but none of those is
+  // a state the collection rested in — and a previous value dated today makes
+  // the score block report a delta over zero elapsed days, which is exactly
+  // the misleading movement section 3b's elapsed-time rule exists to prevent.
+  // The owner met this as "6.2, was 6.1, 0d" after entering 22 ratings.
+  const sameDay = run([base('001-MON'), base('002-SNK'), base('003-SNK')], [
+    ev({ type: 'Rate', plant_id: '001-MON', date: '2026-08-28', time: '09:00', to: 5 }),
+    ev({ type: 'Rate', plant_id: '002-SNK', date: '2026-08-28', time: '09:05', to: 7 }),
+    ev({ type: 'Rate', plant_id: '003-SNK', date: '2026-08-28', time: '09:10', to: 9 }),
+  ], '2026-08-28');
+  eq('rating everything in one day averages once', sameDay.collection.average_health, 7);
+  eq('and reports no previous, because there is no earlier day',
+     sameDay.collection.average_previous, null);
+
+  // A second day gives it something to move against, and the elapsed time is
+  // then real.
+  const nextDay = run([base('001-MON'), base('002-SNK')], [
+    ev({ type: 'Rate', plant_id: '001-MON', date: '2026-08-28', time: '09:00', to: 5 }),
+    ev({ type: 'Rate', plant_id: '002-SNK', date: '2026-08-28', time: '09:05', to: 7 }),
+    ev({ type: 'Rate', plant_id: '001-MON', date: '2026-09-04', time: '09:00', to: 9 }),
+  ], '2026-09-04');
+  eq('a later day moves it', nextDay.collection.average_health, 8);
+  eq('against the previous day, not a step within one',
+     nextDay.collection.average_previous, { value: 6, date: '2026-08-28' });
 }
 
 /* ---------------- care instructions ---------------- */

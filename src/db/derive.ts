@@ -542,7 +542,20 @@ export const derive: Derive = ({ baselines, events, registry, as_of, include_pen
 
   const healthAt = new Map<string, number>();
   const archivedAt = new Set<string>();
-  const series: { value: number; date: ISODate }[] = [];
+  // One entry per day: the average as it stood at the END of that day.
+  //
+  // Within a day the running average wanders — rate twenty-two plants in a
+  // sitting and it takes twenty-two different values on the way — but none of
+  // those is a state the collection ever rested in. Keeping them made
+  // `average_previous` the average after twenty-one of the twenty-two, and the
+  // owner saw Home report `6.2, was 6.1, 0 days` from a single afternoon's
+  // rating. A delta over zero elapsed days is precisely the misleading
+  // movement §3b's "the delta always carries elapsed time" rule exists to
+  // prevent, so the fix is at the source: the collection's average has one
+  // value per day, and moving between two values means moving between two
+  // days.
+  const byDay = new Map<ISODate, number>();
+  const dayOrder: ISODate[] = [];
   for (const e of applied) {
     if (e.type === 'Archive' && e.plant_id !== null) archivedAt.add(e.plant_id);
     else if (e.type === 'Rate' && e.plant_id !== null) healthAt.set(e.plant_id, e.to);
@@ -550,7 +563,13 @@ export const derive: Derive = ({ baselines, events, registry, as_of, include_pen
 
     const values = [...healthAt].filter(([id]) => !archivedAt.has(id)).map(([, v]) => v);
     if (!values.length) continue;
-    const value = round1(values.reduce((s, v) => s + v, 0) / values.length);
+    if (!byDay.has(e.date)) dayOrder.push(e.date);
+    byDay.set(e.date, round1(values.reduce((s, v) => s + v, 0) / values.length));
+  }
+
+  const series: { value: number; date: ISODate }[] = [];
+  for (const date of dayOrder) {
+    const value = byDay.get(date) as number;
     // Consecutive equal averages are collapsed, so that archiving an unrated
     // plant after the last rating cannot make "previous" a copy of "current".
     // The entry keeps the date the value was first reached rather than the
@@ -558,7 +577,7 @@ export const derive: Derive = ({ baselines, events, registry, as_of, include_pen
     // value with the elapsed time since it, and "was 7, as of today" is not
     // news. This is the collection's answer to `health_changed`.
     if (series.length && series[series.length - 1].value === value) continue;
-    series.push({ value, date: e.date });
+    series.push({ value, date });
   }
   const average_previous = series.length >= 2 ? series[series.length - 2] : null;
 
