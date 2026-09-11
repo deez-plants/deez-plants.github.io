@@ -28,6 +28,7 @@ import RecordSession from './pages/RecordSession';
 import Recordings from './pages/Recordings';
 import Backup from './pages/Backup';
 import { enterScreen } from './capture/screenLog';
+import { getPhase, startSession } from './capture/recording';
 import './App.css';
 
 /**
@@ -116,6 +117,17 @@ export default function App() {
   // whatever you were looking at (section 4 rule 3). For a plant-scoped screen
   // that is the plant's own name, which is what the back button on every other
   // screen pushed from there reads too.
+  // The tab bar's centre button. Starting the walk is the point of it — see
+  // the comment on `nav/TabBar.tsx`. Navigation happens first so the screen is
+  // already up when Safari's microphone prompt appears and when `startSession`
+  // reports a failure; a prompt over whatever screen you happened to be on,
+  // with no explanation behind it, is how you get a denied permission.
+  const onRec = () => {
+    nav.goRoot('record');
+    const p = getPhase();
+    if (p === 'ready' || p === 'finished') void startSession(as_of);
+  };
+
   const openAllPages = () => {
     if (current.kind === 'all-pages') return;
     const on = 'plant_id' in current && current.plant_id
@@ -501,7 +513,7 @@ export default function App() {
   return (
     <>
       <div className="app-content">{body}</div>
-      <TabBar active={nav.activeTab} onTab={nav.goRoot} onMore={openAllPages} />
+      <TabBar active={nav.activeTab} onTab={nav.goRoot} onRec={onRec} onMore={openAllPages} />
     </>
   );
 }

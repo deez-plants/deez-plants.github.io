@@ -42,13 +42,44 @@
   cursor: pointer;
 }
 
+/*
+ * The centre button, rebuilt from the mock (`Deez Plants.dc.html`): a dark
+ * disc with a small core inside it, not the solid accent disc an earlier pass
+ * built. Idle, the core is a green circle. Recording, the disc darkens to a
+ * red-brown, the core becomes a red-orange rounded square — a stop symbol —
+ * and a ring scales out from the edge and fades.
+ *
+ * `recPulse` in the mock is `1.6s ease-out infinite`, scale 1 -> 1.35, opacity
+ * .9 -> 0, held at 0 for the last 30% so there is a beat between pulses rather
+ * than a continuous throb.
+ */
 .tabbar-rec-dot {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 58px;
   height: 58px;
   border-radius: 50%;
+  background: var(--panel-on);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.tabbar-rec-core {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 6px 18px rgba(155, 227, 155, 0.25);
+  transition: background 160ms ease, border-radius 160ms ease;
+}
+
+.tabbar-rec-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(232, 138, 106, 0.55);
+  animation: tabbar-rec-pulse 1.6s ease-out infinite;
 }
 
 .tabbar-rec-label {
@@ -58,23 +89,13 @@
 
 /* A walk in progress, visible from every screen. */
 .tabbar-rec.live .tabbar-rec-dot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--warn);
+  background: #3a2019;
   box-shadow: 0 6px 18px rgba(232, 138, 106, 0.3);
 }
 
-.tabbar-rec.recording .tabbar-rec-dot {
-  animation: tabbar-rec-pulse 1.6s ease-in-out infinite;
-}
-
-.tabbar-rec-square {
-  display: block;
-  width: 20px;
-  height: 20px;
+.tabbar-rec.live .tabbar-rec-core {
+  background: var(--warn);
   border-radius: 5px;
-  background: #2a1410;
 }
 
 .tabbar-rec.live .tabbar-rec-label {
@@ -84,10 +105,13 @@
 }
 
 @keyframes tabbar-rec-pulse {
-  0%, 100% { box-shadow: 0 6px 18px rgba(232, 138, 106, 0.3); }
-  50% { box-shadow: 0 6px 26px rgba(232, 138, 106, 0.65); }
+  0% { transform: scale(1); opacity: 0.9; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
 }
 
+/* Respect the setting, but keep the state readable: the ring holds still at
+   full opacity rather than disappearing, so "recording" is still visible. */
 @media (prefers-reduced-motion: reduce) {
-  .tabbar-rec.recording .tabbar-rec-dot { animation: none; }
+  .tabbar-rec-ring { animation: none; opacity: 0.9; }
 }

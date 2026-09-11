@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>rec button states</title></head>
+<body style="margin:0">
+<!--
+  Not a test — a viewer. It loads the real app in two iframes side by side,
+  one idle and one with a walk actually running, so the centre button's two
+  states can be compared without a microphone or a phone. The mic is faked
+  with a Web Audio stream, as in `recorder.html`.
+-->
+<div style="display:flex;gap:16px;padding:16px;background:#222;font:14px monospace;color:#eee">
+  <div><div style="padding:6px">IDLE</div><iframe id="a" src="/" style="width:430px;height:620px;border:1px solid #444"></iframe></div>
+  <div><div style="padding:6px">RECORDING</div><iframe id="b" src="/" style="width:430px;height:620px;border:1px solid #444"></iframe></div>
+</div>
+<script type="module">
+const b = document.getElementById('b');
+await new Promise(r => b.addEventListener('load', r, { once: true }));
+await new Promise(r => setTimeout(r, 3000));
+const w = b.contentWindow;
+const ctx = new w.AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+w.navigator.mediaDevices.getUserMedia = async () => dest.stream;
+const rec = await import('/src/capture/recording.ts');
+// The iframe has its own module instance; drive it through its own button.
+const btn = [...w.document.querySelectorAll('button')].find(x => /Start a walk/.test(x.getAttribute('aria-label') || ''));
+btn?.click();
+</script>
+</body></html>
