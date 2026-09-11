@@ -237,6 +237,20 @@ rounds on the page for reference, so there is a record of what was tried and
 they can go back to an earlier idea. **Append new rounds, dated. Never
 replace or prune what is already there.**
 
+**Round 2 published 2026-09-11.** Round 1 kept intact above it under a dated
+banner. Round 2 starts from the owner's picks, adds an icon-size control
+(21 / 24 / 28 / 32px, the bar's own padding scaling with it), three bar
+variants per size, and **five new Log icons drawn for this round** — `pen`,
+`note`, `checklist`, `logged`, `tick` — in the existing set's language.
+They are badged NEW on the page, because the other 22 are the owner's and
+these are not. Each Log candidate is drawn twice, at bar size and at 40px,
+since the question is which one survives being small.
+
+**A finding worth carrying:** at 21–28px the owner's own doubt about
+`history` looks justified — its hands and the little arrow merge into a blob,
+while `tick`, `logged` and `note` stay legible. Say so if asked, but **the
+owner is the judge here and has not chosen yet.**
+
 ## Start here: what to do first
 
 **The app is live at https://deez-plants.github.io.** Hosting is done — see
