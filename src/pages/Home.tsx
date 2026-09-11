@@ -146,6 +146,15 @@ export default function Home({
         <span className="home-tracked">{state.collection.active_count} TRACKED</span>
       </div>
 
+      {/* Directly under the title, above the score cards. This is the most-used
+          action in the app and it used to sit below DUE, which meant scrolling
+          past three cards to reach the thing you open the app to do. The cards
+          are worth reading; they are not worth reading *first*, every time. */}
+      <button type="button" className="home-care" onClick={onCare}>
+        <Icon name="water" size={24} />
+        Log care
+      </button>
+
       <section className="home-card">
         <ScoreBlock {...collectionScore(state)} />
         {rated.length > 0 && (
@@ -304,10 +313,6 @@ export default function Home({
           </button>
         )}
       </section>
-
-      <button type="button" className="home-care" onClick={onCare}>
-        Log care
-      </button>
 
       {handoff.length > 0 && (
         <section className="home-card">

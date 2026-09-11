@@ -216,16 +216,22 @@
 
 /* Log care and the utility rows */
 
+/* The day's action, so it reads as one — filled accent rather than the
+   outlined panel it used to be, now that it sits above the cards instead of
+   among them. */
 .home-care {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   width: 100%;
-  background: var(--panel-on);
-  border: 1px solid var(--accent-line);
-  border-radius: 12px;
-  padding: 15px 16px;
-  margin-bottom: 14px;
-  font: 600 24px/1 var(--sans);
-  color: var(--ink);
+  background: var(--accent);
+  border: 0;
+  border-radius: 14px;
+  padding: 17px 16px;
+  margin-bottom: 16px;
+  font: 600 25px/1 var(--sans);
+  color: var(--on-accent);
   cursor: pointer;
 }
 
