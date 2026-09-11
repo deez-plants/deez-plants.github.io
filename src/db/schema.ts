@@ -69,14 +69,35 @@ export interface SessionRecord {
    * is still there and still playable.
    */
   closed?: boolean;
+  /**
+   * True when iOS ended the capture and the walk is waiting to be resumed.
+   *
+   * The owner's own design (2026-09-11): a walk that gets interrupted should
+   * **stop completely** — no timer running, nothing alive in the background —
+   * but be remembered, so coming back costs one tap rather than starting
+   * again. This flag is what makes that survive a force-quit, because it is
+   * written to disk alongside the chunks rather than held in memory.
+   *
+   * An interrupted session's audio stays as numbered chunks and is never
+   * assembled into one blob, so a later segment can keep appending. Assembly
+   * happens only when the walk is finally ended.
+   */
+  interrupted?: boolean;
+  /** How many chunks have been written, so a resumed segment carries on
+      numbering instead of overwriting the first segment's audio. */
+  chunk_count?: number;
 }
 
 export interface SessionMarker {
   offset_s: number;
-  type: 'session_start' | 'plant_open' | 'care_logged' | 'photo' | 'session_end';
+  type: 'session_start' | 'plant_open' | 'care_logged' | 'photo' | 'gap' | 'session_end';
   plant_id?: PlantId;
   event_id?: string;
   media?: MediaId;
+  /** On a `gap` marker: how long the walk was interrupted for, in seconds.
+      The transcript has real silence here, and the coverage gate needs to know
+      the time is genuinely missing rather than unaccounted for. */
+  gap_s?: number;
   /** Screen 03 lets you retag a `plant_open` the app placed. An automatic
       marker reads AUTO; one you corrected reads MANUAL, and the difference
       is kept because the AI reading the sidecar should know which is which. */

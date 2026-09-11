@@ -2,6 +2,7 @@ import { closeDeezPlants, openDeezPlants, DB_NAME, REGISTRY_KEY, type DeezDB } f
 import { runFirstRunSeed, type SeedOutcome } from './db/seedRun';
 import { derive } from './db/derive';
 import { deviceId } from './db/events';
+import { restoreInterrupted } from './capture/recording';
 import { todayISO } from './lib/dates';
 import type { DerivedState, Snapshot } from './types/derived';
 import type { StoredEvent } from './types/event';
@@ -89,6 +90,13 @@ async function start(): Promise<Booted> {
   const as_of = todayISO();
   const db = await openDeezPlants();
   const outcome = await runFirstRunSeed(db, as_of);
+  // A walk iOS cut short, from this launch or any earlier one. The recorder
+  // picks it back up into its `interrupted` phase so the Record screen can
+  // offer it — this is the line that makes an interrupted walk survive the
+  // app being force-quit, since everything it needs is already on disk.
+  // Failing here must not stop the app opening: the walk is still recoverable
+  // from Recordings either way.
+  await restoreInterrupted().catch(() => false);
   return { outcome, ...await readAndDerive(db, as_of), thumbs: await loadThumbs(db), as_of };
 }
 

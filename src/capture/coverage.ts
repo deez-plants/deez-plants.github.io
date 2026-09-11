@@ -53,16 +53,24 @@ export function checkCoverage(
   }
 
   // 2. No gap between segments exceeds 20 seconds without a silence marker.
-  // The app writes no silence markers of its own, so any such gap is a gap.
+  //
+  // The app now writes exactly one kind: a `gap` marker, placed where iOS
+  // ended a capture and the owner picked the walk back up. The audio really
+  // does jump there, so a silence across that seam is the recording being
+  // honest rather than the transcript being short — failing it would mean a
+  // resumed walk could never pass, which would make resuming useless.
+  const seams = markers.filter((m) => m.type === 'gap').map((m) => m.offset_s);
   for (let i = 1; i < segments.length; i += 1) {
-    const gap = segments[i].start - segments[i - 1].end;
-    if (gap > MAX_GAP_S) {
-      failures.push({
-        assertion: 2,
-        offset_s: Math.max(0, Math.round(segments[i - 1].end)),
-        detail: `${Math.round(gap)}s of audio between segments has no transcript.`,
-      });
-    }
+    const from = segments[i - 1].end;
+    const to = segments[i].start;
+    if (to - from <= MAX_GAP_S) continue;
+    const explained = seams.some((at) => at >= from - END_TOLERANCE_S && at <= to + END_TOLERANCE_S);
+    if (explained) continue;
+    failures.push({
+      assertion: 2,
+      offset_s: Math.max(0, Math.round(from)),
+      detail: `${Math.round(to - from)}s of audio between segments has no transcript.`,
+    });
   }
 
   // 3. Every marker `offset_s` falls inside a transcribed segment.
@@ -71,6 +79,10 @@ export function checkCoverage(
   // covers that stretch, so checking it here would only double-report it.
   for (const marker of markers) {
     if (marker.type === 'session_end') continue;
+    // A `gap` marker sits exactly on the seam where the audio jumps, so by
+    // definition nothing was transcribed there. Same reasoning as
+    // `session_end`: reporting it would flag the recording for being honest.
+    if (marker.type === 'gap') continue;
     const covered = segments.some((s) => marker.offset_s >= s.start && marker.offset_s <= s.end);
     if (!covered) {
       failures.push({

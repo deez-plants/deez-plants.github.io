@@ -4,11 +4,13 @@ import type { ISODate, PlantId } from '../types/ids';
 import {
   clearFinished,
   discardSession,
+  endInterrupted,
   endSession,
   formatDuration,
   getSnapshot,
   pauseSession,
   recordingSupported,
+  resumeInterrupted,
   resumeSession,
   retagMarker,
   startSession,
@@ -58,6 +60,7 @@ const STATE_WORD = {
   recording: 'RECORDING',
   paused: 'PAUSED',
   saving: 'SAVING',
+  interrupted: 'INTERRUPTED',
   finished: 'SESSION ENDED',
 } as const;
 
@@ -138,6 +141,41 @@ export default function RecordSession({
       )}
 
       {busy && <button type="button" className="rec-primary" disabled>Working…</button>}
+
+      {/* A walk iOS cut short. It is not finished and not running: nothing is
+          being recorded, no timer moves, and the whole thing is on disk — so
+          this survives the app being force-quit and is still here tomorrow.
+          Two ways out, and neither is the default, because carrying on and
+          calling it a day are equally reasonable at this point. */}
+      {rec.phase === 'interrupted' && (
+        <section className="rec-held">
+          <h2 className="rec-held-title">This walk was interrupted</h2>
+          <p className="rec-held-body">
+            {formatDuration(rec.elapsed_s)} recorded and saved. Picking it up
+            continues the same walk — the same markers, the time carrying on
+            from here rather than starting again. The minutes in between are
+            not recorded, and are marked as a gap so the transcript does not
+            pretend otherwise.
+          </p>
+          <div className="rec-held-actions">
+            <button
+              type="button"
+              className="rec-primary"
+              disabled={!supported}
+              onClick={() => void resumeInterrupted()}
+            >
+              Pick it up
+            </button>
+            <button type="button" className="rec-secondary" onClick={() => void endInterrupted()}>
+              End it here
+            </button>
+          </div>
+          <p className="rec-held-note">
+            Safari will ask for the microphone again. That is iOS, not the app
+            forgetting.
+          </p>
+        </section>
+      )}
 
       {live && (
         <div className="rec-controls">

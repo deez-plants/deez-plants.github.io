@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>interrupted panel</title></head>
+<body style="margin:0;background:#222">
+<!-- A viewer, not a test: drives the real app into the interrupted state so
+     the Record screen's held panel can be looked at without a phone. -->
+<iframe id="f" src="/" style="width:430px;height:900px;border:0"></iframe>
+<script type="module">
+const f = document.getElementById('f');
+await new Promise(r => f.addEventListener('load', r, { once: true }));
+await new Promise(r => setTimeout(r, 3000));
+const w = f.contentWindow;
+const ctx = new w.AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+let stream = dest.stream;
+w.navigator.mediaDevices.getUserMedia = async () => stream;
+const btn = [...w.document.querySelectorAll('button')].find(x => /Start a walk/.test(x.getAttribute('aria-label') || ''));
+btn?.click();
+await new Promise(r => setTimeout(r, 4000));
+for (const t of stream.getAudioTracks()) { t.stop(); t.dispatchEvent(new Event('ended')); }
+</script>
+</body></html>

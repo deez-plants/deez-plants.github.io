@@ -1,0 +1,99 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>resume an interrupted walk</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  The owner's design for an interrupted walk (2026-09-11): iOS ends the
+  capture, everything stops dead, and the walk is REMEMBERED rather than
+  finished — so picking it up costs one tap, even after the app was closed.
+
+  Run with the dev server up:
+    http://localhost:5173/check/browser/resume.html
+
+  The mic is faked with Web Audio, so this prompts for nothing. The "app was
+  force-quit" case is simulated by clearing the recorder's in-memory state and
+  calling `restoreInterrupted()`, which is exactly what boot does — the point
+  being that the walk comes back from disk, not from memory.
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+let stream = dest.stream;
+navigator.mediaDevices.getUserMedia = async () => {
+  // A fresh track each time, as a real getUserMedia would give.
+  const d = ctx.createMediaStreamDestination();
+  osc.connect(d);
+  stream = d.stream;
+  return stream;
+};
+
+const rec = await import('/src/capture/recording.ts');
+const { openDeezPlants } = await import('/src/db/schema.ts');
+const { enterScreen } = await import('/src/capture/screenLog.ts');
+
+await rec.startSession('2026-09-11');
+const session_id = rec.getSnapshot().session_id;
+log('started ' + session_id);
+
+// Look at a plant properly, so there is a marker worth preserving.
+enterScreen('detail', '001-MON');
+await new Promise(r => setTimeout(r, 6000));
+const beforeMarkers = rec.getSnapshot().markers.length;
+const beforeElapsed = rec.getSnapshot().elapsed_s;
+
+// iOS kills the capture.
+for (const t of stream.getAudioTracks()) { t.stop(); t.dispatchEvent(new Event('ended')); }
+await new Promise(r => setTimeout(r, 1500));
+
+check('lands in interrupted, not finished', rec.getPhase(), 'interrupted');
+check('the timer stopped, and kept its total', rec.getSnapshot().elapsed_s, beforeElapsed);
+check('the session is still the same one', rec.getSnapshot().session_id, session_id);
+
+const db = await openDeezPlants();
+let stored = await db.get('sessions', session_id);
+check('written to disk as interrupted', [stored.interrupted, !!stored.closed], [true, false]);
+check('audio kept as chunks, not assembled', await db.get('audio', session_id) === undefined, true);
+
+// Nothing must keep running while interrupted.
+const t1 = rec.getSnapshot().elapsed_s;
+await new Promise(r => setTimeout(r, 2500));
+check('nothing ticks while interrupted', rec.getSnapshot().elapsed_s, t1);
+
+// The app is force-quit and reopened: drop in-memory state, restore from disk.
+rec.clearFinished();
+check('memory cleared', rec.getPhase(), 'ready');
+await rec.restoreInterrupted();
+check('the walk comes back from disk', rec.getPhase(), 'interrupted');
+check('with its session id', rec.getSnapshot().session_id, session_id);
+check('and its markers', rec.getSnapshot().markers.length, beforeMarkers);
+
+// Pick it up.
+await rec.resumeInterrupted();
+check('resuming records again', rec.getPhase(), 'recording');
+check('the time carries on rather than restarting', rec.getSnapshot().elapsed_s >= beforeElapsed, true);
+const gaps = rec.getSnapshot().markers.filter((m) => m.type === 'gap');
+check('the gap is marked', gaps.length, 1);
+
+await new Promise(r => setTimeout(r, 1200));
+const id = await rec.endSession();
+check('ending gives back the same walk', id, session_id);
+stored = await db.get('sessions', session_id);
+check('closed, and no longer interrupted', [!!stored.closed, !!stored.interrupted], [true, false]);
+const whole = await db.get('audio', session_id);
+check('both segments assembled into one file', !!whole && whole.size > 0, true);
+
+log(fails === 0 ? '\nALL PASSED' : `\n${fails} FAILED`);
+</script>
+</body></html>

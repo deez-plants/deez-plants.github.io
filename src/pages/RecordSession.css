@@ -58,6 +58,9 @@
 }
 
 .rec-dot.paused { background: var(--amber); }
+/* Held, not running and not done — the same amber as paused, because that is
+   what it is: a walk waiting to carry on. */
+.rec-dot.interrupted { background: var(--amber); }
 .rec-dot.finished { background: var(--accent); }
 
 @keyframes rec-pulse {
@@ -74,6 +77,9 @@
   letter-spacing: 0.06em;
   color: var(--accent);
 }
+
+.rec-panel.interrupted { border-color: rgba(233, 161, 92, 0.35); }
+.rec-panel.interrupted .rec-state-word { color: var(--amber); }
 
 .rec-session-id {
   font: 600 17px/1 var(--mono);
@@ -347,5 +353,41 @@
   margin: 22px 0 18px;
   font: 400 22px/1.45 var(--sans);
   color: var(--ink-45);
+  text-wrap: pretty;
+}
+
+/* An interrupted walk: held, not finished. Amber rather than the warn red —
+   nothing has gone wrong and nothing is lost, the walk is simply waiting. */
+.rec-held {
+  background: var(--panel-raised);
+  border: 1px solid rgba(233, 161, 92, 0.35);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+
+.rec-held-title {
+  margin: 0 0 8px;
+  font: 600 25px/1.25 var(--sans);
+  color: var(--amber);
+}
+
+.rec-held-body {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.rec-held-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rec-held-note {
+  margin: 14px 0 0;
+  font: 400 20px/1.35 var(--sans);
+  color: var(--ink-50);
   text-wrap: pretty;
 }

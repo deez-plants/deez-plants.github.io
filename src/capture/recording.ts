@@ -90,7 +90,16 @@ export function wakeLockSupported(): boolean {
 /* State                                                                       */
 /* -------------------------------------------------------------------------- */
 
-export type RecPhase = 'ready' | 'starting' | 'recording' | 'paused' | 'saving' | 'finished';
+export type RecPhase =
+  | 'ready'
+  | 'starting'
+  | 'recording'
+  | 'paused'
+  | 'saving'
+  /** iOS ended the capture. Nothing is running; the walk is on disk waiting to
+      be resumed or ended. Survives a force-quit — see `restoreInterrupted`. */
+  | 'interrupted'
+  | 'finished';
 
 export interface SavedSession {
   session_id: SessionId;
@@ -238,11 +247,26 @@ function chunkKey(session_id: SessionId, index: number): string {
 
 /** Writes the session record as it stands. Called at start, on every chunk,
     on every marker, and once more on a clean end. */
+/**
+ * Whether the walk is currently being held rather than run.
+ *
+ * This is module state rather than an argument because the chunk writes are
+ * fire-and-forget: `ondataavailable` calls `persistProgress()` with no
+ * arguments, and the final chunk arrives *during* `stopRecorder()` — after the
+ * interrupt has been written. Passing the flag in meant that last write
+ * silently cleared it, and the walk came back as an ordinary unfinished
+ * session with no way to resume. Reading it from here makes every writer
+ * agree, whoever gets there last.
+ */
+let heldInterrupted = false;
+
 async function persistProgress(closed = false): Promise<void> {
   if (!sessionId) return;
   const db = await openDeezPlants();
   const record: SessionRecord = {
     session_id: sessionId,
+    interrupted: heldInterrupted,
+    chunk_count: chunkIndex,
     started: startedIso,
     duration_s: elapsedSeconds(),
     markers: [...markers],
@@ -345,9 +369,15 @@ function onVisibilityChange(): void {
 function onTrackEnded(): void {
   if (phase !== 'recording' && phase !== 'paused') return;
   // iOS ended the capture — a call, a hardware route change, or the app being
-  // away too long. Save what was recorded rather than dropping it.
-  error = 'The microphone stopped — iOS ended the capture. Everything recorded up to that point has been saved.';
-  void endSession();
+  // away too long. Confirmed on the owner's iPhone 2026-09-11: this is what
+  // happens, not what might happen.
+  //
+  // The walk is held rather than finished. Everything recorded is already on
+  // disk; the timer stops dead and nothing keeps running, which is what the
+  // owner asked for — but the session stays resumable instead of being closed
+  // out from under them.
+  error = 'The microphone stopped — iOS ended the capture. Everything so far is saved, and the walk can be picked up where it left off.';
+  void interruptSession();
 }
 
 function attachLifecycle(): void {
@@ -403,6 +433,7 @@ export async function startSession(as_of: ISODate): Promise<void> {
   error = null;
   saved = null;
   backgrounded = false;
+  heldInterrupted = false;
   markers = [];
   chunkIndex = 0;
   accumulatedMs = 0;
@@ -530,6 +561,7 @@ export async function endSession(): Promise<SessionId | null> {
 
   accumulatedMs = elapsedMs();
   runningSince = 0;
+  heldInterrupted = false;
   pushMarker({ type: 'session_end' });
   phase = 'saving';
   registerLiveSession(null);
@@ -568,6 +600,175 @@ export async function endSession(): Promise<SessionId | null> {
   return session_id;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Interrupted walks                                                           */
+/* -------------------------------------------------------------------------- */
+
+/** When the capture was cut off, so the gap marker can say how long it was. */
+let interruptedAt = 0;
+
+/**
+ * Hold the walk rather than end it.
+ *
+ * Everything recorded is already on disk in ten-second chunks. This stops the
+ * recorder, drops the microphone and the wake lock, and stops the timer dead —
+ * nothing keeps running, which was the owner's condition. What it does not do
+ * is assemble the chunks into one blob the way `endSession` does: a resumed
+ * segment has to keep appending to them, and assembly would strand it.
+ */
+async function interruptSession(): Promise<void> {
+  if (phase !== 'recording' && phase !== 'paused') return;
+  accumulatedMs = elapsedMs();
+  runningSince = 0;
+  interruptedAt = Date.now();
+  heldInterrupted = true;
+  phase = 'saving';
+  registerLiveSession(null);
+  notify();
+
+  try {
+    await stopRecorder();
+    await persistProgress();
+  } catch {
+    /* The chunks are the record and they are already written. */
+  } finally {
+    // Not `teardown()`: that clears `runningSince` and the stream, which is
+    // what we want, but the session id, markers and elapsed total must all
+    // survive for the resume.
+    detachLifecycle();
+    stopTicker();
+    for (const track of stream?.getTracks() ?? []) track.stop();
+    stream = null;
+    recorder = null;
+    void releaseWakeLock();
+    phase = 'interrupted';
+    notify();
+  }
+}
+
+/**
+ * Pick an interrupted walk back up. A new microphone, a new recorder, the same
+ * session: same id, same markers, and the elapsed time carries on from where
+ * it stopped rather than restarting or counting the gap.
+ *
+ * The gap itself is marked. The audio really does jump, and a transcript that
+ * pretended otherwise would put the wrong words next to the wrong plants —
+ * and the coverage gate would read the missing minutes as a failure rather
+ * than as time nobody recorded.
+ *
+ * Safari asks for the microphone again here. That is iOS, not something the
+ * app can carry over.
+ */
+export async function resumeInterrupted(): Promise<void> {
+  if (phase !== 'interrupted' || !sessionId) return;
+  const session_id = sessionId;
+
+  phase = 'starting';
+  error = null;
+  heldInterrupted = false;
+  notify();
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chosen = pickMimeType();
+    recorder = new MediaRecorder(stream, chosen ? { mimeType: chosen } : undefined);
+    mime = chosen ?? (recorder.mimeType || null);
+
+    recorder.ondataavailable = (e: BlobEvent) => {
+      if (!e.data || !e.data.size) return;
+      const key = chunkKey(session_id, chunkIndex);
+      chunkIndex += 1;
+      void openDeezPlants()
+        .then((handle) => handle.put('audio', e.data, key))
+        .then(() => persistProgress())
+        .catch(() => { /* the next chunk will try again */ });
+    };
+    recorder.onerror = () => {
+      error = 'The recorder reported an error. Everything captured so far has been saved.';
+      void interruptSession();
+    };
+
+    runningSince = Date.now();
+    phase = 'recording';
+    registerLiveSession({
+      stamp: () => ({ session_id, offset_s: elapsedSeconds() }),
+      mark: pushMarker,
+    });
+
+    // Placed after the phase flips, because `pushMarker` refuses to write
+    // outside a live walk.
+    const gap_s = interruptedAt ? Math.round((Date.now() - interruptedAt) / 1000) : 0;
+    interruptedAt = 0;
+    pushMarker({ type: 'gap', gap_s });
+
+    recorder.start(CHUNK_MS);
+    attachLifecycle();
+    startTicker();
+    void acquireWakeLock();
+    await persistProgress();
+    notify();
+  } catch (e: unknown) {
+    error = friendlyStartError(e);
+    for (const track of stream?.getTracks() ?? []) track.stop();
+    stream = null;
+    recorder = null;
+    runningSince = 0;
+    heldInterrupted = true;
+    phase = 'interrupted';
+    notify();
+  }
+}
+
+/**
+ * Finish an interrupted walk without resuming it — "I'm done, keep what you
+ * got." It goes through `endSession`'s assembly, so the segments become one
+ * file and the walk stops reading as live anywhere.
+ */
+export async function endInterrupted(): Promise<SessionId | null> {
+  if (phase !== 'interrupted') return null;
+  phase = 'paused';
+  return endSession();
+}
+
+/**
+ * Find a walk that was interrupted and never picked up, and make it resumable
+ * again. Called once at boot.
+ *
+ * This is what makes an interrupted walk survive the app being closed: the
+ * flag, the markers and the elapsed total are all on disk, so a force-quit
+ * mid-walk costs the last few seconds of audio and nothing else.
+ */
+export async function restoreInterrupted(): Promise<boolean> {
+  if (phase !== 'ready') return false;
+  const db = await openDeezPlants();
+  const held = (await db.getAll('sessions'))
+    .filter((r) => r.interrupted && !r.closed)
+    .sort((a, b) => (a.started < b.started ? 1 : -1))[0];
+  if (!held) return false;
+
+  sessionId = held.session_id;
+  startedIso = held.started;
+  markers = [...held.markers];
+  accumulatedMs = held.duration_s * 1000;
+  chunkIndex = held.chunk_count ?? held.markers.length;
+  mime = held.mime ?? null;
+  runningSince = 0;
+  // Not restored: `interruptedAt`. A walk picked up tomorrow would otherwise
+  // claim a sixteen-hour gap, which is true of the clock and useless in a
+  // transcript. An unknown gap is recorded as zero and the marker still says
+  // the audio jumps.
+  interruptedAt = 0;
+  heldInterrupted = true;
+  phase = 'interrupted';
+  // No error line here. On a live interrupt the message explains something the
+  // owner could not otherwise know — the microphone stopped, and why. Restored
+  // from disk there is nothing to explain that the panel does not already say,
+  // and saying it twice in two colours makes a handled situation look wrong.
+  error = null;
+  notify();
+  return true;
+}
+
 /**
  * Screen 03's "Delete recording". The audio and the session record go; events
  * and photos logged during the walk stay, because they are the record and the
@@ -604,7 +805,7 @@ export async function discardSession(): Promise<void> {
  * stops offering a summary of something that is no longer on the device.
  */
 export function clearFinished(session_id?: SessionId): void {
-  if (phase !== 'finished') return;
+  if (phase !== 'finished' && phase !== 'interrupted') return;
   if (session_id && sessionId !== session_id) return;
   phase = 'ready';
   sessionId = null;

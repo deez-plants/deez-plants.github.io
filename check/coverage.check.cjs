@@ -131,5 +131,37 @@ eq('an empty transcript parses to nothing',
 eq('malformed JSON falls back to prose rather than throwing',
   parseTranscript('{ not really json').segments.length, 0);
 
+/* ------------------------------------------------- resumed-walk gaps -- */
+
+// A walk iOS cut short and the owner picked back up. The audio genuinely jumps
+// at the seam, so the silence there is the recording being honest — failing it
+// would mean a resumed walk could never pass the gate, which would make
+// resuming pointless.
+{
+  const segs = [
+    { start: 0, end: 30, text: 'before the call' },
+    { start: 120, end: 150, text: 'after the call' },
+  ];
+  const seam = [{ offset_s: 30, type: 'gap', gap_s: 240 }];
+
+  eq('a 90s silence with no gap marker still fails',
+    checkCoverage(segs, 150, []).failures.filter((f) => f.assertion === 2).length, 1);
+
+  eq('the same silence passes when a gap marker explains it',
+    checkCoverage(segs, 150, seam).failures.filter((f) => f.assertion === 2).length, 0);
+
+  eq('a gap marker is never reported as uncovered',
+    checkCoverage(segs, 150, seam).failures.filter((f) => f.assertion === 3).length, 0);
+
+  // The marker excuses its own seam and nothing else.
+  const twoGaps = [
+    { start: 0, end: 30, text: 'one' },
+    { start: 120, end: 150, text: 'two' },
+    { start: 300, end: 330, text: 'three' },
+  ];
+  eq('a gap marker excuses its own seam only',
+    checkCoverage(twoGaps, 330, seam).failures.filter((f) => f.assertion === 2).length, 1);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
