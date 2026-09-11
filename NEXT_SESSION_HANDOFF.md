@@ -207,16 +207,24 @@ itself reported under assertion 3. Without both, a resumed walk could never
 pass the gate, which would make resuming pointless. Four node checks in
 `check/coverage.check.cjs` hold that down.
 
-### 3. The tab bar: the owner's picks, and what is still open
+### 3. The tab bar: SETTLED 2026-09-11 (evening)
 
-**Chosen:** Home = `home` · Plants = `feed` (the leaf) · Rec = `mic` ·
-Log = `history` · More = `other`. **Five items, with Log.**
+**Five items. Icons at 32px, the bar grown to fit.** After looking at Round 2
+of the comparison page, the owner chose:
 
-**Still open, and the owner is the judge:** they want the icons
-**noticeably bigger** — "kinda max size" — and are happy to **grow the bar
-itself** to fit, including possibly matching Rec's label size to the others.
-They are also unsure `history` holds up for Log, especially in its active
-state. Build the comparisons; do not decide for them.
+| Slot | Icon |
+|---|---|
+| Home | `home` |
+| Plants | `feed` (the leaf) |
+| Rec | `mic` |
+| **Log** | **`checklist`** |
+| More | `list` |
+
+**`checklist` is not one of the owner's 22.** It was drawn in this session for
+Round 2, in the set's language. The owner was told before choosing and picked
+it anyway. Their doubt about `history` turned out to be right — at bar size
+its hands and arrow merge. `list` moves from Plants to More, which is free
+because Plants took the leaf.
 
 They asked for **new Log candidates drawn in the existing style** — a pen, a
 notepad, a checklist, and similar. **Be accurate about authorship if it comes
@@ -246,10 +254,34 @@ They are badged NEW on the page, because the other 22 are the owner's and
 these are not. Each Log candidate is drawn twice, at bar size and at 40px,
 since the question is which one survives being small.
 
-**A finding worth carrying:** at 21–28px the owner's own doubt about
-`history` looks justified — its hands and the little arrow merge into a blob,
-while `tick`, `logged` and `note` stay legible. Say so if asked, but **the
-owner is the judge here and has not chosen yet.**
+**Round 2 closed the question.** The owner chose from it — see "The tab bar"
+above. Keep both rounds on the page; the next question gets a Round 3.
+
+## Markers — what the owner asked for, and why (2026-09-11 evening)
+
+They tested the five-second rule on their phone and it works: clicking through
+plants logs only the ones they stop on. Then they asked **"what are the
+markers, and why are they there? I see no need for them."**
+
+That is half right, and the half that is wrong matters. A walk is one long
+audio file and later one long block of transcript; nothing in that text says
+which plant was on screen when a sentence was spoken. **Markers are how the
+AI attributes words to plants**, and how the coverage gate knows whether the
+transcript covers the moments that matter. They are not for the owner to
+read. The one thing they are for the owner is *correcting* a wrong one —
+screen 03's "tap one to correct it".
+
+**Their decisions, after that explanation:**
+
+1. **Stop counting `session_start` and `session_end` in the marker count.**
+   The screen said "5 markers · 3 plants on route" for a three-plant walk;
+   the two extra are bookkeeping leaking onto the screen. The route count is
+   the honest number.
+2. **Collapse the list by default**, behind a tap. It is a correction tool,
+   not something to read.
+
+They kept the feature once they knew what it was for — do not read this as
+"the owner does not want markers."
 
 ## Start here: what to do first
 
