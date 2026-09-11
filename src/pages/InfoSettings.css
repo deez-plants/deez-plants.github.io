@@ -157,3 +157,94 @@
   color: var(--accent);
   cursor: pointer;
 }
+
+/* Archiving. Warn-coloured but not alarming: nothing is destroyed, and the
+   copy says so — the danger styling is about how rarely you should do it, not
+   about risk to the record. */
+.info-archive {
+  margin-top: 28px;
+  background: var(--panel);
+  border: 1px solid rgba(232, 138, 106, 0.28);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.info-archive.archived { border-color: var(--line); }
+
+.info-archive-title {
+  margin: 0 0 8px;
+  font: 600 25px/1.25 var(--sans);
+  color: var(--warn);
+}
+
+.info-archive.archived .info-archive-title { color: var(--ink-50); }
+
+.info-archive-body {
+  margin: 0 0 16px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.info-archive-start {
+  width: 100%;
+  background: none;
+  border: 1px solid rgba(232, 138, 106, 0.5);
+  border-radius: 13px;
+  padding: 15px 12px;
+  font: 600 23px/1 var(--sans);
+  color: var(--warn);
+  cursor: pointer;
+}
+
+.info-archive-form { display: flex; flex-direction: column; gap: 10px; }
+
+.info-archive-label {
+  font: 600 21px/1.3 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.info-archive-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--panel-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 13px 14px;
+  font: 400 23px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.info-archive-actions { display: flex; gap: 8px; }
+
+.info-archive-cancel {
+  flex: 1;
+  background: var(--panel-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  padding: 15px 8px;
+  font: 600 22px/1 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.info-archive-confirm {
+  flex: 1;
+  background: var(--warn);
+  border: 0;
+  border-radius: 13px;
+  padding: 15px 8px;
+  font: 600 22px/1.15 var(--sans);
+  color: #2a1410;
+  cursor: pointer;
+}
+
+.info-archive-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.info-archive-note {
+  margin: 4px 0 0;
+  font: 400 20px/1.35 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}

@@ -5,6 +5,7 @@ import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import { commitUpdate } from '../db/events';
 import { editPlantFields, type FieldChange } from '../care/editField';
+import { archivePlant, ARCHIVE_REASON_MAX } from '../care/archive';
 import { PlantChrome } from '../components/PlantChrome';
 import './InfoSettings.css';
 
@@ -167,6 +168,30 @@ export default function InfoSettings({
     }
   };
 
+  // Screen 04's "Archive this plant (confirm first)". It lives here rather
+  // than on plant detail because this is the screen about what a plant *is*,
+  // and because retiring one should take a moment's navigation rather than
+  // sitting a thumb's width from Log care.
+  const [archiving, setArchiving] = useState(false);
+  const [reason, setReason] = useState('');
+
+  const doArchive = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const db = await openDeezPlants();
+      await archivePlant(db, plant.plant_id, reason, as_of);
+      await onChanged();
+      setArchiving(false);
+      setReason('');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const updateNow = async () => {
     if (busy) return;
     setBusy(true);
@@ -286,6 +311,76 @@ export default function InfoSettings({
             Update now
           </button>
         </div>
+      )}
+
+      {!plant.archived && (
+        <section className="info-archive">
+          <h2 className="info-archive-title">Archive this plant</h2>
+          <p className="info-archive-body">
+            It comes out of the active list and stops counting towards anything.
+            Nothing is deleted — every watering, rating and photo stays exactly
+            where it is, and the plant keeps its ID for good. This is how a
+            plant that died or went to someone else leaves without taking its
+            history with it.
+          </p>
+
+          {!archiving ? (
+            <button type="button" className="info-archive-start" onClick={() => setArchiving(true)}>
+              Archive this plant
+            </button>
+          ) : (
+            <div className="info-archive-form">
+              <label className="info-archive-label" htmlFor="archive-reason">
+                What happened? This is kept with the record.
+              </label>
+              <input
+                id="archive-reason"
+                className="info-archive-input"
+                type="text"
+                value={reason}
+                maxLength={ARCHIVE_REASON_MAX}
+                placeholder="Died over the winter"
+                onChange={(e) => setReason(e.target.value)}
+              />
+              <div className="info-archive-actions">
+                <button
+                  type="button"
+                  className="info-archive-cancel"
+                  onClick={() => { setArchiving(false); setReason(''); }}
+                >
+                  Keep it
+                </button>
+                <button
+                  type="button"
+                  className="info-archive-confirm"
+                  disabled={busy || !reason.trim()}
+                  onClick={() => void doArchive()}
+                >
+                  Archive {plant.name}
+                </button>
+              </div>
+              <p className="info-archive-note">
+                Archiving waits for Update, like everything else — so if this
+                was the wrong plant, you have until then.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {plant.archived && (
+        <section className="info-archive archived">
+          <h2 className="info-archive-title">Archived</h2>
+          <p className="info-archive-body">
+            {plant.archived_date ? `Archived ${plant.archived_date}. ` : ''}
+            {plant.archived_reason ?? 'No reason was recorded.'}
+          </p>
+          <p className="info-archive-note">
+            Bringing a plant back is not something this app does. Entries are
+            append-only, so it would need its own kind of entry and a rule for
+            how the two fit together — a change to the record, not a button.
+          </p>
+        </section>
       )}
 
       {!dirty && saved === 0 && plant.pending_event_ids.length > 0 && (

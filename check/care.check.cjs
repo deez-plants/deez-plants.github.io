@@ -325,5 +325,28 @@ const runRated = (rateEvents, as_of) => derive({
 
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------- archiving -- */
+
+// Rule 8: archiving is an event, never a state patch. These check the event a
+// button would write, not the button.
+{
+  const A = require('./build/care/archive.js');
+  const ctx = { date: '2026-09-11', time: '21:30', device_id: 'DEV-TEST-1' };
+
+  const ev = A.buildArchiveEvent('009-SPD', '  Died over the winter  ', ctx);
+  eq('archive builds an Archive event for the plant',
+    [ev.type, ev.plant_id, ev.source], ['Archive', '009-SPD', 'user']);
+  eq('the reason is trimmed and kept as the note', ev.note, 'Died over the winter');
+  eq('it carries the date and time it was made', [ev.date, ev.time], ['2026-09-11', '21:30']);
+
+  // Section 4 caps `archived_reason`, and an archived plant with no reason
+  // answers "what happened to this one?" with silence.
+  throws('a blank reason is refused', () => A.buildArchiveEvent('009-SPD', '   ', ctx));
+  throws('a reason over 120 characters is refused',
+    () => A.buildArchiveEvent('009-SPD', 'x'.repeat(121), ctx));
+  eq('exactly 120 characters is allowed',
+    A.buildArchiveEvent('009-SPD', 'x'.repeat(120), ctx).note.length, 120);
+}
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
