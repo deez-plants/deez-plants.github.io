@@ -195,11 +195,18 @@ export default function RecordSession({
         </section>
       )}
 
+      {/* Tested on the owner's iPhone, 2026-09-11: they recorded two minutes,
+          switched apps, came back, and it had stopped. So this says "will",
+          not "can". The earlier wording hedged, and hedging here reads as
+          "probably fine" — which is the opposite of what is true, and the
+          reader is holding a walk they cannot redo. */}
       {live && (
         <p className="rec-warning">
-          Keep this app in front. Switching apps mid-walk can end the capture —
-          iOS decides that, not the app. The screen is held awake while a walk
-          is live{wakeLockSupported() ? '' : ', though this browser has no wake lock so it may still dim'}.
+          <strong>Keep this app in front.</strong> iOS ends the capture when you
+          switch to another app — this is confirmed on iPhone, not a
+          precaution. Everything up to that moment is still saved, in
+          ten-second pieces, so a walk cut short is never a walk lost. The
+          screen is held awake while a walk is live{wakeLockSupported() ? '' : ', though this browser has no wake lock so it may still dim'}.
         </p>
       )}
 

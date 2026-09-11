@@ -149,6 +149,39 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
 
       {error && <p className="recs-error">{error}</p>}
 
+      {/* The owner hit a closed loop here: "Add transcript" opened a panel
+          asking them to add a transcript, with nothing saying where one comes
+          from. The app cannot transcribe — DESIGN_REFERENCE.md screen 15,
+          "Export moves the audio and its sidecar out for Whisper" — so the
+          laptop step is intended, but it was invisible, which made a working
+          design read as a broken screen. */}
+      {sessions !== null && sessions.length > 0 && (
+        <details className="recs-how">
+          <summary>How a walk becomes a transcript</summary>
+          <ol className="recs-how-steps">
+            <li>
+              <strong>Export for Whisper</strong> on this phone. You get
+              <code> deez-plants-&lt;session&gt;.zip</code> — the audio and a
+              sidecar naming the plants on the route.
+            </li>
+            <li>
+              <strong>Move it to the laptop</strong> and run Whisper over it
+              (<code>transcribe_walk.py</code>, see <code>TRANSCRIBE.md</code>).
+              This phone cannot do it — Whisper does not run here.
+            </li>
+            <li>
+              <strong>Add transcript</strong>, back on whichever device you
+              like, and give it the Whisper file.
+            </li>
+          </ol>
+          <p className="recs-how-note">
+            Typing or pasting words yourself works too and is accepted whole —
+            it is marked <strong>unverified</strong> because there are no
+            timestamps to check it against.
+          </p>
+        </details>
+      )}
+
       <div className="recs-list">
         {sessions?.map((s) => {
           const liveNow = !s.closed && phase !== 'ready' && phase !== 'finished';
@@ -240,7 +273,9 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
               {transcribing === s.session_id && (
                 <div className="recs-attach">
                   <p className="recs-attach-note">
-                    Whisper JSON or SRT gives a <strong>verified</strong> transcript — timestamps
+                    This wants a file Whisper produced on the laptop — export
+                    the walk first if you have not. Whisper JSON or SRT gives a{' '}
+                    <strong>verified</strong> transcript, because its timestamps
                     let the app check coverage against the {formatDuration(s.duration_s)} it
                     recorded itself. Typed or dictated text is accepted whole as
                     <strong> unverified</strong>, with no gate.

@@ -259,3 +259,44 @@
   color: var(--ink-45);
   text-wrap: pretty;
 }
+
+/* The three-step round trip, collapsed by default. It is reference rather
+   than instruction — you need it once, then never again — so it should not
+   push the sessions down the page for ever. */
+.recs-how {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.recs-how > summary {
+  font: 600 23px/1.25 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.recs-how-steps {
+  margin: 12px 0 0;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font: 400 22px/1.35 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.recs-how-steps code {
+  font: 400 20px/1.2 var(--mono);
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.recs-how-note {
+  margin: 12px 0 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
