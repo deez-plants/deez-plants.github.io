@@ -29,6 +29,85 @@ Do not re-read `HANDOFF.md` section 6 as live instruction — it's marked
 superseded in place. The build order in its section 2 still roughly holds;
 the phase-gated pacing and "live-test for weeks before continuing" does not.
 
+## The 2026-09-11 recording pass — read this before touching Record
+
+The owner ran the iPhone test. **Three findings, all settled.**
+
+**1. iOS kills recording on backgrounding. Confirmed, not theoretical.** The
+owner recorded ~2 minutes, switched apps, came back: stopped. The
+pessimistic assumption in `capture/recording.ts` was correct. The screen log
+and the 10-second audio chunks both survived, so the durability design did
+its job. **Do not design as though foreground-only is a maybe. It is a
+fact.**
+
+**2. A real bug, and its cause is known.** `endSession()` sets the phase to
+`saving`, then awaits `stopRecorder()`, which waits on the MediaRecorder's
+`stop` event. When iOS has already killed the track, that event never fires
+and **the await has no timeout**, so the app hangs in `saving` for ever.
+Both symptoms the owner saw come from that one hang: the Record screen stuck
+on "Working…" (`busy` is true while `saving`), and Recordings showing
+"Recording now" on a dead session (`liveNow` in `Recordings.tsx` tests
+`!s.closed`, and the code that closes the session sits *after* the hang).
+`stopRecorder()` guards against `state === 'inactive'` but not against a
+recorder that is nominally alive with a dead track under it — which is
+exactly what an iOS kill produces, and exactly what a laptop cannot
+reproduce. **Force-quitting clears it; nothing is lost, because chunks are
+written independently.**
+
+**3. The mock had things the build dropped.** Verified by reading
+`Deez Plants.dc.html`, not from memory:
+- `@keyframes recPulse` — a ring scaling to 1.35x and fading, 1.6s, looping,
+  shown **only while recording** (`recActive`). Never built.
+- While recording the button also turns `#9BE39B` → `#E88A6A`, the inner dot
+  morphs circle → 5px-radius square, and the label reads `Pause`. Never
+  built.
+- **`tapRec` starts the session directly** (`if (t.secs === 0) set({ screen:
+  "rec", recording: true })`). The build made it navigate only, with a
+  comment justifying the change. The comment's reasoning about the *label*
+  was sound; keeping navigation-only was not.
+- The screen is called **"Inspection session"** — that part the build got
+  right.
+
+**Checked and NOT a miss:** Home's "Do next" exists, renamed "Most urgent".
+And the transcript round-trip genuinely is a laptop step (screen 15: "Export
+moves the audio and its sidecar out for Whisper") — what is missing is any
+on-screen sign that the laptop step exists, so "Add transcript" reads as a
+closed loop.
+
+### The agreed fixes (owner approved 2026-09-11)
+
+**A** hang fix · **B** Rec button per the mock, with one deliberate
+deviation: while recording, the tab-bar button **opens the screen rather than
+pausing**, because a mis-tap that silently pauses a walk is worse than one
+extra tap · **C** transcript dead end · **D** make the backgrounding warning
+specific, now that it is a known fact · **E** Log care moved to the top of
+Home.
+
+### The tab bar — an ongoing task, deliberately deferred
+
+The owner wants **Log care in the bottom bar** (label: `Log`), because it is
+what they use most and it currently sits below the fold on Home.
+
+**`DESIGN_REFERENCE.md` section 6 locks the opposite** — "Log Care as
+plant-specific contextual actions rather than permanent tabs". The owner was
+told this and is overriding it knowingly, having now used the app. **That
+override is the decision; do not re-raise the lock.**
+
+Sequenced as: **E first** (top of Home, cheap, may be enough), then a
+five-item bar if it is not. Five fits — an iPhone 14 Pro Max is 430pt wide,
+~86pt per item. The owner noted their phone's dock shows only 4; that is a
+fixed iOS dock rule, not a width limit, and does not apply.
+
+**This is an ongoing, multi-session task.** The owner will choose icons from
+a published comparison page (see below) and may supply their own: flat solid
+white PNG, 512x512, transparent background, ~15% padding — never the 3D
+treatment of the app icon, which turns to mush at 24px. **Check
+`src/components/Icon.tsx` first** — 22 of the owner's own icons are already
+extracted there and may cover all five.
+
+**No part of this touches data.** Nav is presentational; IndexedDB is keyed
+to the origin. Deferring it costs nothing but the inconvenience.
+
 ## Start here: what to do first
 
 **The app is live at https://deez-plants.github.io.** Hosting is done — see
