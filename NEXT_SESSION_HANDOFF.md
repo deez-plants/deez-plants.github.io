@@ -539,7 +539,7 @@ interrupted mid-flight still inherits every decision.
    Archive action (the dead Spider Plant stays in the active list for now),
    and any redesign of the two web guides beyond bringing them up to date.
 
-### One number worth checking
+### One number worth checking — SOLVED 2026-09-11
 
 After the ratings landed, Home's score block reads `6.2 /10` with a previous
 value of `6.1` and an elapsed time of `0d`. Both are computed from the same
@@ -547,9 +547,19 @@ value of `6.1` and an elapsed time of `0d`. Both are computed from the same
 it replaced came out 0.1 lower than the state that replaced it. It is
 cosmetic and nobody has chased it, but a same-day delta of `+0.1 · 0d` is
 exactly the kind of misleading movement §3b's "the delta always carries
-elapsed time" rule exists to prevent. Worth a look: either a rounding
-difference between the pre-fold and post-fold derivations, or `movement()`
-should read `no change` when the elapsed time is zero.
+elapsed time" rule exists to prevent.
+
+**Cause and fix.** Neither guess above was right — it was not rounding and
+the renderer was innocent. `derive.ts` recorded the running collection
+average after *every* `Rate` event, so entering 22 ratings in one sitting
+wrote 22 entries and `average_previous` became the average after 21 of them.
+The series now holds **one value per day**, the average as it stood at the
+end of that day, so moving between two values means moving between two days.
+Home reads "6.2 /10 Sep 08 · first record", which is the truth.
+
+**Do not undo this by adding intermediate points back for a smoother
+sparkline.** The sparkline draws real days; a line with a point per rating
+would be drawing the act of typing.
 
 ### The hosting decisions (2026-09-09, settled — do not relitigate)
 
