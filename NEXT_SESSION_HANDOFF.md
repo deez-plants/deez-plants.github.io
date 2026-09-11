@@ -220,6 +220,17 @@ of the comparison page, the owner chose:
 | **Log** | **`checklist`** |
 | More | `list` |
 
+**Built 2026-09-11.** `src/nav/TabBar.tsx`, icons at 32px with the bar's
+padding grown to match. Labels stay at **20px** — five items still clear the
+brief's hard readability floor at 430pt (~86pt each), and that floor is never
+the thing to trade for room. The idle Rec disc carries the mic; recording, it
+gives way to the stop square, because a microphone and a stop symbol shown at
+once say two different things.
+
+**One thing left for the owner to decide:** Home still has its own full-width
+`Log care` button at the top, added when the bar had no Log tab. It is now
+arguably redundant. It has been left alone rather than removed on a guess.
+
 **`checklist` is not one of the owner's 22.** It was drawn in this session for
 Round 2, in the set's language. The owner was told before choosing and picked
 it anyway. Their doubt about `history` turned out to be right — at bar size
