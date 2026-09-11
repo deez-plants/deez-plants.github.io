@@ -478,14 +478,43 @@ export async function resumeSession(): Promise<void> {
   notify();
 }
 
+/** How long to wait for the recorder's `stop` event before giving up on it.
+    A live recorder fires it in milliseconds; this only ever elapses when the
+    recorder cannot answer at all. */
+const STOP_TIMEOUT_MS = 3_000;
+
+/**
+ * Stop the recorder and wait for its final chunk — but never wait for ever.
+ *
+ * The timeout is the whole point. When iOS kills the capture, the recorder is
+ * left nominally alive with a dead track underneath it: `state` is not
+ * `inactive`, so the guard below does not fire, but `stop` never arrives
+ * either. Without a deadline the caller hung in `saving` permanently, which
+ * wedged the Record screen on "Working…" and left `closed` false so Recordings
+ * reported a dead session as "Recording now". A laptop cannot produce that
+ * state, which is why it survived every test until a real iOS kill.
+ *
+ * Resolving early costs at most the last partial chunk. The chunks already
+ * written every ten seconds are untouched.
+ */
 function stopRecorder(): Promise<void> {
   return new Promise<void>((resolve) => {
     const r = recorder;
     if (!r || r.state === 'inactive') { resolve(); return; }
-    r.addEventListener('stop', () => resolve(), { once: true });
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(finish, STOP_TIMEOUT_MS);
+
+    r.addEventListener('stop', finish, { once: true });
     // Some engines will not fire `stop` from `paused`.
     if (r.state === 'paused') { try { r.resume(); } catch { /* ignore */ } }
-    try { r.stop(); } catch { resolve(); }
+    try { r.stop(); } catch { finish(); }
   });
 }
 
@@ -506,24 +535,36 @@ export async function endSession(): Promise<SessionId | null> {
   registerLiveSession(null);
   notify();
 
-  await stopRecorder();
+  // Everything from here is best-effort. The walk is already on disk in
+  // ten-second chunks, so the worst outcome of a failure here is a session
+  // that has to be read back from its chunks — not a lost walk. What must not
+  // happen is the phase staying at `saving`, because that is a freeze the
+  // owner can only clear by force-quitting the app. Hence `finally`.
+  try {
+    await stopRecorder();
 
-  const db = await openDeezPlants();
-  // The recorder's last `ondataavailable` fires just before `stop` and writes
-  // asynchronously; give it the turn it needs before assembling.
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const db = await openDeezPlants();
+    // The recorder's last `ondataavailable` fires just before `stop` and writes
+    // asynchronously; give it the turn it needs before assembling.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-  const whole = await readSessionAudio(db, session_id);
-  if (whole) {
-    await deleteSessionAudio(db, session_id);
-    await db.put('audio', whole, session_id);
+    const whole = await readSessionAudio(db, session_id);
+    if (whole) {
+      await deleteSessionAudio(db, session_id);
+      await db.put('audio', whole, session_id);
+    }
+    await persistProgress(true);
+  } catch {
+    // Mark the session closed even if assembling its audio failed, so it stops
+    // reading as live. A second attempt is pointless: the chunks are the
+    // record, and `readSessionAudio` already falls back to them.
+    try { await persistProgress(true); } catch { /* the chunks still stand */ }
+  } finally {
+    saved = { session_id, duration_s: elapsedSeconds(), marker_count: markers.length };
+    teardown();
+    phase = 'finished';
+    notify();
   }
-  await persistProgress(true);
-
-  saved = { session_id, duration_s: elapsedSeconds(), marker_count: markers.length };
-  teardown();
-  phase = 'finished';
-  notify();
   return session_id;
 }
 

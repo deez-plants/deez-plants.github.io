@@ -1,0 +1,72 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>recorder: iOS kill</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  The one failure `npm run check` cannot reach: what happens when iOS kills a
+  capture mid-walk.
+
+  Run it with the dev server up:  http://localhost:5173/check/browser/recorder.html
+
+  Why it has to live in a browser. `endSession()` waits for the MediaRecorder's
+  `stop` event. On iOS a killed capture leaves the recorder nominally alive —
+  not `inactive` — and that event never arrives, so the wait hung for ever and
+  the app froze on "Working…" until force-quit. Chrome will not reproduce that
+  on its own: ending a track flips its recorder straight to `inactive`, which
+  short-circuits the wait. Both conditions have to be forced, and that is
+  exactly why this survived every laptop test until a real walk on a real
+  iPhone hit it (2026-09-11).
+
+  Verified to fail without the fix: hangs past 12s and reports HUNG.
+  With the fix: settles at ~4s and reports finished.
+
+  The mic is faked with a Web Audio stream, so this prompts for nothing.
+-->
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+
+// A real live audio track from Web Audio — no permission prompt, and a track
+// we can end on demand to reproduce exactly what iOS does to a capture.
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+const fake = dest.stream;
+navigator.mediaDevices.getUserMedia = async () => fake;
+
+const rec = await import('/src/capture/recording.ts');
+log('module loaded, phase=' + rec.getPhase());
+
+await rec.startSession();
+log('after start, phase=' + rec.getPhase());
+
+await new Promise(r => setTimeout(r, 1200));
+
+// The precise condition that hangs, isolated. Two things have to be true at
+// once: the recorder is NOT `inactive` (so stopRecorder's early return does
+// not fire), and the `stop` event never arrives. Chrome will not produce that
+// pair on its own — ending a track flips it straight to `inactive` — which is
+// exactly why a laptop never caught this and a real iOS kill did.
+MediaRecorder.prototype.stop = function () { /* swallowed, as on iOS */ };
+log('stop() swallowed, recorder still live, phase=' + rec.getPhase());
+rec.endSession();
+await new Promise(r => setTimeout(r, 50));
+log('endSession called, phase=' + rec.getPhase());
+
+const t0 = Date.now();
+let settled = 'TIMED OUT (still hung)';
+const watchdog = new Promise(r => setTimeout(() => r('HUNG'), 12000));
+const done = (async () => {
+  while (rec.getPhase() === 'saving' || rec.getPhase() === 'recording') {
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return rec.getPhase();
+})();
+settled = await Promise.race([done, watchdog]);
+log('settled after ' + (Date.now() - t0) + 'ms -> phase=' + settled);
+log(settled === 'finished' ? 'PASS: reached finished, no hang' : 'FAIL: ' + settled);
+</script>
+</body></html>
