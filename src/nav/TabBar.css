@@ -1,3 +1,8 @@
+/*
+ * Five items at the owner's chosen 32px, with the bar's own padding grown to
+ * match rather than the icons squeezed into the old height. They picked the
+ * size by looking at all four options at their phone's real width.
+ */
 .tabbar {
   position: fixed;
   left: 0;
@@ -7,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 10px 8px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 14px 4px calc(20px + env(safe-area-inset-bottom, 0px));
   background: var(--panel);
   border-top: 1px solid var(--line);
 }
@@ -17,14 +22,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
   min-height: 44px;
-  padding: 6px 4px;
+  padding: 4px 2px;
   background: none;
   border: 0;
+  /* 20px is the brief's hard readability floor (DESIGN_REFERENCE.md section
+     6), and five labels still clear it at this width — 430pt gives each item
+     about 86pt. It is the floor, so never trade it for room. */
   font: 600 20px/1 var(--sans);
   color: var(--ink-45);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .tabbar-item.on { color: var(--accent); }
@@ -34,32 +44,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  margin-top: -20px;
+  gap: 6px;
+  margin-top: -22px;
   padding: 0;
   background: none;
   border: 0;
   cursor: pointer;
 }
 
-/*
- * The centre button, rebuilt from the mock (`Deez Plants.dc.html`): a dark
- * disc with a small core inside it, not the solid accent disc an earlier pass
- * built. Idle, the core is a green circle. Recording, the disc darkens to a
- * red-brown, the core becomes a red-orange rounded square — a stop symbol —
- * and a ring scales out from the edge and fades.
- *
- * `recPulse` in the mock is `1.6s ease-out infinite`, scale 1 -> 1.35, opacity
- * .9 -> 0, held at 0 for the last 30% so there is a beat between pulses rather
- * than a continuous throb.
- */
 .tabbar-rec-dot {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 58px;
-  height: 58px;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   background: var(--panel-on);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
@@ -86,6 +85,12 @@
   font: 700 20px/1 var(--sans);
   color: var(--ink);
 }
+
+/* Idle, the disc holds the mic icon in the accent colour. Recording, the icon
+   gives way to the stop square — a microphone and a stop symbol at once would
+   say two different things. */
+.tabbar-rec-dot > svg { color: var(--accent); }
+.tabbar-rec.live .tabbar-rec-dot > svg { color: var(--warn); }
 
 /* A walk in progress, visible from every screen. */
 .tabbar-rec.live .tabbar-rec-dot {

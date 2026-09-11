@@ -519,7 +519,13 @@ export default function App() {
   return (
     <>
       <div className="app-content">{body}</div>
-      <TabBar active={nav.activeTab} onTab={nav.goRoot} onRec={onRec} onMore={openAllPages} />
+      <TabBar
+        active={nav.activeTab}
+        onTab={nav.goRoot}
+        onRec={onRec}
+        onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
+        onMore={openAllPages}
+      />
     </>
   );
 }

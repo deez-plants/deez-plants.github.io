@@ -51,6 +51,20 @@ const ICONS = {
   mic: { f: 'M12 2.4a3.2 3.2 0 0 1 3.2 3.2v5.6a3.2 3.2 0 0 1-6.4 0V5.6A3.2 3.2 0 0 1 12 2.4z', s: 'M5.6 10.8a6.4 6.4 0 0 0 12.8 0M12 17.4V21.4M8.6 21.4h6.8', sw: 2.4 },
   history: { f: 'M12 3.4a8.6 8.6 0 1 0 8.6 8.6h-2.6A6 6 0 1 1 12 6z', s: 'M12 7.6v4.8l3.4 2M20.6 3.4v5.2h-5.2', sw: 2.2 },
   other: { f: 'M12 9.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM4.6 9.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM19.4 9.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z' },
+
+  /**
+   * The one icon here that is NOT the owner's.
+   *
+   * Drawn 2026-09-11 for the tab-bar comparison page, in this set's language —
+   * 24x24, stroked at 2, the same weights as `note` and `reminder`. The owner
+   * was told it was not theirs before choosing it for Log, and chose it
+   * anyway: their own `history` turned out to collapse at tab-bar size, which
+   * they had suspected.
+   */
+  checklist: {
+    s: 'M8.8 4.8H6.4a1.6 1.6 0 0 0-1.6 1.6v13a1.6 1.6 0 0 0 1.6 1.6h11.2a1.6 1.6 0 0 0 1.6-1.6v-13a1.6 1.6 0 0 0-1.6-1.6h-2.4M9.6 2.8h4.8a1 1 0 0 1 1 1v1.6a1 1 0 0 1-1 1H9.6a1 1 0 0 1-1-1V3.8a1 1 0 0 1 1-1zM8.6 13.2l2.4 2.4 4.4-4.4',
+    sw: 2,
+  },
 } satisfies Record<string, IconDef>;
 
 export type IconName = keyof typeof ICONS;
