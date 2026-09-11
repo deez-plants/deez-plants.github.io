@@ -98,12 +98,18 @@ five-item bar if it is not. Five fits — an iPhone 14 Pro Max is 430pt wide,
 ~86pt per item. The owner noted their phone's dock shows only 4; that is a
 fixed iOS dock rule, not a width limit, and does not apply.
 
-**This is an ongoing, multi-session task.** The owner will choose icons from
-a published comparison page (see below) and may supply their own: flat solid
-white PNG, 512x512, transparent background, ~15% padding — never the 3D
-treatment of the app icon, which turns to mush at 24px. **Check
-`src/components/Icon.tsx` first** — 22 of the owner's own icons are already
-extracted there and may cover all five.
+**This is an ongoing, multi-session task.** The comparison page is published
+at **https://claude.ai/code/artifact/619f85e3-1cfb-4f5a-8f48-d250331e1347** —
+every candidate is drawn from `src/components/Icon.tsx` (the owner's own
+artwork, so no new icons were needed), the owner picks one per slot, and the
+page renders the bar at 430px, the real width of their phone, in four-item
+and five-item forms at three label sizes. **Wait for their picks; do not
+guess them.** The page stores picks in the viewer's own browser only, so the
+owner has to read the line back — it does not reach this session on its own.
+
+If they do want to draw new ones: flat solid white PNG, 512x512, transparent
+background, ~15% padding — never the 3D treatment of the app icon, which
+turns to mush at 24px.
 
 **No part of this touches data.** Nav is presentational; IndexedDB is keyed
 to the origin. Deferring it costs nothing but the inconvenience.
