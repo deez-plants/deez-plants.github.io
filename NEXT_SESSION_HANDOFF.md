@@ -951,31 +951,32 @@ the browser tool, screenshot it, compare against `screenshots/`), run
 `check` alone does not typecheck pages) — before reporting it done. Commit
 at every stable, checks-passing checkpoint.
 
-## Published status page
-
-A running status page for the owner (non-technical framing, the roadmap
-table with time estimates and who does what) is published at:
+## The owner's page — one, not two
 
 **https://claude.ai/code/artifact/1e8d981a-2bef-4ab7-bc30-87f3f309f62d**
 
-Update it as steps complete — redeploy by publishing the same source file
-path from within a session that has read it first (see the Artifact tool's
-own instructions), passing this URL, not by creating a new one. Updated this
-session for Care calendar, Adherence history, Rooms and planters, More
-about/Info and settings, and Health history.
+The Roadmap and the Playbook were merged into this single page on 2026-09-11,
+at the owner's request: two pages that overlapped and disagreed were most of
+why they found them confusing. It carries where things stand, the one thing
+to do next, and every remaining step with its time and whose job it is. The
+old Playbook URL (`0f4f7478-…`) is now a short pointer at this one, so the
+owner's existing bookmark still lands somewhere useful — **do not rebuild the
+Playbook.**
 
-A companion page, **the Deez Plants Playbook**
-(https://claude.ai/code/artifact/0f4f7478-a690-45ce-a364-d62190747ea4), is a
-step-by-step guide for the owner: how to start a session, what to expect
-while Claude works, the four things that need them, and exact prompts for
-each. It's mostly static — only touch it if the actual workflow changes,
-not per build step.
+**It saves its own ticks.** The page declares the `artifact` capability, so
+ticking an item republishes the page with that state baked into its
+`<script id="state">` block — which means the owner's ticks persist across
+devices and are visible to anyone with the link. Two consequences:
 
-Its 2026-09-08 rewrite corrected a section that had gone actively wrong: it
-told the owner their ratings could only ever be typed in on the phone and
-that Claude could not enter them. Backup changed that, and the page now says
-so. It also leads with the per-origin storage rule, since that is what cost
-the owner an evening.
+1. **The owner's ticks arrive here as a republish notice**, and the local
+   source file in the session scratchpad is then behind. Re-read the artifact
+   before editing it, or their ticks get overwritten.
+2. **Update the `steps` array in that state block**, not prose scattered
+   through the page — the page renders itself from that array.
+
+The division of labour the owner set: **this handoff is the authority; the
+page is theirs for tracking.** If they ever disagree, the handoff is right.
+The page says so itself.
 
 ## Other files worth knowing about
 
