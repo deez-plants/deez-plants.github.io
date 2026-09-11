@@ -114,6 +114,98 @@ turns to mush at 24px.
 **No part of this touches data.** Nav is presentational; IndexedDB is keyed
 to the origin. Deferring it costs nothing but the inconvenience.
 
+## The 2026-09-11 night pass — the owner's decisions, settled
+
+The owner ran the real iPhone test after the recording fixes landed and
+reported: **no freeze, 5+ minutes of continuous recording, pause, delete,
+the delete warning, sessions appearing in Recordings and deleting cleanly,
+and markers landing on the plants they switched to at the end.** Item A is
+confirmed on real iOS. They also said explicitly they like the running timer
+on the tab-bar button and **it stays** — do not replace it with the mock's
+"Pause" label.
+
+### 1. The five-second rule was only half built
+
+`screenLog.ts` applies it correctly to the **log**: `closeVisit()` drops any
+visit under `SCREEN_LOG_MIN_DWELL_S`, quoting section 6 — "anything on
+screen under 5 seconds was navigation, not looking."
+
+But `enterScreen()` places the **marker** one line earlier, with no dwell
+check at all:
+
+```
+if (plant_id) markPlantOpen(plant_id);   // fires the instant you arrive
+```
+
+So the rule got applied to the log and skipped for the markers — and the
+markers are the thing the AI actually reads. The owner found this by flicking
+between plants during a walk and watching "Detected on route" fill up with
+plants they had not looked at. **Fix: hold the marker for the same five
+seconds and place it only if still on that plant.** Their 5-minute run
+confirms markers otherwise work, so this is narrowly about fast switching.
+
+### 2. Resume an interrupted walk — the owner's design, not the first proposal
+
+The first proposal was segments that keep a walk alive across the
+interruption. **The owner cut it back, and their version is better.** Their
+words: if they get a call or forget they were recording, they do **not** want
+the app "continuing to time or do anything" — it can stop completely, as long
+as it **remembers where it was**.
+
+So:
+
+- iOS kills the capture → everything saves, **the timer stops dead**, nothing
+  keeps running in the background. The session is marked **interrupted**
+  rather than closed.
+- Next time the app opens — ten seconds later, tomorrow, or after a
+  force-quit — the Record screen offers **Resume**, or ending it properly.
+- Resume adds a segment to the same walk. The timer continues from the
+  recorded total, **not** counting the gap. Markers keep landing in the same
+  list. Segments stitch in order at export.
+- A **gap marker** records the interruption and its length, so the transcript
+  carries an honest seam and the coverage gate does not read the missing
+  minutes as a failure.
+
+**Surviving a force-quit is achievable, not best-effort.** The owner said
+losing an unsaved walk would be acceptable but not losing it would be better
+— and not losing it is the easy case here, because chunks and the session
+record are already written to IndexedDB every ten seconds. What is missing is
+only that the app marks an interrupted walk *finished* and offers no way back
+in.
+
+Safari re-asks for the microphone on resume. That is iOS; do not try to work
+around it.
+
+### 3. The tab bar: the owner's picks, and what is still open
+
+**Chosen:** Home = `home` · Plants = `feed` (the leaf) · Rec = `mic` ·
+Log = `history` · More = `other`. **Five items, with Log.**
+
+**Still open, and the owner is the judge:** they want the icons
+**noticeably bigger** — "kinda max size" — and are happy to **grow the bar
+itself** to fit, including possibly matching Rec's label size to the others.
+They are also unsure `history` holds up for Log, especially in its active
+state. Build the comparisons; do not decide for them.
+
+They asked for **new Log candidates drawn in the existing style** — a pen, a
+notepad, a checklist, and similar. **Be accurate about authorship if it comes
+up: the 22 icons are the owner's, from the mock Claude Design built to their
+brief. This session recovered them; it did not draw them.** Anything new must
+match the set's language — 24x24 grid, the same filled/stroked mix, stroke
+widths in the 2.0–2.6 range — or it will read as imported.
+
+**Rec needs no animation on the mock-up page.** The owner decided the running
+timer already does that job.
+
+### 4. The mock-up page is cumulative — do not tidy it
+
+**https://claude.ai/code/artifact/619f85e3-1cfb-4f5a-8f48-d250331e1347**
+
+The owner's instruction, verbatim in effect: keep adding to it, keep the old
+rounds on the page for reference, so there is a record of what was tried and
+they can go back to an earlier idea. **Append new rounds, dated. Never
+replace or prune what is already there.**
+
 ## Start here: what to do first
 
 **The app is live at https://deez-plants.github.io.** Hosting is done — see
