@@ -615,6 +615,23 @@ Live at **https://deez-plants.github.io**, deployed by
   console errors. Manifest and all four icons serve with correct content
   types.
 
+### Open: does a recorded walk play back?
+
+Built 2026-09-11 — a player in Recordings, and coverage failures as buttons
+that seek to the moment they name (section 6's replay button; the two are one
+feature). **Not confirmed working on audio, and not claimed to be.**
+
+In Chrome on the build machine the player mounts and the blob loads, but the
+audio never reaches `readyState > 0`. The blob is a valid fragmented MP4 —
+`ftypisom` header, chunk 0 a 641-byte init segment, the rest fragments —
+which is exactly what Safari's `MediaRecorder` produces and what Chrome's own
+`<audio>` will not decode back. So this may be a Chrome-only limitation and
+work fine on the owner's phone, or it may not.
+
+**The test is: open a walk in Recordings on the iPhone and press play.** Add
+it to the next round of things the owner checks. Whisper reads fMP4 through
+ffmpeg regardless, so the export and transcript path does not depend on this.
+
 ### The iPhone test — the owner's, and the last real unknown
 
 Everything a desktop browser can prove about recording has been proved. These
