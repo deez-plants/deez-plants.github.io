@@ -1046,6 +1046,15 @@ so the reasoning stays attached to the work.
     data, since installed apps are treated better than ordinary sites.
 13. **Model switch — safe now.** Everything left is fast-model work. The two
     items that warranted care (the spec change and backup) are done.
+**Archive — built 2026-09-11.** `src/care/archive.ts` plus the panel on Info
+and settings. The event type and its derive rules already existed; nothing
+could write one, which is why 009-SPD is still active. **The owner archives
+their own Spider Plant** — this session built it and deliberately did not use
+it, because archiving a real plant is their decision and an event cannot be
+taken back. Note there is no unarchive, on purpose: entries are append-only
+and `derive.ts` keeps the first Archive per plant, so reversing it needs its
+own event type and an interleaving rule.
+
 14. Screens **22** (How this app works — static copy, trivial), **21**
     (Handoff log — reads `packages`/`applied_updates`, nearly a pure
     render), **17** (Since last time — reads `snapshots`), **18** (What
