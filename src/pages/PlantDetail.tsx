@@ -158,15 +158,35 @@ export default function PlantDetail({
 
       <h1 className="detail-title">{plant.name}</h1>
 
-      <div className="detail-top">
-        {heroUrl
-          ? <img className="detail-hero" src={heroUrl} alt="" width={150} height={150} />
-          : <div className="detail-hero detail-hero-empty" />}
-        <div className="detail-score">
-          <ScoreBlock {...plantScore(plant, openSheet)} label={null} />
-          {confirmation && <p className="detail-confirmation">{confirmation}</p>}
-        </div>
+      {/*
+        The owner's order, agreed 2026-09-12 and drawn as Round 3 of the
+        screens mock-up. The identity block, then the photograph at full
+        width, then the rating, then the care status — because "what I need to
+        do and what's overdue is what I will be using most at a glance, then I
+        can see and do what's needed; this is my main interaction". The care
+        status used to sit below several cards.
+
+        The hero is **square**. Their collection is 24 square photographs, one
+        4:3 and one 3:4, and capture crops nothing — so a square frame costs
+        almost nothing today and does crop a tall photograph, which they
+        accepted after seeing it against the Spider Plant. `object-fit: cover`
+        rather than a fixed-height box: section 6 records a photo in a
+        mismatched container leaving a pale band, and that is the bug this
+        would otherwise repeat.
+
+        The plant's ID is NOT repeated here. It is in the locked Prev/Next
+        strip above, and the owner asked for it in one place only.
+      */}
+      {heroUrl
+        ? <img className="detail-hero" src={heroUrl} alt="" />
+        : <div className="detail-hero detail-hero-empty" />}
+
+      <div className="detail-score">
+        <ScoreBlock {...plantScore(plant, openSheet)} label={null} />
+        {confirmation && <p className="detail-confirmation">{confirmation}</p>}
       </div>
+
+      {plant.species && <p className="detail-species">{plant.species}</p>}
 
       <p className="detail-checked">
         <span className={`detail-state detail-state-${badge.tone}`}>{badge.text}</span>

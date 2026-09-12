@@ -13,31 +13,36 @@
   text-wrap: pretty;
 }
 
-.detail-top {
-  display: flex;
-  align-items: stretch;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
+/* Full width, square, rounded — the owner's choice from Round 2 of the screens
+   page. `aspect-ratio` with `object-fit: cover` rather than a fixed height, so
+   a photograph of any shape fills the frame instead of leaving the pale band
+   DESIGN_REFERENCE.md section 6 records as a lesson already learned once. */
 .detail-hero {
-  flex: none;
-  width: 150px;
-  height: 150px;
-  border-radius: 16px;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
   border: 1px solid var(--line);
   object-fit: cover;
   background: var(--panel-raised);
+  margin-bottom: 4px;
 }
 
 .detail-hero-empty { display: block; }
 
 .detail-score {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  padding: 12px 0 2px;
+}
+
+/* Its own line under the rating, nothing else on it. Location is deliberately
+   absent — it lives in PLACEMENT and the owner asked for it in one place. */
+.detail-species {
+  margin: 0 0 12px;
+  font: 400 23px/1.35 var(--sans);
+  color: var(--ink-60);
+  text-wrap: pretty;
 }
 
 .detail-confirmation {

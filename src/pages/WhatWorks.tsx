@@ -58,23 +58,17 @@ export default function WhatWorks({
     <main className="works">
       <button type="button" className="works-back" onClick={onBack}>‹ {backLabel}</button>
       <h1 className="works-title">What works</h1>
-      <p className="works-dek">
-        {plant
-          ? <>Everything you have changed or done to <strong>{plant.name}</strong>, with your ratings either side of it.</>
-          : 'Every change you made to how a plant is cared for, with your ratings either side of it.'}
-      </p>
 
-      {/* The screen's own conscience, stated before any data. */}
-      <p className="works-caveat">
-        <strong>This is not a claim about cause.</strong> The ratings are shown
-        and the reading is yours. A plant moves for reasons this record never
-        saw, and two numbers cannot tell them apart.
-      </p>
-
+      {/* Four blocks used to stand between the title and any content — an
+          explaining sentence, a caveat paragraph, then the count. The owner:
+          "there is too much useless extra text at the top". The sentence is
+          gone (the back button names the plant, the title says what this is)
+          and the caveat moved to the foot of the page. What is left is the
+          one line that carries information. */}
       <p className="works-count">
         {changes.length === 0
           ? 'No care changes recorded yet.'
-          : `${changes.length} change${changes.length === 1 ? '' : 's'} · ${answered} with a rating on both sides`}
+          : `${changes.length} change${changes.length === 1 ? '' : 's'} · ${answered} with ratings both sides`}
       </p>
 
       {changes.length === 0 && (
@@ -166,6 +160,13 @@ export default function WhatWorks({
           What works across every plant ›
         </button>
       )}
+
+      {/* Shortened and moved, not deleted. The reference calls this screen's
+          governing sentence "not a claim of causation — the ratings are shown,
+          the inference is yours", and it is what keeps the page from reading
+          as a verdict. One line at the foot does that; a paragraph at the head
+          was just in the way. */}
+      <p className="works-caveat">Ratings shown, not conclusions drawn.</p>
     </main>
   );
 }

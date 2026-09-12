@@ -28,21 +28,20 @@
   text-wrap: pretty;
 }
 
-/* Stated before any data, and styled to be read rather than skimmed past —
-   this screen's whole risk is looking more authoritative than it is. */
+/* At the foot now, and one line. The rule still matters — this screen's whole
+   risk is looking more authoritative than it is — but the paragraph that said
+   so was standing between the title and the content. */
 .works-caveat {
-  margin: 0 0 18px;
-  padding: 4px 0 4px 16px;
-  border-left: 3px solid var(--amber);
-  font: 400 22px/1.4 var(--sans);
-  color: var(--ink-70);
+  margin: 22px 0 0;
+  padding: 4px 0 4px 14px;
+  border-left: 2px solid var(--amber);
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-50);
   text-wrap: pretty;
 }
 
-.works-caveat strong { color: var(--ink); font-weight: 600; }
-
 .works-count {
-  margin: 0 0 16px;
+  margin: 8px 0 16px;
   font: 600 21px/1 var(--mono);
   color: var(--ink-50);
 }
