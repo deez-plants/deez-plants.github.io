@@ -313,6 +313,95 @@ an edit does not show up, check the port in the dev server's own output
 before doubting the edit**, and kill strays with
 `Get-NetTCPConnection -LocalPort 5173 -State Listen` then `Stop-Process`.
 
+## What this app is actually for (the owner, 2026-09-11)
+
+Their words, close to verbatim, after using the thing for a week:
+
+> What works … this is really the whole point of the app, to track what works
+> and make it how I take care of it and see it thrive. This is the biggest
+> reason I am making this app and it should be the crux. Together with AI and
+> my observations and actions over time I can use this app to remember all the
+> things I can't.
+
+**Treat screen 18 as the thesis, not the last item on a list.** Ratings, the
+care log, walks and the AI round-trip are all instrumentation feeding it. A
+future session that finds What works half-built should finish it before
+anything cosmetic.
+
+**This does not license the app to start concluding.** Twenty-two plants and a
+few ratings a year cannot support inference, and a confident wrong answer is
+worse than none — the owner would end up learning the app's arithmetic instead
+of their plants. The screen's job is to **hold the evidence still**: the change,
+the ratings either side, the elapsed time, the photographs. The judgement stays
+with the person who looked at the plant. Rule 1 and this purpose are the same
+policy, not a tension to resolve.
+
+**Why append-only pays off here.** Nothing is ever edited away, so a 2026
+change and the rating that followed it read identically in 2031. The record
+cannot rot, and it gets more valuable the longer it runs. Anything that would
+let history be rewritten breaks the point of the project, not just a rule.
+
+### Agreed 2026-09-11, to build
+
+1. **The timer keeps counting after iOS stops the mic.** Confirmed on the
+   owner's phone: they hear the mic-stop sound, come back, and the timer is
+   still running; the interrupted state appears minutes later. Two problems,
+   not one — the late detection is visible, and **the elapsed total counts
+   time that was never recorded**, which inflates every later marker offset
+   and hands the coverage gate a duration full of nothing. Three signals
+   instead of `track.ended` alone: freeze the clock on `visibilitychange` to
+   hidden (nothing is recorded from that instant whatever iOS does next),
+   listen for the track's `mute` event (iOS mutes long before it ends), and a
+   watchdog on chunk arrival.
+2. **Shorten the red recording warning to one line.** It was lengthened after
+   their backgrounding test and became a paragraph shouting on every walk.
+3. **Re-lay-out Most urgent and Needs attention**: plant name on its own line,
+   care type and days past underneath. The name is what they scan for and it
+   was buried mid-row.
+4. **What works moves onto Plant Detail**, below Placement, ordered: What
+   works · More about this plant · Info and settings · Photos. Plant-scoped
+   there, with a "see every plant" link inside it, and its All-pages row moves
+   into *This plant*. The collection view stays reachable — the owner chose
+   the middle of three options.
+5. **Widen what counts as a change worth rating either side of.** Care-spec
+   edits were too narrow for the purpose above. Add **room and spot moves**
+   (their most common intervention), the **seasonal balcony move**, repot,
+   top-dress, hard prune, pest treatment, soil flush, adding support, taking
+   cuttings. Keep **routine** separate and merely counted — rotating, wiping
+   leaves, misting — or a weekly rotate buries the annual repot.
+6. **Persistent storage.** The app has never called `navigator.storage.persist()`.
+   Not a substitute for backup; no reason not to ask.
+7. **Lazy thumbnails.** `loadThumbs` currently builds an object URL for every
+   photo at boot. Fine at 26, a slow memory-hungry launch at 2,000. Heroes at
+   boot, the rest when a gallery opens. The owner's own framing.
+
+### Storage, answered for the owner
+
+Events ~250 bytes each, ~2,000/year: **half a megabyte a year**, never delete.
+Photos ~400KB: ~40MB/year, affordable. **Audio is the only thing that grows
+dangerously** — a ten-minute walk is ~9MB, weekly walks ~470MB/year.
+
+The natural remedy: once a walk has a verified transcript the audio's job is
+done, because the transcript is what the AI reads and what the gate checks.
+**But this is not currently possible** — Delete removes the session whole.
+Needs a "free up space" action that drops audio and keeps the transcript,
+markers and route, **offered only when a transcript exists**, since dropping
+audio from an untranscribed walk loses the walk. Not urgent; years away at
+their rate. Do not let it become automatic.
+
+### Mock up before building
+
+The per-plant What works and a full-width Plant Detail hero both need the
+owner's eye first. **A second cumulative mock-up page**, same rule as the
+icons one. Round 1: What works in their chosen band order — timeline, photos,
+what you said, routine — and three hero treatments.
+
+**The hero has a trap.** Section 6's *lessons already learned once* records a
+photo in a fixed-height container mismatched to its real aspect ratio, leaving
+a pale band. A full-bleed hero is exactly where that returns, and the owner's
+photos are portrait phone shots: full width at true shape is ~570px tall on
+their phone. **Draw it with their real photos, never placeholders.**
+
 ## Start here: what to do first
 
 **The app is live at https://deez-plants.github.io.** Hosting is done — see
