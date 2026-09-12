@@ -355,18 +355,58 @@ async function releaseWakeLock(): Promise<void> {
   notify();
 }
 
+/**
+ * Leaving the app stops the clock, immediately.
+ *
+ * The owner hit this on their phone: switch away, hear the microphone stop,
+ * come back, and the timer is still counting — the interrupted state only
+ * arriving minutes later. Two faults, and the invisible one is worse. iOS
+ * stops recording the moment the app is backgrounded, so every second counted
+ * after that is **time that was never captured**: it inflates the offset of
+ * every marker placed afterwards and hands the coverage gate a duration full
+ * of silence that no transcript can ever cover.
+ *
+ * So the clock stops on `visibilitychange`, which fires at once and is not
+ * iOS's to delay. Whether the walk is dead or merely paused is a separate
+ * question, answered on the way back in.
+ */
 function onVisibilityChange(): void {
   if (phase !== 'recording' && phase !== 'paused') return;
+
   if (document.visibilityState === 'hidden') {
     backgrounded = true;
+    if (phase === 'recording' && runningSince) {
+      accumulatedMs = elapsedMs();
+      runningSince = 0;
+      stopTicker();
+    }
     notify();
-  } else {
-    // A hidden page loses its wake lock. Take another.
-    void acquireWakeLock();
+    return;
   }
+
+  // Back in front. Trust the track's own state rather than waiting for its
+  // `ended` event, which on iOS can take minutes to arrive — and may never,
+  // if the mic was muted rather than released.
+  void acquireWakeLock();
+  if (phase === 'recording') {
+    if (!captureAlive()) { onCaptureLost(); return; }
+    // Still live, so the capture survived. Carry on from where the clock
+    // stopped rather than pretending the gap was recorded.
+    runningSince = Date.now();
+    startTicker();
+  }
+  notify();
 }
 
-function onTrackEnded(): void {
+/** Whether the microphone is still actually delivering. A muted track is as
+    dead as an ended one for our purposes, and iOS reaches for mute first. */
+function captureAlive(): boolean {
+  const tracks = stream?.getAudioTracks() ?? [];
+  if (!tracks.length) return false;
+  return tracks.some((t) => t.readyState === 'live' && !t.muted);
+}
+
+function onCaptureLost(): void {
   if (phase !== 'recording' && phase !== 'paused') return;
   // iOS ended the capture — a call, a hardware route change, or the app being
   // away too long. Confirmed on the owner's iPhone 2026-09-11: this is what
@@ -380,18 +420,53 @@ function onTrackEnded(): void {
   void interruptSession();
 }
 
+/**
+ * The third signal, for when neither event arrives and the track still claims
+ * to be live: audio simply stops turning up.
+ *
+ * A chunk is due every `CHUNK_MS`. Going more than a couple of intervals
+ * without one, while visible and supposedly recording, means the capture is
+ * dead whatever the API says. Only checked in the foreground — a backgrounded
+ * page has already stopped its clock and is not counting anything.
+ */
+const CHUNK_SILENCE_MS = CHUNK_MS * 2.5;
+let lastChunkAt = 0;
+let watchdog: ReturnType<typeof setInterval> | null = null;
+
+function startWatchdog(): void {
+  stopWatchdog();
+  lastChunkAt = Date.now();
+  watchdog = setInterval(() => {
+    if (phase !== 'recording') return;
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - lastChunkAt < CHUNK_SILENCE_MS) return;
+    onCaptureLost();
+  }, 2_000);
+}
+
+function stopWatchdog(): void {
+  if (watchdog !== null) clearInterval(watchdog);
+  watchdog = null;
+}
+
 function attachLifecycle(): void {
   document.addEventListener('visibilitychange', onVisibilityChange);
   for (const track of stream?.getAudioTracks() ?? []) {
-    track.addEventListener('ended', onTrackEnded);
+    track.addEventListener('ended', onCaptureLost);
+    // iOS mutes an interrupted microphone well before it ends the track. This
+    // is the signal that actually arrives promptly.
+    track.addEventListener('mute', onCaptureLost);
   }
+  startWatchdog();
 }
 
 function detachLifecycle(): void {
   document.removeEventListener('visibilitychange', onVisibilityChange);
   for (const track of stream?.getAudioTracks() ?? []) {
-    track.removeEventListener('ended', onTrackEnded);
+    track.removeEventListener('ended', onCaptureLost);
+    track.removeEventListener('mute', onCaptureLost);
   }
+  stopWatchdog();
 }
 
 function teardown(): void {
@@ -453,6 +528,7 @@ export async function startSession(as_of: ISODate): Promise<void> {
 
     recorder.ondataavailable = (e: BlobEvent) => {
       if (!e.data || !e.data.size) return;
+      lastChunkAt = Date.now();
       const key = chunkKey(session_id, chunkIndex);
       chunkIndex += 1;
       // Fire and forget: a slow write must never stall the recorder.
@@ -676,6 +752,7 @@ export async function resumeInterrupted(): Promise<void> {
 
     recorder.ondataavailable = (e: BlobEvent) => {
       if (!e.data || !e.data.size) return;
+      lastChunkAt = Date.now();
       const key = chunkKey(session_id, chunkIndex);
       chunkIndex += 1;
       void openDeezPlants()

@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>the clock while backgrounded</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  The owner's report, 2026-09-11: switch away from the app, hear the mic stop,
+  come back, and the timer is STILL COUNTING — the interrupted state only
+  showing up minutes later.
+
+  The invisible half is the worse one. iOS stops recording the moment the app
+  is backgrounded, so every second counted after that is time never captured:
+  it inflates the offset of every later marker and hands the coverage gate a
+  duration full of silence no transcript can cover.
+
+  Run with the dev server up:
+    http://localhost:5173/check/browser/backgrounded.html
+
+  `visibilitychange` cannot be fired synthetically with a real hidden state, so
+  `document.visibilityState` is stubbed and the event dispatched — which is
+  exactly what the browser does, minus the actual backgrounding.
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+
+let visibility = 'visible';
+Object.defineProperty(document, 'visibilityState', { get: () => visibility, configurable: true });
+const setVisibility = (v) => { visibility = v; document.dispatchEvent(new Event('visibilitychange')); };
+
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+let stream = dest.stream;
+navigator.mediaDevices.getUserMedia = async () => {
+  const d = ctx.createMediaStreamDestination();
+  osc.connect(d); stream = d.stream; return stream;
+};
+
+const rec = await import('/src/capture/recording.ts');
+
+await rec.startSession('2026-09-11');
+await new Promise(r => setTimeout(r, 2500));
+const beforeLeaving = rec.getSnapshot().elapsed_s;
+check('the clock runs while in front', beforeLeaving >= 2, true);
+
+// Away for four seconds.
+setVisibility('hidden');
+await new Promise(r => setTimeout(r, 4000));
+check('the clock stops the instant the app is backgrounded',
+  rec.getSnapshot().elapsed_s, beforeLeaving);
+check('and is marked backgrounded', rec.getSnapshot().backgrounded, true);
+
+// Back, with the microphone still alive: the walk carries on, and the four
+// seconds away are NOT counted.
+setVisibility('visible');
+await new Promise(r => setTimeout(r, 2500));
+const afterReturn = rec.getSnapshot().elapsed_s;
+check('still recording after a survivable trip away', rec.getPhase(), 'recording');
+check('the time away was not counted', afterReturn < beforeLeaving + 4, true);
+check('but the clock restarted', afterReturn > beforeLeaving, true);
+
+// Now the iOS case: the mic dies while away, and the app finds out on return
+// rather than minutes later. `mute` is what iOS reaches for first.
+setVisibility('hidden');
+await new Promise(r => setTimeout(r, 1200));
+for (const t of stream.getAudioTracks()) t.stop();
+setVisibility('visible');
+await new Promise(r => setTimeout(r, 2000));
+check('a dead microphone is noticed on return, not minutes later',
+  rec.getPhase(), 'interrupted');
+
+const held = rec.getSnapshot().elapsed_s;
+await new Promise(r => setTimeout(r, 2000));
+check('and nothing counts afterwards', rec.getSnapshot().elapsed_s, held);
+
+log(fails === 0 ? '\nALL PASSED' : `\n${fails} FAILED`);
+</script>
+</body></html>
