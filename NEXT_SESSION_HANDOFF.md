@@ -407,9 +407,24 @@ what you said, routine — and three hero treatments.
 
 **The hero has a trap.** Section 6's *lessons already learned once* records a
 photo in a fixed-height container mismatched to its real aspect ratio, leaving
-a pale band. A full-bleed hero is exactly where that returns, and the owner's
-photos are portrait phone shots: full width at true shape is ~570px tall on
-their phone. **Draw it with their real photos, never placeholders.**
+a pale band. A full-bleed hero is exactly where that returns.
+
+**Published 2026-09-11: https://claude.ai/code/artifact/f2fe6dc2-2a6b-4377-90ca-d7f288b8e7b6**
+Round 1 carries three What-works layouts (differing only in which band leads)
+and four hero treatments, at 430px, using the owner's own photographs.
+Cumulative like the icons page — **append rounds, never prune**.
+
+**A measured finding that corrected an assumption.** This session guessed the
+owner's photos were portrait phone shots. They are **24 square, one 4:3, one
+3:4** — and `capture/photos.ts` crops nothing, it only scales to a max edge, so
+anything taken from here on is whatever the phone gives. A hero must hold all
+three shapes. Full width at true shape is 430px tall on a square and 573px on
+the portrait one, which is the case to judge. `Icons/make-mock-photos.ps1`
+regenerates the embedded images.
+
+**Wait for their answers** before building either: which layout and which band
+leads, and which hero. Do not guess from the "my suggestion" label on the
+page — that is a suggestion, not a decision.
 
 ## Start here: what to do first
 
