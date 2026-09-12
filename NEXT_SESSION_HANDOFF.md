@@ -254,8 +254,22 @@ Two of the four are now built (2026-09-12); the other two are marked below.
 |---|---|
 | Plant Detail in the owner's order, square hero | **built** |
 | What works top matter trimmed | **built** |
-| Photos as the place photo decisions are made | not yet |
-| What works uses the chosen photo pair | not yet |
+| Photos as the place photo decisions are made | **built** |
+| What works uses the chosen photo pair | **built** |
+
+**All four are now built (2026-09-12).** What remains of the queue is nothing;
+the next things are Reminders (needs the owner's answers), the Whisper test,
+their two new plants, and the desk console.
+
+Two details worth not undoing:
+
+- **`compare_media` is a plant field, not a local preference**, so the chosen
+  pair survives a backup and restore. `FIELD_DEFINITIONS.md` section 4 was
+  updated in the same pass. A deleted choice falls back to the rule rather
+  than stranding the pair.
+- **Photos groups by label, not by date.** Date was right for a gallery and
+  wrong for a chooser. Do not "restore" date grouping without also moving the
+  hero and pair choices somewhere else.
 
 **Everything in this section has been decided with the owner and is waiting on
 implementation, not on more discussion.** Agreed 2026-09-12; the owner asked
