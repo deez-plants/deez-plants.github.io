@@ -491,6 +491,23 @@ leaf underside is useless for identifying a plant in a list. The hero shows in
 the plants list, the care checklist, the plant page header and the review
 package.
 
+**A second per-plant choice: the compared pair.** `compare_media` names the two
+photographs the What-works screen puts side by side — `editable_by: user`, a
+plant field written as an `Edit` event, stored as two media ids separated by a
+comma, or absent.
+
+Absent is the normal case and means *use the rule*: **the last two whole-plant
+photographs**. Comparing like with like is the point — a whole plant beside a
+leaf close-up looks like change without being it, and a screen whose job is
+judging change must not manufacture any. Fewer than two whole-plant shots means
+no pair at all, stated plainly rather than padded with a close-up.
+
+It is a field rather than a local preference for one reason: it has to survive
+a backup and restore. A choice that vanished when the owner moved to a new
+phone would be worse than one that travels with the record. A chosen photo that
+is later deleted falls back to the rule rather than stranding the pair, and the
+pair always renders oldest first, so it reads then and now.
+
 **Everything else is transient.** Opening a plant's photos page caches that
 plant's set while you are on it and drops it when you leave. First open of a long
 history takes a few hundred milliseconds and fills in progressively as you
