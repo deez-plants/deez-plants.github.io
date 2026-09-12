@@ -376,9 +376,11 @@ let history be rewritten breaks the point of the project, not just a rule.
    top-dress, hard prune, pest treatment, soil flush, adding support, taking
    cuttings. Keep **routine** separate and merely counted — rotating, wiping
    leaves, misting — or a weekly rotate buries the annual repot.
-6. **Persistent storage.** The app has never called `navigator.storage.persist()`.
-   Not a substitute for backup; no reason not to ask.
-7. **Lazy thumbnails.** `loadThumbs` currently builds an object URL for every
+6. ~~**Persistent storage.**~~ Done 2026-09-11, in `boot.ts`. A request, not a
+   guarantee — Chrome refuses it on localhost without engagement — and never
+   a substitute for backup.
+7. ~~**Lazy thumbnails.**~~ Done 2026-09-11: heroes at boot, galleries fetch
+   their own through `ensureThumbs`. Previously `loadThumbs` built an object URL for every
    photo at boot. Fine at 26, a slow memory-hungry launch at 2,000. Heroes at
    boot, the rest when a gallery opens. The owner's own framing.
 
