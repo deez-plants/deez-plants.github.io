@@ -1,14 +1,14 @@
 # Deez Plants — handoff to the next session
 
-Written 2026-09-07, updated as work continues. The build has now reached
-Care calendar/All months, Adherence history, Rooms and planters, More about
-this plant/Info and settings (later made fully editable), Health history,
-the Add-a-plant write flow, a direct Care-calendar link on Plant Detail,
-export/import (Prepare review package + Apply AI update, the full
-section-11 validation chain), and the whole of Capture — photo capture with
-gallery and hero selection, both notes lanes, and walk recording with
-markers, the screen log and both transcript tiers. **Read this file first,
-before anything else.**
+**This file is the authority on this project.** It is read at the start of
+every conversation in this repo, and it is the only thing that survives one
+ending. Anything decided in a chat and not written here is lost when that chat
+closes — so when a decision is made, it belongs in this file before the work
+that follows from it.
+
+Reorganised 2026-09-12 from what had become chronological sediment. Nothing
+was removed in that pass; the dated sections are still below, in full, because
+the reasoning attached to a decision is usually more useful than the decision.
 
 ## Read in this order
 
@@ -29,90 +29,469 @@ Do not re-read `HANDOFF.md` section 6 as live instruction — it's marked
 superseded in place. The build order in its section 2 still roughly holds;
 the phase-gated pacing and "live-test for weeks before continuing" does not.
 
-## The 2026-09-11 recording pass — read this before touching Record
+### How this file is laid out
 
-The owner ran the iPhone test. **Three findings, all settled.**
+The first half is what you need before touching anything; the second half is
+the dated record of how each decision was reached.
 
-**1. iOS kills recording on backgrounding. Confirmed, not theoretical.** The
-owner recorded ~2 minutes, switched apps, came back: stopped. The
-pessimistic assumption in `capture/recording.ts` was correct. The screen log
-and the 10-second audio chunks both survived, so the durability design did
-its job. **Do not design as though foreground-only is a maybe. It is a
-fact.**
+| Section | What it is |
+|---|---|
+| **What this app is for** | The owner's own statement of purpose. Read it. It governs priorities. |
+| **Where everything lives** | URLs, repo, the owner's pages, and the per-origin storage rule. |
+| **Start here** | What to do next. |
+| **Specified and agreed, but NOT yet built** | Decided with the owner, waiting on implementation. **Build these before inventing anything.** |
+| **Traps** | Things that cost a session real time. Read before debugging anything odd. |
+| **Where earlier passes got it wrong** | Wrong answers, kept so they are not re-derived. |
+| *Everything after that* | The dated record, in reverse order: 2026-09-12, the two 2026-09-11 passes, markers, hosting, the 2026-09-08 audit, what's built, what's next, the owner's pages, other files. |
 
-**2. A real bug, and its cause is known.** `endSession()` sets the phase to
-`saving`, then awaits `stopRecorder()`, which waits on the MediaRecorder's
-`stop` event. When iOS has already killed the track, that event never fires
-and **the await has no timeout**, so the app hangs in `saving` for ever.
-Both symptoms the owner saw come from that one hang: the Record screen stuck
-on "Working…" (`busy` is true while `saving`), and Recordings showing
-"Recording now" on a dead session (`liveNow` in `Recordings.tsx` tests
-`!s.closed`, and the code that closes the session sits *after* the hang).
-`stopRecorder()` guards against `state === 'inactive'` but not against a
-recorder that is nominally alive with a dead track under it — which is
-exactly what an iOS kill produces, and exactly what a laptop cannot
-reproduce. **Force-quitting clears it; nothing is lost, because chunks are
-written independently.**
+**When a decision is made, write it here before doing the work.** A chat ends
+and takes everything unwritten with it; this file is the whole of what
+survives.
 
-**3. The mock had things the build dropped.** Verified by reading
-`Deez Plants.dc.html`, not from memory:
-- `@keyframes recPulse` — a ring scaling to 1.35x and fading, 1.6s, looping,
-  shown **only while recording** (`recActive`). Never built.
-- While recording the button also turns `#9BE39B` → `#E88A6A`, the inner dot
-  morphs circle → 5px-radius square, and the label reads `Pause`. Never
-  built.
-- **`tapRec` starts the session directly** (`if (t.secs === 0) set({ screen:
-  "rec", recording: true })`). The build made it navigate only, with a
-  comment justifying the change. The comment's reasoning about the *label*
-  was sound; keeping navigation-only was not.
-- The screen is called **"Inspection session"** — that part the build got
-  right.
+## What this app is for
 
-**Checked and NOT a miss:** Home's "Do next" exists, renamed "Most urgent".
-And the transcript round-trip genuinely is a laptop step (screen 15: "Export
-moves the audio and its sidecar out for Whisper") — what is missing is any
-on-screen sign that the laptop step exists, so "Add transcript" reads as a
-closed loop.
+Their words, close to verbatim, after using the thing for a week:
 
-### The agreed fixes (owner approved 2026-09-11)
+> What works … this is really the whole point of the app, to track what works
+> and make it how I take care of it and see it thrive. This is the biggest
+> reason I am making this app and it should be the crux. Together with AI and
+> my observations and actions over time I can use this app to remember all the
+> things I can't.
 
-**A** hang fix · **B** Rec button per the mock, with one deliberate
-deviation: while recording, the tab-bar button **opens the screen rather than
-pausing**, because a mis-tap that silently pauses a walk is worse than one
-extra tap · **C** transcript dead end · **D** make the backgrounding warning
-specific, now that it is a known fact · **E** Log care moved to the top of
-Home.
+**Treat screen 18 as the thesis, not the last item on a list.** Ratings, the
+care log, walks and the AI round-trip are all instrumentation feeding it. A
+future session that finds What works half-built should finish it before
+anything cosmetic.
 
-### The tab bar — an ongoing task, deliberately deferred
+**This does not license the app to start concluding.** Twenty-two plants and a
+few ratings a year cannot support inference, and a confident wrong answer is
+worse than none — the owner would end up learning the app's arithmetic instead
+of their plants. The screen's job is to **hold the evidence still**: the change,
+the ratings either side, the elapsed time, the photographs. The judgement stays
+with the person who looked at the plant. Rule 1 and this purpose are the same
+policy, not a tension to resolve.
 
-The owner wants **Log care in the bottom bar** (label: `Log`), because it is
-what they use most and it currently sits below the fold on Home.
+**Why append-only pays off here.** Nothing is ever edited away, so a 2026
+change and the rating that followed it read identically in 2031. The record
+cannot rot, and it gets more valuable the longer it runs. Anything that would
+let history be rewritten breaks the point of the project, not just a rule.
 
-**`DESIGN_REFERENCE.md` section 6 locks the opposite** — "Log Care as
-plant-specific contextual actions rather than permanent tabs". The owner was
-told this and is overriding it knowingly, having now used the app. **That
-override is the decision; do not re-raise the lock.**
+### Agreed 2026-09-11, to build
 
-Sequenced as: **E first** (top of Home, cheap, may be enough), then a
-five-item bar if it is not. Five fits — an iPhone 14 Pro Max is 430pt wide,
-~86pt per item. The owner noted their phone's dock shows only 4; that is a
-fixed iOS dock rule, not a width limit, and does not apply.
+1. **The timer keeps counting after iOS stops the mic.** Confirmed on the
+   owner's phone: they hear the mic-stop sound, come back, and the timer is
+   still running; the interrupted state appears minutes later. Two problems,
+   not one — the late detection is visible, and **the elapsed total counts
+   time that was never recorded**, which inflates every later marker offset
+   and hands the coverage gate a duration full of nothing. Three signals
+   instead of `track.ended` alone: freeze the clock on `visibilitychange` to
+   hidden (nothing is recorded from that instant whatever iOS does next),
+   listen for the track's `mute` event (iOS mutes long before it ends), and a
+   watchdog on chunk arrival.
 
-**This is an ongoing, multi-session task.** The comparison page is published
-at **https://claude.ai/code/artifact/619f85e3-1cfb-4f5a-8f48-d250331e1347** —
-every candidate is drawn from `src/components/Icon.tsx` (the owner's own
-artwork, so no new icons were needed), the owner picks one per slot, and the
-page renders the bar at 430px, the real width of their phone, in four-item
-and five-item forms at three label sizes. **Wait for their picks; do not
-guess them.** The page stores picks in the viewer's own browser only, so the
-owner has to read the line back — it does not reach this session on its own.
+   **Done 2026-09-11.** All three signals are in `capture/recording.ts`;
+   `check/browser/backgrounded.html` covers them and was run against the old
+   code first, where it reproduced the owner's symptom exactly. **A trip away
+   the capture survives resumes without counting the time away** — a walk's
+   duration stays the length of its audio, which is what the coverage gate
+   compares against.
+2. **Shorten the red recording warning to one line.** It was lengthened after
+   their backgrounding test and became a paragraph shouting on every walk.
+3. **Re-lay-out Most urgent and Needs attention**: plant name on its own line,
+   care type and days past underneath. The name is what they scan for and it
+   was buried mid-row.
+4. **What works moves onto Plant Detail**, below Placement, ordered: What
+   works · More about this plant · Info and settings · Photos. Plant-scoped
+   there, with a "see every plant" link inside it, and its All-pages row moves
+   into *This plant*. The collection view stays reachable — the owner chose
+   the middle of three options.
+5. **Widen what counts as a change worth rating either side of.** Care-spec
+   edits were too narrow for the purpose above. Add **room and spot moves**
+   (their most common intervention), the **seasonal balcony move**, repot,
+   top-dress, hard prune, pest treatment, soil flush, adding support, taking
+   cuttings. Keep **routine** separate and merely counted — rotating, wiping
+   leaves, misting — or a weekly rotate buries the annual repot.
+6. ~~**Persistent storage.**~~ Done 2026-09-11, in `boot.ts`. A request, not a
+   guarantee — Chrome refuses it on localhost without engagement — and never
+   a substitute for backup.
+7. ~~**Lazy thumbnails.**~~ Done 2026-09-11: heroes at boot, galleries fetch
+   their own through `ensureThumbs`. Previously `loadThumbs` built an object URL for every
+   photo at boot. Fine at 26, a slow memory-hungry launch at 2,000. Heroes at
+   boot, the rest when a gallery opens. The owner's own framing.
 
-If they do want to draw new ones: flat solid white PNG, 512x512, transparent
-background, ~15% padding — never the 3D treatment of the app icon, which
-turns to mush at 24px.
+### Storage, answered for the owner
 
-**No part of this touches data.** Nav is presentational; IndexedDB is keyed
-to the origin. Deferring it costs nothing but the inconvenience.
+Events ~250 bytes each, ~2,000/year: **half a megabyte a year**, never delete.
+Photos ~400KB: ~40MB/year, affordable. **Audio is the only thing that grows
+dangerously** — a ten-minute walk is ~9MB, weekly walks ~470MB/year.
+
+The natural remedy: once a walk has a verified transcript the audio's job is
+done, because the transcript is what the AI reads and what the gate checks.
+**But this is not currently possible** — Delete removes the session whole.
+Needs a "free up space" action that drops audio and keeps the transcript,
+markers and route, **offered only when a transcript exists**, since dropping
+audio from an untranscribed walk loses the walk. Not urgent; years away at
+their rate. Do not let it become automatic.
+
+**Built 2026-09-11**, with both guards: the action appears only on a walk that
+has a transcript, and it confirms first. It stays manual.
+
+### Two traps for anyone driving the app in a browser
+
+1. **Browser harnesses write into the owner's real database.** This session's
+   own checks left **27 test sessions and 33 audio chunks** in the store at
+   `localhost:5173` — the origin holding their record. They were removed and
+   the record verified intact afterwards (132 events, 22 plants, 26 photos).
+   **Clean up after any harness that starts a session**, and check before
+   assuming a stray session is theirs: the owner records on their phone, so a
+   walk sitting on the laptop is almost certainly a test.
+2. **"Recording now" has been wrong twice.** The check must compare against
+   the recorder's actual `session_id`, not merely ask whether the recorder is
+   busy — otherwise every unfinished walk in the list claims to be live, and
+   one `interrupted` walk lights up all of them.
+
+### Mock up before building
+
+The per-plant What works and a full-width Plant Detail hero both need the
+owner's eye first. **A second cumulative mock-up page**, same rule as the
+icons one. Round 1: What works in their chosen band order — timeline, photos,
+what you said, routine — and three hero treatments.
+
+**The hero has a trap.** Section 6's *lessons already learned once* records a
+photo in a fixed-height container mismatched to its real aspect ratio, leaving
+a pale band. A full-bleed hero is exactly where that returns.
+
+**Published 2026-09-11: https://claude.ai/code/artifact/f2fe6dc2-2a6b-4377-90ca-d7f288b8e7b6**
+Round 1 carries three What-works layouts (differing only in which band leads)
+and four hero treatments, at 430px, using the owner's own photographs.
+Cumulative like the icons page — **append rounds, never prune**.
+
+**A measured finding that corrected an assumption.** This session guessed the
+owner's photos were portrait phone shots. They are **24 square, one 4:3, one
+3:4** — and `capture/photos.ts` crops nothing, it only scales to a max edge, so
+anything taken from here on is whatever the phone gives. A hero must hold all
+three shapes. Full width at true shape is 430px tall on a square and 573px on
+the portrait one, which is the case to judge. `Icons/make-mock-photos.ps1`
+regenerates the embedded images.
+
+**Wait for their answers** before building either: which layout and which band
+leads, and which hero. Do not guess from the "my suggestion" label on the
+page — that is a suggestion, not a decision.
+
+## Where everything lives
+
+| | |
+|---|---|
+| **The app** | https://deez-plants.github.io |
+| **The code** | https://github.com/deez-plants/deez-plants.github.io |
+| **The owner's build log** (theirs to tick) | https://claude.ai/code/artifact/1e8d981a-2bef-4ab7-bc30-87f3f309f62d |
+| **Tab-bar mock-ups** (cumulative) | https://claude.ai/code/artifact/619f85e3-1cfb-4f5a-8f48-d250331e1347 |
+| **Screen mock-ups** (cumulative) | https://claude.ai/code/artifact/f2fe6dc2-2a6b-4377-90ca-d7f288b8e7b6 |
+| **The owner's GitHub** | `604drw` — **not** the `604dr` in the local git config |
+
+**The owner's record lives in three unconnected places** and always will:
+the hosted app on their phone, the laptop's `localhost:5173`, and any other
+address the app is ever opened at. Storage is per-origin, there is no server,
+and **Back up → Save my record / Restore is the only bridge**. This has cost
+the owner an evening once already; do not let a session forget it.
+
+**Both mock-up pages are cumulative by the owner's explicit instruction.**
+Add a dated round; never replace or prune an earlier one. They want the record
+of what was tried so they can go back to an idea.
+
+**The build log ticks itself.** It declares the `artifact` capability, so
+ticking an item republishes the page with the state baked into its
+`<script id="state">` block. That means the owner's ticks arrive here as a
+republish notice and the local copy goes stale — re-read before editing, or
+their ticks get overwritten. Edit the `steps` array, not prose.
+
+## Start here: what to do first
+
+**Build what is in "Specified and agreed, but NOT yet built" below.** As of
+2026-09-12 there are four specifications waiting: Plant Detail reordered with
+a full-width square hero, the What works top matter trimmed, Photos becoming
+where photo decisions are made, and the What works photo rule. All four were
+settled with the owner in conversation; **none needs further discussion, and
+none has been built.** The owner explicitly asked for the specs to be written
+down rather than built that day, because they were going out.
+
+**Everything else is done or is the owner's.** The app is live, installed on
+their phone, holding their record. All 25 screens exist. The five things that
+are theirs: choose nothing further on the heroes (done — full-width square,
+rounded), retest the tab bar and the recorder on the phone, answer what they
+want Reminders to do, run a real walk through Whisper, and add their two new
+plants.
+
+**Only the desk console is left that is purely mine**, and it is deliberately
+last.
+
+### Two things that are still open questions, not tasks
+
+**The missing Listen button was never reproduced.** Two confident diagnoses
+were wrong (see "Where earlier passes got it wrong"). Ask the owner whether
+they meant "there is no button" or "it will not play" — those are different
+bugs, and the second is reproducible here: Chrome refuses to decode the
+fragmented MP4 Safari writes. It may be fine on their phone.
+
+**Does a recorded walk play back on iOS?** Untested. The player is built and
+seeks correctly; whether Safari decodes its own format back is a question only
+their phone answers. Whisper reads it regardless, so the export path does not
+depend on it.
+
+**Storage is per-origin, and this trips everyone.** `localhost:5173`, a LAN
+address like `192.168.1.195:5173`, and any hosted URL are **three separate
+databases with no server between them** — and two of those three are on the
+same laptop, in the same browser. Data entered in one never appears in
+another. The owner lost an evening to this; do not repeat it. Backup is the
+only bridge.
+
+## Specified and agreed, but NOT yet built
+
+**Everything in this section has been decided with the owner and is waiting on
+implementation, not on more discussion.** Agreed 2026-09-12; the owner asked
+for no app changes that day so the specifications were written down instead.
+Build these before inventing anything new.
+
+### Plant Detail, in the owner's order
+
+Their reasoning, which is the part to keep: *"this info on what I need to do
+and what's overdue or the care type info is what I will be using most at a
+glance — then I can see and do what's needed, this is my main interaction."*
+The care status was buried below several cards; it belongs directly under the
+identity block.
+
+```
+‹ Prev · 001-MON · Next ›        (the locked strip — see below)
+Large Monstera
+[ full-width SQUARE hero, rounded corners ]
+7 / 10   ME                      ← tapping it re-rates
+Monstera deliciosa
+On schedule
+Care adherence
+Rating over time
+[ Photo ] [ Record ] [ Log ] [ History ]     ← the four action buttons
+Quick care
+Placement                        ← location lives HERE and nowhere else
+What works · More about this plant · Info and settings · Photos
+Care calendar                    ← last
+```
+
+- **The plant ID appears once.** It is already in the locked Prev/Next strip
+  (`DESIGN_REFERENCE.md` section 6 — not open for redesign). The owner
+  explicitly said: keep it there, do not repeat it above the name.
+- **Location is not repeated** either. It sits in Placement only.
+- **The hero is full width, square, rounded corners.** Chosen from Round 2 of
+  the screens page. A square frame costs almost nothing — 24 of their 26
+  photos already are square — but **it does crop a portrait photo**, which is
+  the trade they accepted after seeing it against the Spider Plant.
+
+### What works — trim the top matter
+
+The owner: *"there is too much useless extra text at the top."* Four blocks
+stood before any content.
+
+- **Delete the explanatory sentence.** The back button names the plant and the
+  title says What works; it restates the obvious.
+- **Cut the caveat to one line and move it to the bottom** — something like
+  "Ratings shown, not conclusions drawn."
+- **Keep a short count line**: "3 changes · 1 with ratings both sides".
+
+**The caveat must survive in some form.** It is what stops this screen
+becoming "the app says watering less works", and given how much weight the
+owner puts on this page that is the thing most worth protecting. One line at
+the bottom is enough; deleting it is not.
+
+### Photos becomes where every photo decision is made
+
+Agreed as a consolidation: one place owns "which photos matter".
+
+- **Group whole-plant shots first**, then the other labels. It currently groups
+  by date, which is the wrong axis when you are there to choose.
+- **Set the hero** here (already exists).
+- **Set the two What-works photos** here (new). What works links to this page
+  rather than carrying its own picker.
+
+Two mechanics settled in the same conversation:
+
+1. **An explicit choice sticks until cleared**, with a "use the latest two"
+   button to hand it back to the app. A deliberate choice must not quietly
+   expire because a new photo arrived.
+2. **One whole-plant photo means no pair.** Say so; do not pad it with a
+   close-up. That is the like-with-like rule below.
+
+### The What works photo rule
+
+The owner's choice: **the last two full-plant photos**, "because that shows
+the work I have done".
+
+- **Compare like with like.** Every photo carries one of four labels; a whole
+  plant beside a detail close-up *looks* like change and is not. Prefer the
+  whole-plant label and fall back only if there are not two.
+- **The pair is overridable** — a presentation preference, not a fact.
+- **Tap through to the whole strip.** Two is the summary, never the limit.
+
+### The band order on What works
+
+**Photos · the story · the routine · what you said.**
+
+## Traps, and facts that cost something to learn
+
+**Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
+are three separate databases with no server between them. Backup is the only
+bridge. The owner lost an evening to this.
+
+**Orphaned dev servers serve months-old files.** `npm run dev` says "Port 5173
+is in use, trying another one" and quietly moves to 5174+, which is easy to
+miss in a scrollback. A CSS change on disk, passing the build, simply did not
+appear in the browser — it was being served by a dead process from a previous
+session. **Use `--strictPort`**, and if an edit does not show up, check the
+port in the dev server's own output before doubting the edit. Clear strays
+with `Get-NetTCPConnection -LocalPort 5173 -State Listen` then `Stop-Process`.
+
+**Browser harnesses write into the owner's real database.** This session's
+checks left **27 test sessions and 33 audio chunks** in the store at
+`localhost:5173`. They were removed and the record verified afterwards (132
+events, 22 plants, 26 photos). Clean up after any harness that starts a
+session. A walk sitting on the laptop is almost certainly a test — the owner
+records on their phone.
+
+**Control-test every test.** Two harnesses in this session passed *against the
+broken code* and proved nothing until they were run against the bug first. A
+test that cannot fail is not evidence. Run it against the old behaviour before
+believing a green result.
+
+**GitHub's legacy Jekyll builder clobbers the Actions deploy.** It fires on any
+repo named `*.github.io` and publishes the repo source — the raw `index.html`
+with its `<script src="/src/main.tsx">`, which is a white screen. **Pages
+source must be set to GitHub Actions**; a session told the owner that step was
+unnecessary on the strength of one lucky observation, and it was not.
+
+**The room/spot migration wrote 21 moves that never happened.** Splitting
+"Living room, by the window" into a room and a spot is indistinguishable from
+a real move by event type. They cannot be retagged — append-only — so they are
+recognised by shape: a room edit and a spot edit made together whose combined
+place is unchanged.
+
+**The owner's photos are 24 square, one 4:3, one 3:4**, and `capture/photos.ts`
+crops nothing, it only scales to a max edge. A session assumed portrait phone
+shots and was wrong. Any photo treatment must hold all three shapes — section
+6's *lessons already learned once* records this bug being made before.
+
+**Storage arithmetic**, answered for the owner: events ~250 bytes each,
+~2,000/year = **half a megabyte a year, never delete**. Photos ~400KB =
+~40MB/year, affordable. **Audio is the only dangerous one** — a ten-minute walk
+is ~9MB, weekly walks ~470MB/year. Transcribed audio is the thing to drop, and
+`Free up space` in Recordings does exactly that.
+
+**iOS kills recording when the app is backgrounded.** Confirmed on the owner's
+phone, not a precaution. Everything survives, because chunks are written every
+ten seconds, and the walk can be picked up — but the capture stops.
+
+## Where earlier passes got it wrong
+
+### The root cause of the 2026-09-08 drift, so it does not happen again
+
+`CLAUDE.md` says that where the built app differs from `DESIGN_REFERENCE.md`,
+the app is right and the reference is stale. That rule was written about
+**hand-tuned type sizes** — so nobody would shrink the owner's text back
+down. It was over-applied as cover for structural drift: whole blocks the
+reference specifies (`Do next`, `Your ratings over time`, the inline care
+calendar, every icon) were simply never built, and the precedence rule was
+allowed to excuse it. **The rule covers sizing only.** A missing section is
+not a stale reference.
+
+**And check citations.** The old plants-list code justified its deviation by
+citing "a note in `DESIGN_REFERENCE.md` that the pill predates section 3b".
+No such note exists; screen 02 specifies the pill outright. A comment in this
+codebase that justifies itself by pointing at a document is worth verifying
+against the document.
+
+
+Kept because the wrong answers are worth not repeating.
+
+- **"The Pages toggle is unnecessary."** It was mandatory. See the Jekyll trap.
+- **The missing Listen button, diagnosed wrongly twice.** Not "interrupted
+  walks stay chunked and the size check misses them" — `readSessionAudio`
+  already falls back to chunks. Not "a walk shorter than one chunk loses its
+  only chunk" — `check/browser/shortwalk.html` disproves it at two seconds and
+  twelve. **It was never reproduced.** The screen was made to state its own
+  condition instead. The one reproducible fact is that Chrome will not decode
+  the fragmented MP4 Safari writes; ask the owner whether they meant "no
+  button" or "it will not play", because they are different bugs.
+- **Tap-to-start on the Rec button.** Built from the mock, reverted after the
+  owner used it.
+- **"`npm run check` passes."** One assertion had been failing for weeks
+  because the check runner's exit code was never looked at.
+- **A comment citing a document that did not say what it claimed.** Be
+  suspicious of any comment in this codebase that justifies a deviation by
+  pointing at a document — check the citation.
+
+## Decisions of 2026-09-12 (settled — do not relitigate)
+
+### The Rec button goes back to navigating only
+
+**Reverted on the owner's own reasoning, which beats the mock's.** An earlier
+pass made the tab-bar button start the walk because `tapRec` in the mock does.
+The owner used it and found the real cost: an accidental tap creates a
+recording they have to notice and delete, and a stray tap while one is running
+is worse. The asymmetry settles it — starting a walk is deliberate, so one
+extra tap costs nothing, while an accidental start or stop costs a walk or a
+cleanup.
+
+**The button always opens the Record screen. Start, pause and stop live
+there.** It keeps its timer and red recording state, which the owner said
+explicitly they like. Do not "restore" tap-to-start from the mock: this is the
+mock being overridden knowingly by someone who has used the thing.
+
+### What works — the photo rule
+
+The owner's choice: **the last two full-plant photos**, because that is what
+shows the work they have done. Plus:
+
+- **Comparing like with like matters.** Every photo carries one of four labels;
+  a "whole plant" beside a detail close-up looks like change and is not. Prefer
+  the `whole` label, and fall back only if there are not two.
+- **The owner can override the pair and pick their own two.** That choice is a
+  preference about presentation, not a fact about the plant.
+- **Tap through to the whole strip** — two is the summary, never the limit.
+
+**Round 2 of the screens page published 2026-09-12** with the band order and
+the photo rule drawn in, plus two more heroes: **5** three-quarter square with
+the name above and the score beside, and **6** full bleed with the name above
+and the score below. Round 1 is kept and relabelled "answered" — **append,
+never prune**. Still waiting on the owner: which hero, and whether the What
+works bands are right. Judge the heroes on the portrait photo; that is the one
+that forces a choice.
+
+### Band order on the per-plant What works
+
+**Photos · the story · the routine · what you said.** Layout B from the
+mock-up page with the last two swapped.
+
+### Log care comes off Home and the Plants list
+
+It is in the tab bar from everywhere now, so both were redundant. The tab bar
+override (see the 2026-09-11 decisions) is what earned this.
+
+### The missing Listen button — diagnosed, not intermittent
+
+**That diagnosis was wrong, and so was the next one.** Recorded here because
+the wrong answers are worth not repeating:
+
+- *"Interrupted walks stay chunked and the size check misses them"* — no.
+  `readSessionAudio` already falls back to chunk keys, so an interrupted walk
+  reports its real size.
+- *"A walk shorter than one chunk loses its only chunk to a fire-and-forget
+  write"* — no. `check/browser/shortwalk.html` records two seconds and twelve
+  and both keep their audio.
+
+**It was not reproduced.** Rather than guess a third time, the screen was made
+to say what it knows: no audio says so in words instead of a dead disabled
+button, Listen carries the file size, and a player that loads but never
+decodes says so. **The one thing that is reproducible is that Chrome will not
+decode the fragmented MP4 Safari writes**, and that may be the whole of what
+the owner hit — "cannot listen" and "no button" are two different symptoms and
+they may only have meant the first. Ask which before chasing it further.
 
 ## The 2026-09-11 night pass — the owner's decisions, settled
 
@@ -268,6 +647,91 @@ since the question is which one survives being small.
 **Round 2 closed the question.** The owner chose from it — see "The tab bar"
 above. Keep both rounds on the page; the next question gets a Round 3.
 
+## The 2026-09-11 recording pass — read this before touching Record
+
+The owner ran the iPhone test. **Three findings, all settled.**
+
+**1. iOS kills recording on backgrounding. Confirmed, not theoretical.** The
+owner recorded ~2 minutes, switched apps, came back: stopped. The
+pessimistic assumption in `capture/recording.ts` was correct. The screen log
+and the 10-second audio chunks both survived, so the durability design did
+its job. **Do not design as though foreground-only is a maybe. It is a
+fact.**
+
+**2. A real bug, and its cause is known.** `endSession()` sets the phase to
+`saving`, then awaits `stopRecorder()`, which waits on the MediaRecorder's
+`stop` event. When iOS has already killed the track, that event never fires
+and **the await has no timeout**, so the app hangs in `saving` for ever.
+Both symptoms the owner saw come from that one hang: the Record screen stuck
+on "Working…" (`busy` is true while `saving`), and Recordings showing
+"Recording now" on a dead session (`liveNow` in `Recordings.tsx` tests
+`!s.closed`, and the code that closes the session sits *after* the hang).
+`stopRecorder()` guards against `state === 'inactive'` but not against a
+recorder that is nominally alive with a dead track under it — which is
+exactly what an iOS kill produces, and exactly what a laptop cannot
+reproduce. **Force-quitting clears it; nothing is lost, because chunks are
+written independently.**
+
+**3. The mock had things the build dropped.** Verified by reading
+`Deez Plants.dc.html`, not from memory:
+- `@keyframes recPulse` — a ring scaling to 1.35x and fading, 1.6s, looping,
+  shown **only while recording** (`recActive`). Never built.
+- While recording the button also turns `#9BE39B` → `#E88A6A`, the inner dot
+  morphs circle → 5px-radius square, and the label reads `Pause`. Never
+  built.
+- **`tapRec` starts the session directly** (`if (t.secs === 0) set({ screen:
+  "rec", recording: true })`). The build made it navigate only, with a
+  comment justifying the change. The comment's reasoning about the *label*
+  was sound; keeping navigation-only was not.
+- The screen is called **"Inspection session"** — that part the build got
+  right.
+
+**Checked and NOT a miss:** Home's "Do next" exists, renamed "Most urgent".
+And the transcript round-trip genuinely is a laptop step (screen 15: "Export
+moves the audio and its sidecar out for Whisper") — what is missing is any
+on-screen sign that the laptop step exists, so "Add transcript" reads as a
+closed loop.
+
+### The agreed fixes (owner approved 2026-09-11)
+
+**A** hang fix · **B** Rec button per the mock, with one deliberate
+deviation: while recording, the tab-bar button **opens the screen rather than
+pausing**, because a mis-tap that silently pauses a walk is worse than one
+extra tap · **C** transcript dead end · **D** make the backgrounding warning
+specific, now that it is a known fact · **E** Log care moved to the top of
+Home.
+
+### The tab bar — an ongoing task, deliberately deferred
+
+The owner wants **Log care in the bottom bar** (label: `Log`), because it is
+what they use most and it currently sits below the fold on Home.
+
+**`DESIGN_REFERENCE.md` section 6 locks the opposite** — "Log Care as
+plant-specific contextual actions rather than permanent tabs". The owner was
+told this and is overriding it knowingly, having now used the app. **That
+override is the decision; do not re-raise the lock.**
+
+Sequenced as: **E first** (top of Home, cheap, may be enough), then a
+five-item bar if it is not. Five fits — an iPhone 14 Pro Max is 430pt wide,
+~86pt per item. The owner noted their phone's dock shows only 4; that is a
+fixed iOS dock rule, not a width limit, and does not apply.
+
+**This is an ongoing, multi-session task.** The comparison page is published
+at **https://claude.ai/code/artifact/619f85e3-1cfb-4f5a-8f48-d250331e1347** —
+every candidate is drawn from `src/components/Icon.tsx` (the owner's own
+artwork, so no new icons were needed), the owner picks one per slot, and the
+page renders the bar at 430px, the real width of their phone, in four-item
+and five-item forms at three label sizes. **Wait for their picks; do not
+guess them.** The page stores picks in the viewer's own browser only, so the
+owner has to read the line back — it does not reach this session on its own.
+
+If they do want to draw new ones: flat solid white PNG, 512x512, transparent
+background, ~15% padding — never the 3D treatment of the app icon, which
+turns to mush at 24px.
+
+**No part of this touches data.** Nav is presentational; IndexedDB is keyed
+to the origin. Deferring it costs nothing but the inconvenience.
+
 ## Markers — what the owner asked for, and why (2026-09-11 evening)
 
 They tested the five-second rule on their phone and it works: clicking through
@@ -312,258 +776,6 @@ another one" and moves to 5176, which is easy to miss in a scrollback. **If
 an edit does not show up, check the port in the dev server's own output
 before doubting the edit**, and kill strays with
 `Get-NetTCPConnection -LocalPort 5173 -State Listen` then `Stop-Process`.
-
-## What this app is actually for (the owner, 2026-09-11)
-
-Their words, close to verbatim, after using the thing for a week:
-
-> What works … this is really the whole point of the app, to track what works
-> and make it how I take care of it and see it thrive. This is the biggest
-> reason I am making this app and it should be the crux. Together with AI and
-> my observations and actions over time I can use this app to remember all the
-> things I can't.
-
-**Treat screen 18 as the thesis, not the last item on a list.** Ratings, the
-care log, walks and the AI round-trip are all instrumentation feeding it. A
-future session that finds What works half-built should finish it before
-anything cosmetic.
-
-**This does not license the app to start concluding.** Twenty-two plants and a
-few ratings a year cannot support inference, and a confident wrong answer is
-worse than none — the owner would end up learning the app's arithmetic instead
-of their plants. The screen's job is to **hold the evidence still**: the change,
-the ratings either side, the elapsed time, the photographs. The judgement stays
-with the person who looked at the plant. Rule 1 and this purpose are the same
-policy, not a tension to resolve.
-
-**Why append-only pays off here.** Nothing is ever edited away, so a 2026
-change and the rating that followed it read identically in 2031. The record
-cannot rot, and it gets more valuable the longer it runs. Anything that would
-let history be rewritten breaks the point of the project, not just a rule.
-
-### Agreed 2026-09-11, to build
-
-1. **The timer keeps counting after iOS stops the mic.** Confirmed on the
-   owner's phone: they hear the mic-stop sound, come back, and the timer is
-   still running; the interrupted state appears minutes later. Two problems,
-   not one — the late detection is visible, and **the elapsed total counts
-   time that was never recorded**, which inflates every later marker offset
-   and hands the coverage gate a duration full of nothing. Three signals
-   instead of `track.ended` alone: freeze the clock on `visibilitychange` to
-   hidden (nothing is recorded from that instant whatever iOS does next),
-   listen for the track's `mute` event (iOS mutes long before it ends), and a
-   watchdog on chunk arrival.
-
-   **Done 2026-09-11.** All three signals are in `capture/recording.ts`;
-   `check/browser/backgrounded.html` covers them and was run against the old
-   code first, where it reproduced the owner's symptom exactly. **A trip away
-   the capture survives resumes without counting the time away** — a walk's
-   duration stays the length of its audio, which is what the coverage gate
-   compares against.
-2. **Shorten the red recording warning to one line.** It was lengthened after
-   their backgrounding test and became a paragraph shouting on every walk.
-3. **Re-lay-out Most urgent and Needs attention**: plant name on its own line,
-   care type and days past underneath. The name is what they scan for and it
-   was buried mid-row.
-4. **What works moves onto Plant Detail**, below Placement, ordered: What
-   works · More about this plant · Info and settings · Photos. Plant-scoped
-   there, with a "see every plant" link inside it, and its All-pages row moves
-   into *This plant*. The collection view stays reachable — the owner chose
-   the middle of three options.
-5. **Widen what counts as a change worth rating either side of.** Care-spec
-   edits were too narrow for the purpose above. Add **room and spot moves**
-   (their most common intervention), the **seasonal balcony move**, repot,
-   top-dress, hard prune, pest treatment, soil flush, adding support, taking
-   cuttings. Keep **routine** separate and merely counted — rotating, wiping
-   leaves, misting — or a weekly rotate buries the annual repot.
-6. ~~**Persistent storage.**~~ Done 2026-09-11, in `boot.ts`. A request, not a
-   guarantee — Chrome refuses it on localhost without engagement — and never
-   a substitute for backup.
-7. ~~**Lazy thumbnails.**~~ Done 2026-09-11: heroes at boot, galleries fetch
-   their own through `ensureThumbs`. Previously `loadThumbs` built an object URL for every
-   photo at boot. Fine at 26, a slow memory-hungry launch at 2,000. Heroes at
-   boot, the rest when a gallery opens. The owner's own framing.
-
-### Storage, answered for the owner
-
-Events ~250 bytes each, ~2,000/year: **half a megabyte a year**, never delete.
-Photos ~400KB: ~40MB/year, affordable. **Audio is the only thing that grows
-dangerously** — a ten-minute walk is ~9MB, weekly walks ~470MB/year.
-
-The natural remedy: once a walk has a verified transcript the audio's job is
-done, because the transcript is what the AI reads and what the gate checks.
-**But this is not currently possible** — Delete removes the session whole.
-Needs a "free up space" action that drops audio and keeps the transcript,
-markers and route, **offered only when a transcript exists**, since dropping
-audio from an untranscribed walk loses the walk. Not urgent; years away at
-their rate. Do not let it become automatic.
-
-**Built 2026-09-11**, with both guards: the action appears only on a walk that
-has a transcript, and it confirms first. It stays manual.
-
-### Two traps for anyone driving the app in a browser
-
-1. **Browser harnesses write into the owner's real database.** This session's
-   own checks left **27 test sessions and 33 audio chunks** in the store at
-   `localhost:5173` — the origin holding their record. They were removed and
-   the record verified intact afterwards (132 events, 22 plants, 26 photos).
-   **Clean up after any harness that starts a session**, and check before
-   assuming a stray session is theirs: the owner records on their phone, so a
-   walk sitting on the laptop is almost certainly a test.
-2. **"Recording now" has been wrong twice.** The check must compare against
-   the recorder's actual `session_id`, not merely ask whether the recorder is
-   busy — otherwise every unfinished walk in the list claims to be live, and
-   one `interrupted` walk lights up all of them.
-
-### Mock up before building
-
-The per-plant What works and a full-width Plant Detail hero both need the
-owner's eye first. **A second cumulative mock-up page**, same rule as the
-icons one. Round 1: What works in their chosen band order — timeline, photos,
-what you said, routine — and three hero treatments.
-
-**The hero has a trap.** Section 6's *lessons already learned once* records a
-photo in a fixed-height container mismatched to its real aspect ratio, leaving
-a pale band. A full-bleed hero is exactly where that returns.
-
-**Published 2026-09-11: https://claude.ai/code/artifact/f2fe6dc2-2a6b-4377-90ca-d7f288b8e7b6**
-Round 1 carries three What-works layouts (differing only in which band leads)
-and four hero treatments, at 430px, using the owner's own photographs.
-Cumulative like the icons page — **append rounds, never prune**.
-
-**A measured finding that corrected an assumption.** This session guessed the
-owner's photos were portrait phone shots. They are **24 square, one 4:3, one
-3:4** — and `capture/photos.ts` crops nothing, it only scales to a max edge, so
-anything taken from here on is whatever the phone gives. A hero must hold all
-three shapes. Full width at true shape is 430px tall on a square and 573px on
-the portrait one, which is the case to judge. `Icons/make-mock-photos.ps1`
-regenerates the embedded images.
-
-**Wait for their answers** before building either: which layout and which band
-leads, and which hero. Do not guess from the "my suggestion" label on the
-page — that is a suggestion, not a decision.
-
-## Decisions of 2026-09-12 (settled — do not relitigate)
-
-### The Rec button goes back to navigating only
-
-**Reverted on the owner's own reasoning, which beats the mock's.** An earlier
-pass made the tab-bar button start the walk because `tapRec` in the mock does.
-The owner used it and found the real cost: an accidental tap creates a
-recording they have to notice and delete, and a stray tap while one is running
-is worse. The asymmetry settles it — starting a walk is deliberate, so one
-extra tap costs nothing, while an accidental start or stop costs a walk or a
-cleanup.
-
-**The button always opens the Record screen. Start, pause and stop live
-there.** It keeps its timer and red recording state, which the owner said
-explicitly they like. Do not "restore" tap-to-start from the mock: this is the
-mock being overridden knowingly by someone who has used the thing.
-
-### What works — the photo rule
-
-The owner's choice: **the last two full-plant photos**, because that is what
-shows the work they have done. Plus:
-
-- **Comparing like with like matters.** Every photo carries one of four labels;
-  a "whole plant" beside a detail close-up looks like change and is not. Prefer
-  the `whole` label, and fall back only if there are not two.
-- **The owner can override the pair and pick their own two.** That choice is a
-  preference about presentation, not a fact about the plant.
-- **Tap through to the whole strip** — two is the summary, never the limit.
-
-**Round 2 of the screens page published 2026-09-12** with the band order and
-the photo rule drawn in, plus two more heroes: **5** three-quarter square with
-the name above and the score beside, and **6** full bleed with the name above
-and the score below. Round 1 is kept and relabelled "answered" — **append,
-never prune**. Still waiting on the owner: which hero, and whether the What
-works bands are right. Judge the heroes on the portrait photo; that is the one
-that forces a choice.
-
-### Band order on the per-plant What works
-
-**Photos · the story · the routine · what you said.** Layout B from the
-mock-up page with the last two swapped.
-
-### Log care comes off Home and the Plants list
-
-It is in the tab bar from everywhere now, so both were redundant. The tab bar
-override (see the 2026-09-11 decisions) is what earned this.
-
-### The missing Listen button — diagnosed, not intermittent
-
-**That diagnosis was wrong, and so was the next one.** Recorded here because
-the wrong answers are worth not repeating:
-
-- *"Interrupted walks stay chunked and the size check misses them"* — no.
-  `readSessionAudio` already falls back to chunk keys, so an interrupted walk
-  reports its real size.
-- *"A walk shorter than one chunk loses its only chunk to a fire-and-forget
-  write"* — no. `check/browser/shortwalk.html` records two seconds and twelve
-  and both keep their audio.
-
-**It was not reproduced.** Rather than guess a third time, the screen was made
-to say what it knows: no audio says so in words instead of a dead disabled
-button, Listen carries the file size, and a player that loads but never
-decodes says so. **The one thing that is reproducible is that Chrome will not
-decode the fragmented MP4 Safari writes**, and that may be the whole of what
-the owner hit — "cannot listen" and "no button" are two different symptoms and
-they may only have meant the first. Ask which before chasing it further.
-
-## Start here: what to do first
-
-**The app is live at https://deez-plants.github.io.** Hosting is done — see
-"Hosting, as built" below for what actually happened, including the manual
-step that turned out not to be needed. The repo now has a remote and the
-code is backed up off the laptop for the first time.
-
-**What is left is the iPhone test, and it is the owner's to run.** It is
-the last thing blocking the desk console and the remaining screens, because
-if backgrounding kills a recording the fix belongs in `capture/recording.ts`
-before anything else is built on top of it. The steps are written out under
-"The iPhone test" below.
-
-**The live site shows `Not rated · 22 not rated yet`, and that is correct.**
-It is a new origin with an empty database. The owner's real record is still
-only on the laptop's `localhost`. Moving it across is step 1 of the test —
-**and the owner has never had their record in two places at once, so do not
-treat the transfer as a formality.**
-
-**Then show the owner backup.** It is the thing they have been blocked by without
-knowing it, and it is now built. Their real record — 22 ratings and two
-watering rounds they actually did — lives in **one** store: this laptop's
-`localhost`. Their phone has none of it. Back up → *Save my record* produces
-a ~60KB file; opening it on the phone through Back up → *Restore* brings the
-lot across. That is the demonstration to lead with.
-
-**Then read "The 2026-09-08 audit" below** before touching any screen. It
-carries the drift found, the decisions the owner made (twice — a settled
-decision list and an evening decision list, both marked do-not-relitigate),
-and a work list of which items 1–10 are now done.
-
-**Storage is per-origin, and this trips everyone.** `localhost:5173`, a LAN
-address like `192.168.1.195:5173`, and any hosted URL are **three separate
-databases with no server between them** — and two of those three are on the
-same laptop, in the same browser. Data entered in one never appears in
-another. The owner lost an evening to this; do not repeat it. Backup is the
-only bridge.
-
-### The root cause of the drift, so it does not happen again
-
-`CLAUDE.md` says that where the built app differs from `DESIGN_REFERENCE.md`,
-the app is right and the reference is stale. That rule was written about
-**hand-tuned type sizes** — so nobody would shrink the owner's text back
-down. It was over-applied as cover for structural drift: whole blocks the
-reference specifies (`Do next`, `Your ratings over time`, the inline care
-calendar, every icon) were simply never built, and the precedence rule was
-allowed to excuse it. **The rule covers sizing only.** A missing section is
-not a stale reference.
-
-**And check citations.** The old plants-list code justified its deviation by
-citing "a note in `DESIGN_REFERENCE.md` that the pill predates section 3b".
-No such note exists; screen 02 specifies the pill outright. A comment in this
-codebase that justifies itself by pointing at a document is worth verifying
-against the document.
 
 ## Recording is built — hosting still needs the owner
 
@@ -894,6 +1106,15 @@ up the list: it is the migration path for the owner's setup work, not just
 insurance.
 
 ## What's built and committed
+
+*The original 2026-09-07 preamble, kept because it is the earliest summary of
+how far the build had come: "Care calendar/All months, Adherence history,
+Rooms and planters, More about this plant/Info and settings (later made fully
+editable), Health history, the Add-a-plant write flow, a direct Care-calendar
+link on Plant Detail, export/import (Prepare review package + Apply AI update,
+the full section-11 validation chain), and the whole of Capture — photo
+capture with gallery and hero selection, both notes lanes, and walk recording
+with markers, the screen log and both transcript tiers."*
 
 As of commit `b2669fa` (`git log --oneline` will show newer ones by the time
 you read this):
