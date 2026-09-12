@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { boot, refresh, type Booted } from './boot';
 import { useNav } from './nav/useNav';
 import type { PlantScopedKind, Screen } from './nav/types';
+import type { PlantId } from './types/ids';
 import { TabBar } from './nav/TabBar';
 import AllPages, { type AllPagesGroup } from './nav/AllPages';
 import PlantPicker from './nav/PlantPicker';
@@ -475,10 +476,14 @@ export default function App() {
         state={state}
         events={events}
         plant_id={screen.plant_id}
+        thumbs={thumbs}
         backLabel={nav.backLabel ?? 'All pages'}
         onBack={nav.back}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'What works')}
         onSeeAll={screen.plant_id ? () => nav.push({ kind: 'works' }, 'What works') : undefined}
+        onPhotos={screen.plant_id
+          ? () => nav.push({ kind: 'photos', plant_id: screen.plant_id as PlantId }, 'What works')
+          : undefined}
       />
     );
   } else if (screen.kind === 'how') {

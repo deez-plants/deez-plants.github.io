@@ -134,6 +134,11 @@ export const USER_ONLY_FIELDS = [
   'notes_user',
   'collection_notes_user',
   'hero_media',
+  /** Which two photographs What works compares. See `compare_media` in
+      FIELD_DEFINITIONS.md section 4 — a presentation preference the owner sets,
+      stored as a plant field so it survives a backup and restore the way the
+      hero does. */
+  'compare_media',
 ] as const;
 
 /** `editable_by: derived`. Recomputed from events; never written, never proposed. */

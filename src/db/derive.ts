@@ -56,6 +56,7 @@ interface WorkingFields {
   status_label: StatusLabel | null;
   do_next: string | null;
   hero_media: MediaId | null;
+  compare_media: string | null;
 }
 
 interface Provenance {
@@ -81,6 +82,7 @@ const FIELD_NAMES = [
   'name', 'species', 'acquired', 'room', 'pot', 'planter',
   'water_interval_days', 'water_interval_days_winter',
   'feed', 'light', 'soil', 'notes_user', 'status_label', 'do_next', 'hero_media',
+  'compare_media',
 ] as const;
 
 function newWorking(base: PlantBaseline): Working {
@@ -117,6 +119,7 @@ function newWorking(base: PlantBaseline): Working {
       status_label: base.status_label,
       do_next: base.do_next,
       hero_media: null,
+      compare_media: null,
     },
     last_set_by,
     intervals: [{
@@ -243,6 +246,9 @@ function applyEdit(w: Working, e: EditEvent): void {
     case 'do_next': if (v === null || typeof v === 'string') w.fields.do_next = v; break;
     case 'hero_media':
       w.fields.hero_media = v === null ? null : (v as MediaId);
+      break;
+    case 'compare_media':
+      w.fields.compare_media = v === null ? null : String(v);
       break;
     case 'status_label':
       w.fields.status_label = v === null ? null : (v as StatusLabel);
@@ -452,6 +458,10 @@ function finalizePlant(
     care_instructions: w.instructions,
     photos: w.photos,
     hero: w.fields.hero_media,
+    // Two media ids, comma separated, or null for "let the app choose".
+    compare: w.fields.compare_media
+      ? w.fields.compare_media.split(',').filter(Boolean)
+      : null,
     last_checked: w.last_event_date,
     attention,
     pending_event_ids: pendingByPlant.get(w.base.plant_id) ?? [],

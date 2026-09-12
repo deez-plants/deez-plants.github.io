@@ -138,6 +138,9 @@ export interface DerivedPlant {
   photos: MediaId[];
   /** Chosen manually, usually not the newest. See FLAG B — needs a home in section 4. */
   hero: MediaId | null;
+  /** The two photographs the owner chose for What works to compare, if they
+      chose any. Null means "use the rule" — the last two whole-plant shots. */
+  compare: string[] | null;
 
   /** Most recent event of any type on this plant. See DECISION 6. */
   last_checked: ISODate | null;

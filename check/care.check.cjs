@@ -417,5 +417,52 @@ const runRated = (rateEvents, as_of) => derive({
   eq('scoped sees one', W.careChanges(two, both, '002-SNK').map((c) => c.plant_id), ['002-SNK']);
 }
 
+/* ------------------------------------------ the compared photographs -- */
+
+// The owner's rule, 2026-09-12: the last two full-plant photographs, because
+// that is what shows the work they have done.
+{
+  const W = require('./build/score/whatWorks.js');
+  const ph = (media_id, date, label) => ({ media_id, date, label });
+
+  const shots = [
+    ph('m1', '2026-01-10', 'whole'),
+    ph('m2', '2026-03-02', 'leaf'),
+    ph('m3', '2026-05-04', 'whole'),
+    ph('m4', '2026-07-08', 'whole'),
+    ph('m5', '2026-08-01', 'soil'),
+  ];
+
+  const auto = W.comparePhotos({ compare: null }, shots);
+  eq('the last two whole-plant shots, oldest first',
+    [auto.pair.map((p) => p.media_id), auto.chosen], [['m3', 'm4'], false]);
+
+  // Comparing like with like is the whole point: a whole plant beside a leaf
+  // close-up looks like change without being it.
+  eq('close-ups are never paired with a whole plant',
+    auto.pair.every((p) => p.label === 'whole'), true);
+
+  // One whole-plant photo is not a comparison, and padding it would show
+  // change that is not there.
+  eq('one whole-plant photo gives no pair',
+    W.comparePhotos({ compare: null }, [ph('m1', '2026-01-10', 'whole'), ph('m2', '2026-02-01', 'leaf')]).pair.length, 0);
+  eq('no photos at all gives no pair', W.comparePhotos({ compare: null }, []).pair.length, 0);
+
+  // An explicit choice wins, and does not expire because a newer photo landed.
+  const picked = W.comparePhotos({ compare: ['m1', 'm4'] }, shots);
+  eq('the pair the owner chose wins',
+    [picked.pair.map((p) => p.media_id), picked.chosen], [['m1', 'm4'], true]);
+  eq('their pair may cross labels if they say so',
+    W.comparePhotos({ compare: ['m2', 'm5'] }, shots).pair.map((p) => p.media_id), ['m2', 'm5']);
+
+  // A chosen photo that has since been deleted must not strand the pair.
+  eq('a deleted choice falls back rather than breaking',
+    W.comparePhotos({ compare: ['gone', 'alsogone'] }, shots).pair.map((p) => p.media_id), ['m3', 'm4']);
+
+  // Always oldest first, so the pair reads then -> now.
+  eq('order is always then, then now',
+    W.comparePhotos({ compare: ['m4', 'm1'] }, shots).pair.map((p) => p.media_id), ['m1', 'm4']);
+}
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import type { DerivedState } from '../types/derived';
 import type { StoredEvent } from '../types/event';
 import type { PlantId } from '../types/ids';
-import { answeredCount, careChanges } from '../score/whatWorks';
-import { formatDayMonth } from '../lib/dates';
+import { answeredCount, careChanges, comparePhotos, type ComparePhoto } from '../score/whatWorks';
+import { formatDayMonth, formatDayMonthYear } from '../lib/dates';
 import { healthBand } from '../score/score';
 import './WhatWorks.css';
 
@@ -35,6 +35,10 @@ export interface WhatWorksProps {
   onOpenPlant: (plant_id: PlantId) => void;
   /** Widen from one plant to the whole collection. Only offered when scoped. */
   onSeeAll?: () => void;
+  /** media_id -> object URL, for the two photographs compared at the top. */
+  thumbs?: Map<string, string>;
+  /** Photos is where the pair is chosen; this is the way there. */
+  onPhotos?: () => void;
 }
 
 function movement(delta: number | null, days: number | null): string {
@@ -45,7 +49,7 @@ function movement(delta: number | null, days: number | null): string {
 }
 
 export default function WhatWorks({
-  state, events, plant_id, backLabel, onBack, onOpenPlant, onSeeAll,
+  state, events, plant_id, backLabel, onBack, onOpenPlant, onSeeAll, thumbs, onPhotos,
 }: WhatWorksProps) {
   const changes = useMemo(
     () => careChanges(state, events, plant_id),
@@ -53,6 +57,22 @@ export default function WhatWorks({
   );
   const answered = answeredCount(changes);
   const plant = plant_id ? state.plants[plant_id] : undefined;
+
+  // The photographs band. Scoped to one plant only — a then-and-now pair means
+  // nothing across a collection.
+  const photos = useMemo<ComparePhoto[]>(() => {
+    if (!plant_id) return [];
+    const out: ComparePhoto[] = [];
+    for (const e of events) {
+      if (e.plant_id !== plant_id || e.type === 'Edit' || !e.media) continue;
+      e.media.forEach((media_id, i) => {
+        out.push({ media_id, date: e.date, label: e.media_labels?.[i] ?? null });
+      });
+    }
+    return out;
+  }, [events, plant_id]);
+
+  const compare = plant ? comparePhotos(plant, photos) : { pair: [], chosen: false };
 
   return (
     <main className="works">
@@ -65,6 +85,48 @@ export default function WhatWorks({
           gone (the back button names the plant, the title says what this is)
           and the caveat moved to the foot of the page. What is left is the
           one line that carries information. */}
+      {plant && (
+        <section className="works-photos">
+          {/* First on the page, at the owner's request: photographs, the
+              story, the routine, what you said. "See it thrive" was their
+              phrase, and two photographs answer that faster than any number
+              on this screen. */}
+          {compare.pair.length === 2 ? (
+            <>
+              <div className="works-pair">
+                {compare.pair.map((ph) => (
+                  <figure className="works-shot" key={ph.media_id}>
+                    {thumbs?.get(ph.media_id)
+                      ? <img src={thumbs.get(ph.media_id)} alt="" />
+                      : <div className="works-shot-empty" />}
+                    <figcaption>{formatDayMonthYear(ph.date)}</figcaption>
+                  </figure>
+                ))}
+              </div>
+              <p className="works-photos-note">
+                {compare.chosen ? 'The two you chose.' : 'The last two whole-plant photos.'}
+                {onPhotos && (
+                  <button type="button" className="works-photos-link" onClick={onPhotos}>
+                    {compare.chosen ? 'Change them ›' : 'Choose your own ›'}
+                  </button>
+                )}
+              </p>
+            </>
+          ) : (
+            /* One whole-plant photograph is not a comparison, and padding it
+               with a close-up would show change that is not there. */
+            <p className="works-photos-none">
+              No pair to compare yet — two whole-plant photos and they appear here.
+              {onPhotos && (
+                <button type="button" className="works-photos-link" onClick={onPhotos}>
+                  Photos ›
+                </button>
+              )}
+            </p>
+          )}
+        </section>
+      )}
+
       <p className="works-count">
         {changes.length === 0
           ? 'No care changes recorded yet.'

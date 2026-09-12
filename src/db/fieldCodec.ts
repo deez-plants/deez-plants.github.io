@@ -41,6 +41,7 @@ export const FIELD_KINDS: Record<EditableField, FieldKind> = {
   do_next: 'opt_text',
   notes_user: 'text',
   hero_media: 'opt_text',
+  compare_media: 'opt_text',
   care_instructions: 'instruction_list',
   collection_notes_user: 'text',
   collection_care_instructions: 'instruction_list',

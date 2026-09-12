@@ -79,6 +79,27 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
     return () => { live = false; };
   }, [entries]);
 
+  /**
+   * Grouped by label, whole-plant first — not by date.
+   *
+   * This page became the one place photo decisions are made (the owner,
+   * 2026-09-12: the hero and the two What-works photographs both get chosen
+   * here). Date was the right axis when this was only a gallery; when you are
+   * here to *choose*, the question is "which whole-plant shots do I have",
+   * and having them scattered through six sessions is the wrong shape.
+   */
+  const labelled = useMemo(() => {
+    const order: (MediaLabel | 'none')[] = ['whole', 'leaf', 'soil', 'roots', 'none'];
+    const map = new Map<MediaLabel | 'none', Entry[]>();
+    for (const e of entries) {
+      const key = e.label ?? 'none';
+      const list = map.get(key);
+      if (list) list.push(e);
+      else map.set(key, [e]);
+    }
+    return order.filter((k) => map.has(k)).map((k) => [k, map.get(k) as Entry[]] as const);
+  }, [entries]);
+
   const groups = useMemo(() => {
     const map = new Map<ISODate, Entry[]>();
     for (const e of entries) {
@@ -87,6 +108,50 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
     }
     return [...map.entries()];
   }, [entries]);
+
+  /**
+   * The two photographs What works compares.
+   *
+   * Stored as a plant field, written as an `Edit` event, exactly as the hero
+   * is — so the choice survives a backup and restore rather than evaporating
+   * with the browser. A preference that vanished when the owner moved to a
+   * new phone would be worse than one that travels with the record.
+   *
+   * Null means "use the rule": the last two whole-plant shots. An explicit
+   * choice sticks until it is cleared — it must not quietly expire because a
+   * new photo arrived, which was the owner's own condition.
+   */
+  const chosen = plant.compare ?? [];
+
+  const writeCompare = async (next: string[] | null) => {
+    setBusyHero('compare' as MediaId);
+    setError(null);
+    try {
+      const db = await openDeezPlants();
+      await editPlantFields(db, plant.plant_id, [{
+        field: 'compare_media',
+        from: plant.compare ? plant.compare.join(',') : null,
+        to: next && next.length ? next.join(',') : null,
+      }], as_of);
+      await onChanged();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusyHero(null);
+    }
+  };
+
+  const toggleCompare = (media_id: MediaId) => {
+    if (chosen.includes(media_id)) {
+      void writeCompare(chosen.filter((id) => id !== media_id));
+      return;
+    }
+    // Two is the comparison. A third replaces the older of the pair rather
+    // than being refused — refusing a tap and explaining why is worse than
+    // doing the obvious thing.
+    const next = [...chosen, media_id].slice(-2);
+    void writeCompare(next);
+  };
 
   const setHero = async (media_id: MediaId) => {
     setBusyHero(media_id);
@@ -122,35 +187,64 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
 
       {groups.length === 0 && <p className="photos-empty">Nothing captured for this plant yet.</p>}
 
-      {groups.map(([date, list]) => (
-        <section key={date} className="photos-group">
+      {chosen.length > 0 && (
+        <div className="photos-chosen">
+          <span>
+            {chosen.length === 2
+              ? 'Comparing two photographs you chose.'
+              : 'One chosen — pick a second to compare.'}
+          </span>
+          <button type="button" className="photos-chosen-clear" onClick={() => void writeCompare(null)}>
+            Use the latest two
+          </button>
+        </div>
+      )}
+
+      {labelled.map(([label, list]) => (
+        <section key={label} className="photos-group">
           <div className="photos-group-head">
-            <span className="photos-group-date">{formatDayMonthYear(date)}</span>
+            <span className="photos-group-date">
+              {label === 'none' ? 'Unlabelled' : LABEL_TEXT[label as MediaLabel]}
+            </span>
             <span className="photos-group-count">{list.length} photo{list.length === 1 ? '' : 's'}</span>
           </div>
           <div className="photos-grid">
             {list.map((e) => {
               const isHero = e.media_id === plant.hero;
+              const isCompare = chosen.includes(e.media_id);
               // `loaded` is read so this re-renders when the thumbnails arrive.
               const url = loaded >= 0 ? thumbs.get(e.media_id) : undefined;
               return (
-                <div key={e.media_id} className={isHero ? 'photos-tile hero' : 'photos-tile'}>
+                <div
+                  key={e.media_id}
+                  className={`photos-tile${isHero ? ' hero' : ''}${isCompare ? ' compare' : ''}`}
+                >
                   {url
                     ? <img className="photos-tile-image" src={url} alt="" />
                     : <div className="photos-tile-image empty" />}
-                  {e.label && <span className={`photos-tile-label ${e.label}`}>{LABEL_TEXT[e.label]}</span>}
-                  {isHero ? (
-                    <span className="photos-tile-hero-badge">HERO</span>
-                  ) : (
+                  <span className="photos-tile-date">{formatDayMonthYear(e.date)}</span>
+                  <div className="photos-tile-actions">
+                    {isHero ? (
+                      <span className="photos-tile-hero-badge">HERO</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="photos-tile-sethero"
+                        disabled={busyHero !== null}
+                        onClick={() => void setHero(e.media_id)}
+                      >
+                        {busyHero === e.media_id ? '…' : 'Set hero'}
+                      </button>
+                    )}
                     <button
                       type="button"
-                      className="photos-tile-sethero"
+                      className={isCompare ? 'photos-tile-compare on' : 'photos-tile-compare'}
                       disabled={busyHero !== null}
-                      onClick={() => void setHero(e.media_id)}
+                      onClick={() => toggleCompare(e.media_id)}
                     >
-                      {busyHero === e.media_id ? '…' : 'Set hero'}
+                      {isCompare ? 'Comparing ✓' : 'Compare'}
                     </button>
-                  )}
+                  </div>
                 </div>
               );
             })}
@@ -159,9 +253,11 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
       ))}
 
       <p className="photos-note">
-        Held in memory while you are on this page, then dropped. The hero is
-        the one image kept for good — it is what shows in lists and on the
-        plant page.
+        Grouped by what each photograph shows, whole-plant first, because this
+        is where you choose. <strong>Hero</strong> is the one image kept for
+        good — it shows in lists and on the plant page.
+        <strong> Compare</strong> picks the two What works puts side by side;
+        leave them alone and it uses the last two whole-plant shots on its own.
       </p>
     </main>
   );

@@ -217,3 +217,56 @@ export function careChanges(
 export function answeredCount(changes: readonly CareChange[]): number {
   return changes.filter((c) => c.delta !== null).length;
 }
+
+/* -------------------------------------------------------------------------- */
+/* The photographs What works compares                                         */
+/* -------------------------------------------------------------------------- */
+
+export interface ComparePhoto {
+  media_id: string;
+  date: ISODate;
+  label: string | null;
+}
+
+/**
+ * The two photographs to put side by side, and whether the owner picked them.
+ *
+ * Their rule, 2026-09-12: **the last two full-plant photographs**, "because
+ * that shows the work I have done".
+ *
+ * **Comparing like with like is the part that matters.** Every photo carries
+ * one of four labels, and a whole-plant shot beside a leaf close-up *looks*
+ * like change without being it — which on a screen whose whole job is judging
+ * change would be actively misleading. So whole-plant shots are preferred, and
+ * the fallback to anything else is deliberate and last.
+ *
+ * One whole-plant photograph means **no pair**. Say so rather than padding it
+ * with a close-up; a pair that is not a comparison is worse than none.
+ */
+export function comparePhotos(
+  plant: { compare: string[] | null },
+  photos: readonly ComparePhoto[],
+): { pair: ComparePhoto[]; chosen: boolean } {
+  // An explicit choice wins and sticks until cleared — it must not expire
+  // because a newer photograph arrived.
+  if (plant.compare?.length) {
+    const byId = new Map(photos.map((p) => [p.media_id, p]));
+    const pair = plant.compare.map((id) => byId.get(id)).filter((p): p is ComparePhoto => !!p);
+    if (pair.length) return { pair: sortOldestFirst(pair), chosen: true };
+  }
+
+  const whole = photos.filter((p) => p.label === 'whole');
+  const pool = whole.length >= 2 ? whole : [];
+  if (pool.length < 2) return { pair: [], chosen: false };
+
+  // The last two, oldest of the pair first, so it reads then -> now.
+  return { pair: sortOldestFirst(sortNewestFirst(pool).slice(0, 2)), chosen: false };
+}
+
+function sortNewestFirst(list: readonly ComparePhoto[]): ComparePhoto[] {
+  return [...list].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+function sortOldestFirst(list: readonly ComparePhoto[]): ComparePhoto[] {
+  return [...list].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
