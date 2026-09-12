@@ -443,6 +443,55 @@ regenerates the embedded images.
 leads, and which hero. Do not guess from the "my suggestion" label on the
 page — that is a suggestion, not a decision.
 
+## Decisions of 2026-09-12 (settled — do not relitigate)
+
+### The Rec button goes back to navigating only
+
+**Reverted on the owner's own reasoning, which beats the mock's.** An earlier
+pass made the tab-bar button start the walk because `tapRec` in the mock does.
+The owner used it and found the real cost: an accidental tap creates a
+recording they have to notice and delete, and a stray tap while one is running
+is worse. The asymmetry settles it — starting a walk is deliberate, so one
+extra tap costs nothing, while an accidental start or stop costs a walk or a
+cleanup.
+
+**The button always opens the Record screen. Start, pause and stop live
+there.** It keeps its timer and red recording state, which the owner said
+explicitly they like. Do not "restore" tap-to-start from the mock: this is the
+mock being overridden knowingly by someone who has used the thing.
+
+### What works — the photo rule
+
+The owner's choice: **the last two full-plant photos**, because that is what
+shows the work they have done. Plus:
+
+- **Comparing like with like matters.** Every photo carries one of four labels;
+  a "whole plant" beside a detail close-up looks like change and is not. Prefer
+  the `whole` label, and fall back only if there are not two.
+- **The owner can override the pair and pick their own two.** That choice is a
+  preference about presentation, not a fact about the plant.
+- **Tap through to the whole strip** — two is the summary, never the limit.
+
+### Band order on the per-plant What works
+
+**Photos · the story · the routine · what you said.** Layout B from the
+mock-up page with the last two swapped.
+
+### Log care comes off Home and the Plants list
+
+It is in the tab bar from everywhere now, so both were redundant. The tab bar
+override (see the 2026-09-11 decisions) is what earned this.
+
+### The missing Listen button — diagnosed, not intermittent
+
+It looks random and is not: it is **interrupted walks specifically**. A walk
+that ends cleanly has its chunks assembled into one blob under the session id.
+An interrupted one deliberately stays as chunks so a resumed segment can keep
+appending — that is what makes "pick it up" work. But `listSessions` measures
+a walk by looking only for the assembled blob, finds nothing, reports
+`audio_bytes: 0`, and **every audio control is disabled when the size is
+zero**. Fix by measuring the chunks too, never by assembling early.
+
 ## Start here: what to do first
 
 **The app is live at https://deez-plants.github.io.** Hosting is done — see
