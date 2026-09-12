@@ -484,13 +484,23 @@ override (see the 2026-09-11 decisions) is what earned this.
 
 ### The missing Listen button — diagnosed, not intermittent
 
-It looks random and is not: it is **interrupted walks specifically**. A walk
-that ends cleanly has its chunks assembled into one blob under the session id.
-An interrupted one deliberately stays as chunks so a resumed segment can keep
-appending — that is what makes "pick it up" work. But `listSessions` measures
-a walk by looking only for the assembled blob, finds nothing, reports
-`audio_bytes: 0`, and **every audio control is disabled when the size is
-zero**. Fix by measuring the chunks too, never by assembling early.
+**That diagnosis was wrong, and so was the next one.** Recorded here because
+the wrong answers are worth not repeating:
+
+- *"Interrupted walks stay chunked and the size check misses them"* — no.
+  `readSessionAudio` already falls back to chunk keys, so an interrupted walk
+  reports its real size.
+- *"A walk shorter than one chunk loses its only chunk to a fire-and-forget
+  write"* — no. `check/browser/shortwalk.html` records two seconds and twelve
+  and both keep their audio.
+
+**It was not reproduced.** Rather than guess a third time, the screen was made
+to say what it knows: no audio says so in words instead of a dead disabled
+button, Listen carries the file size, and a player that loads but never
+decodes says so. **The one thing that is reproducible is that Chrome will not
+decode the fragmented MP4 Safari writes**, and that may be the whole of what
+the owner hit — "cannot listen" and "no button" are two different symptoms and
+they may only have meant the first. Ask which before chasing it further.
 
 ## Start here: what to do first
 
