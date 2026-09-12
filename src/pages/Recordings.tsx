@@ -244,6 +244,16 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
             it is marked <strong>unverified</strong> because there are no
             timestamps to check it against.
           </p>
+          {/* Moved here from the red banner on the Record screen, which was
+              repeating it on every walk. It is reassurance, and reassurance
+              only needs saying once. */}
+          <p className="recs-how-note">
+            <strong>A walk cut short is never a walk lost.</strong> Audio is
+            written to this device every ten seconds while you record, so if
+            iOS stops the capture — a call, or switching apps — everything up
+            to that moment is already saved, and the walk can be picked up
+            where it left off.
+          </p>
         </details>
       )}
 

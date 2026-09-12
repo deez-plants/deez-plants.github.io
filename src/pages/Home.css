@@ -196,11 +196,23 @@
   color: var(--ink-40);
 }
 
+/* The second line of a row: what kind of care, and how long since. Sits under
+   the plant's name rather than beside it — three things competing across one
+   line is what made this unreadable. Wraps rather than squeezing, because a
+   long plant name should push this down, not crush it. */
+.home-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 9px;
+  margin-top: 7px;
+}
+
 .home-row-tag {
   flex: none;
   font: 600 18px/1 var(--mono);
   letter-spacing: 0.06em;
-  padding: 4px 7px;
+  padding: 5px 8px;
   border-radius: 6px;
   color: var(--ink-60);
   border: 1px solid var(--line-strong);
@@ -209,8 +221,7 @@
 .home-row-tag.water { color: var(--accent); border-color: var(--accent-line); }
 
 .home-row-days {
-  flex: none;
-  font: 600 20px/1 var(--mono);
+  font: 600 20px/1.2 var(--sans);
   color: var(--warn);
 }
 

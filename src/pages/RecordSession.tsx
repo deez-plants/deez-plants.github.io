@@ -233,18 +233,17 @@ export default function RecordSession({
         </section>
       )}
 
-      {/* Tested on the owner's iPhone, 2026-09-11: they recorded two minutes,
-          switched apps, came back, and it had stopped. So this says "will",
-          not "can". The earlier wording hedged, and hedging here reads as
-          "probably fine" — which is the opposite of what is true, and the
-          reader is holding a walk they cannot redo. */}
+      {/* One line. An earlier pass grew this into a paragraph after the
+          owner's backgrounding test, and a paragraph in red on every single
+          walk is nagging rather than warning — they said so. What it must
+          still do is state the fact rather than hedge: iOS *does* end the
+          capture, confirmed on their phone. The reassurance about ten-second
+          chunks moved to the collapsed section in Recordings, where it is
+          read once instead of shouted every time. */}
       {live && (
         <p className="rec-warning">
-          <strong>Keep this app in front.</strong> iOS ends the capture when you
-          switch to another app — this is confirmed on iPhone, not a
-          precaution. Everything up to that moment is still saved, in
-          ten-second pieces, so a walk cut short is never a walk lost. The
-          screen is held awake while a walk is live{wakeLockSupported() ? '' : ', though this browser has no wake lock so it may still dim'}.
+          <strong>Keep this app in front</strong> — iOS stops the recording if
+          you leave.{wakeLockSupported() ? '' : ' This browser has no wake lock, so the screen may dim.'}
         </p>
       )}
 

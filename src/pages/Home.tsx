@@ -288,13 +288,24 @@ export default function Home({
               const days = p.adherence.days_past ?? 0;
               return (
                 <li key={p.plant_id}>
+                  {/* The plant's name on its own line, what and how far past
+                      underneath — the same shape Needs attention uses. It was
+                      one cramped row with the care tag first, which buried the
+                      name in the middle: the name is the thing you scan for,
+                      and the owner said it read as a mess. */}
                   <button type="button" className="home-row" onClick={() => onOpenPlant(p.plant_id)}>
-                    <span className="home-row-tag water">WATER</span>
                     <span className="home-row-body">
                       <span className="home-row-name">{p.name}</span>
-                    </span>
-                    <span className="home-row-days">
-                      {days > 0 ? `${days}d past` : 'due today'}
+                      <span className="home-row-meta">
+                        <span className="home-row-tag water">WATER</span>
+                        <span className="home-row-days">
+                          {/* Rule 9: how long since the interval, never an
+                              instruction to water. */}
+                          {days > 0
+                            ? `${days} day${days === 1 ? '' : 's'} past interval`
+                            : 'interval is up today'}
+                        </span>
+                      </span>
                     </span>
                     <span className="home-row-chev" aria-hidden="true">›</span>
                   </button>
