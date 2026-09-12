@@ -472,6 +472,14 @@ shows the work they have done. Plus:
   preference about presentation, not a fact about the plant.
 - **Tap through to the whole strip** — two is the summary, never the limit.
 
+**Round 2 of the screens page published 2026-09-12** with the band order and
+the photo rule drawn in, plus two more heroes: **5** three-quarter square with
+the name above and the score beside, and **6** full bleed with the name above
+and the score below. Round 1 is kept and relabelled "answered" — **append,
+never prune**. Still waiting on the owner: which hero, and whether the What
+works bands are right. Judge the heroes on the portrait photo; that is the one
+that forces a choice.
+
 ### Band order on the per-plant What works
 
 **Photos · the story · the routine · what you said.** Layout B from the
