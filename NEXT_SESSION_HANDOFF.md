@@ -334,6 +334,23 @@ the work I have done".
 
 **Photos · the story · the routine · what you said.**
 
+### One decision taken without asking, and why
+
+**Where the owner's chosen What-works photo pair is stored.** They asked to be
+able to override the automatic pair. That choice has to survive a backup and
+restore, so it cannot live in component state or `localStorage`.
+
+**Following the precedent already set by the hero**, which is an `Edit` event
+on a plant field (`hero_media`), the chosen pair is stored the same way — a
+plant field, written as an `Edit` event, folded by `derive`. That keeps rule 5
+(append-only), rule 8 (no state patches), and means the choice travels with
+the record like everything else.
+
+It required a `FIELD_DEFINITIONS.md` section 4 addition, done in the same
+pass. **If the owner would rather the pair were not part of the record, this
+is the decision to revisit** — but a preference that vanishes when you restore
+onto a new phone would be worse than one that travels.
+
 ### All of the above is drawn, not just described
 
 **Round 3 of the screens page is the agreed Plant Detail as a picture** —
