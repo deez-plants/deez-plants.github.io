@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ISODate, MediaId } from '../types/ids';
 import type { StoredEvent } from '../types/event';
 import type { DerivedPlant } from '../types/derived';
 import type { MediaLabel } from '../types/plant';
 import { formatDayMonthYear } from '../lib/dates';
 import { openDeezPlants } from '../db/schema';
+import { ensureThumbs } from '../boot';
 import { editPlantFields } from '../care/editField';
 import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
 import './PhotosPage.css';
@@ -65,6 +66,19 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
     return [...byMedia.values()].sort((a, b) => (order.get(b.media_id) ?? -1) - (order.get(a.media_id) ?? -1));
   }, [events, plant.plant_id, plant.photos]);
 
+  // Boot only loads each plant's hero, so a gallery has to fetch its own
+  // thumbnails. `ensureThumbs` fills the same map every screen already holds;
+  // the counter is here to re-render once it has, since mutating a Map does
+  // not.
+  const [loaded, setLoaded] = useState(0);
+  useEffect(() => {
+    let live = true;
+    void ensureThumbs(entries.map((e) => e.media_id)).then(() => {
+      if (live) setLoaded((n) => n + 1);
+    });
+    return () => { live = false; };
+  }, [entries]);
+
   const groups = useMemo(() => {
     const map = new Map<ISODate, Entry[]>();
     for (const e of entries) {
@@ -117,7 +131,8 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
           <div className="photos-grid">
             {list.map((e) => {
               const isHero = e.media_id === plant.hero;
-              const url = thumbs.get(e.media_id);
+              // `loaded` is read so this re-renders when the thumbnails arrive.
+              const url = loaded >= 0 ? thumbs.get(e.media_id) : undefined;
               return (
                 <div key={e.media_id} className={isHero ? 'photos-tile hero' : 'photos-tile'}>
                   {url

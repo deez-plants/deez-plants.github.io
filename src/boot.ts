@@ -77,13 +77,66 @@ async function readAndDerive(db: DeezDB, as_of: ISODate): Promise<Read> {
   };
 }
 
-async function loadThumbs(db: DeezDB): Promise<Map<string, string>> {
-  for (const record of await db.getAll('media')) {
-    if (!thumbUrls.has(record.media_id)) {
-      thumbUrls.set(record.media_id, URL.createObjectURL(record.thumb));
-    }
+/**
+ * Thumbnails, loaded on demand rather than all of them at startup.
+ *
+ * This used to build an object URL for every photo in the database on every
+ * launch. Fine at 26. At a few thousand — which a few years of this app is —
+ * it is a slow, memory-hungry start for images almost none of which are on
+ * screen. The owner asked for exactly this split: the heroes every time, since
+ * that is 22 images and takes a moment, and the rest only when a gallery is
+ * actually opened.
+ *
+ * `thumbUrls` is module-level and shared by reference, so filling it later
+ * reaches every screen already holding it.
+ */
+async function loadThumbs(db: DeezDB, ids: readonly string[]): Promise<Map<string, string>> {
+  const missing = ids.filter((id) => id && !thumbUrls.has(id));
+  for (const id of missing) {
+    const record = await db.get('media', id);
+    if (record) thumbUrls.set(id, URL.createObjectURL(record.thumb));
   }
   return thumbUrls;
+}
+
+/**
+ * Fill in thumbnails a screen needs but the boot did not load — a plant's
+ * whole gallery, typically. Resolves to the same map every screen already
+ * holds, so the caller re-renders rather than re-plumbing.
+ */
+export async function ensureThumbs(ids: readonly string[]): Promise<Map<string, string>> {
+  if (!ids.length) return thumbUrls;
+  const db = await openDeezPlants();
+  return loadThumbs(db, ids);
+}
+
+/** The hero of every plant — what the lists and Home actually draw. */
+function heroIds(state: DerivedState): string[] {
+  const out: string[] = [];
+  for (const p of Object.values(state.plants)) {
+    const hero = p.hero ?? p.photos[0];
+    if (hero) out.push(hero);
+  }
+  return out;
+}
+
+/**
+ * Ask the browser not to evict this database to reclaim space.
+ *
+ * Everything the owner has is in IndexedDB on one device, and without this a
+ * browser is within its rights to throw it away under storage pressure. It is
+ * a request, not a guarantee — Safari may refuse, and backups remain the real
+ * safety net — but there is no reason not to ask, and an installed app is
+ * treated far more generously than a tab.
+ */
+async function askToPersist(): Promise<void> {
+  try {
+    if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
+      await navigator.storage.persist();
+    }
+  } catch {
+    /* Not supported, or refused. Neither is worth failing a boot over. */
+  }
 }
 
 async function start(): Promise<Booted> {
@@ -97,7 +150,9 @@ async function start(): Promise<Booted> {
   // Failing here must not stop the app opening: the walk is still recoverable
   // from Recordings either way.
   await restoreInterrupted().catch(() => false);
-  return { outcome, ...await readAndDerive(db, as_of), thumbs: await loadThumbs(db), as_of };
+  void askToPersist();
+  const derived = await readAndDerive(db, as_of);
+  return { outcome, ...derived, thumbs: await loadThumbs(db, heroIds(derived.state)), as_of };
 }
 
 // React StrictMode runs effects twice in development. Sharing one promise keeps
@@ -114,10 +169,11 @@ export async function refresh(): Promise<Booted> {
   const as_of = todayISO();
   const db = await openDeezPlants();
   const current = await inFlight;
+  const refreshed = await readAndDerive(db, as_of);
   return {
     outcome: current?.outcome ?? { ran: false, already_seeded: true, plants: 0, events: 0, photos: 0, missing: [] },
-    ...await readAndDerive(db, as_of),
-    thumbs: await loadThumbs(db),
+    ...refreshed,
+    thumbs: await loadThumbs(db, heroIds(refreshed.state)),
     as_of,
   };
 }
