@@ -245,7 +245,17 @@ same laptop, in the same browser. Data entered in one never appears in
 another. The owner lost an evening to this; do not repeat it. Backup is the
 only bridge.
 
-## Specified and agreed, but NOT yet built
+## Specified and agreed — build status
+
+**Everything in this section was decided with the owner, not left open.**
+Two of the four are now built (2026-09-12); the other two are marked below.
+
+| | Status |
+|---|---|
+| Plant Detail in the owner's order, square hero | **built** |
+| What works top matter trimmed | **built** |
+| Photos as the place photo decisions are made | not yet |
+| What works uses the chosen photo pair | not yet |
 
 **Everything in this section has been decided with the owner and is waiting on
 implementation, not on more discussion.** Agreed 2026-09-12; the owner asked
