@@ -334,6 +334,17 @@ the work I have done".
 
 **Photos · the story · the routine · what you said.**
 
+### All of the above is drawn, not just described
+
+**Round 3 of the screens page is the agreed Plant Detail as a picture** —
+https://claude.ai/code/artifact/f2fe6dc2-2a6b-4377-90ca-d7f288b8e7b6 — shown
+against a square photo and the one portrait photo, with the order written out
+beneath it and the three other agreed changes listed. It is a specification,
+not a question: Rounds 1 and 2 are marked answered above it.
+
+Check the build against it. If the built screen and Round 3 disagree, one of
+them is wrong and it is worth knowing which before continuing.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
