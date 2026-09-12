@@ -398,6 +398,23 @@ markers and route, **offered only when a transcript exists**, since dropping
 audio from an untranscribed walk loses the walk. Not urgent; years away at
 their rate. Do not let it become automatic.
 
+**Built 2026-09-11**, with both guards: the action appears only on a walk that
+has a transcript, and it confirms first. It stays manual.
+
+### Two traps for anyone driving the app in a browser
+
+1. **Browser harnesses write into the owner's real database.** This session's
+   own checks left **27 test sessions and 33 audio chunks** in the store at
+   `localhost:5173` — the origin holding their record. They were removed and
+   the record verified intact afterwards (132 events, 22 plants, 26 photos).
+   **Clean up after any harness that starts a session**, and check before
+   assuming a stray session is theirs: the owner records on their phone, so a
+   walk sitting on the laptop is almost certainly a test.
+2. **"Recording now" has been wrong twice.** The check must compare against
+   the recorder's actual `session_id`, not merely ask whether the recorder is
+   busy — otherwise every unfinished walk in the list claims to be live, and
+   one `interrupted` walk lights up all of them.
+
 ### Mock up before building
 
 The per-plant What works and a full-width Plant Detail hero both need the
