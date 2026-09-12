@@ -50,8 +50,11 @@ export type Screen =
   | { kind: 'backup' }
   /** Screen 17: what changed against a saved state. */
   | { kind: 'since' }
-  /** Screen 18: care changes with the ratings either side of them. */
-  | { kind: 'works' }
+  /** Screen 18: care changes with the ratings either side of them.
+      `plant_id` scopes it to one plant, which is how it is reached from that
+      plant's page — the owner calls this the point of the app. Absent for the
+      whole collection. */
+  | { kind: 'works'; plant_id?: PlantId }
   /** Screen 22: what the app, the owner and the AI each decide. */
   | { kind: 'how' }
   /** Screen 21: the audit trail for the AI round trip. */
@@ -69,7 +72,7 @@ export type Screen =
   | { kind: 'placeholder'; title: string; subtitle?: string };
 
 /** The screens a plant picker can hand a plant to. */
-export type PlantScopedKind = 'detail' | 'history' | 'photos' | 'more' | 'info';
+export type PlantScopedKind = 'detail' | 'history' | 'photos' | 'more' | 'info' | 'works';
 
 export type RootTab = 'home' | 'plants' | 'record';
 

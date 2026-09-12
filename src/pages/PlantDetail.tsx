@@ -65,6 +65,7 @@ export interface PlantDetailProps {
   /** Opens the full Care calendar screen — the inline preview's "View all". */
   onCareCalendar: () => void;
   /** Opens the soil / care-instructions / notes screen for this plant. */
+  onWhatWorks: () => void;
   onMoreAbout: () => void;
   /** Opens the identity / placement / care-spec display for this plant. */
   onInfo: () => void;
@@ -112,7 +113,7 @@ function trimSeasonNote(text: string): string {
 
 export default function PlantDetail({
   plant, events, thumbs, as_of, onChanged, backLabel, onBack, allPlants, onNavigate, onLogCare,
-  onHistory, onRecordNote, onCareCalendar, onMoreAbout, onInfo, onPhotos,
+  onHistory, onRecordNote, onCareCalendar, onWhatWorks, onMoreAbout, onInfo, onPhotos,
 }: PlantDetailProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -313,14 +314,21 @@ export default function PlantDetail({
         </dl>
       </button>
 
-      <button type="button" className="detail-linkrow" onClick={onPhotos}>
-        Photos{plant.photos.length > 0 && ` · ${plant.photos.length}`} <span aria-hidden="true">›</span>
+      {/* The owner's order, 2026-09-11, and What works leads it on purpose:
+          "this is really the whole point of the app". It sits directly under
+          PLACEMENT, where the question "what have I changed about this one"
+          naturally follows "where does it live". */}
+      <button type="button" className="detail-linkrow" onClick={onWhatWorks}>
+        What works <span aria-hidden="true">›</span>
       </button>
       <button type="button" className="detail-linkrow" onClick={onMoreAbout}>
         More about this plant <span aria-hidden="true">›</span>
       </button>
       <button type="button" className="detail-linkrow" onClick={onInfo}>
         Info and settings <span aria-hidden="true">›</span>
+      </button>
+      <button type="button" className="detail-linkrow" onClick={onPhotos}>
+        Photos{plant.photos.length > 0 && ` · ${plant.photos.length}`} <span aria-hidden="true">›</span>
       </button>
 
       {/* The inline three-month preview the reference shows here. It was a

@@ -348,5 +348,74 @@ const runRated = (rateEvents, as_of) => derive({
     A.buildArchiveEvent('009-SPD', 'x'.repeat(120), ctx).note.length, 120);
 }
 
+/* ------------------------------------------------------- what works -- */
+
+// Screen 18, the screen the owner calls the point of the app. These check what
+// counts as an intervention, and — the reason this section exists — what does
+// NOT.
+{
+  const W = require('./build/score/whatWorks.js');
+
+  const readings = [
+    { event_id: 'R1', date: '2026-06-01', value: 5, source: 'user', device_id: 'D' },
+    { event_id: 'R2', date: '2026-08-01', value: 8, source: 'user', device_id: 'D' },
+  ];
+  const st = {
+    plants: {
+      '001-MON': { plant_id: '001-MON', name: 'Large Monstera', health: { history: readings } },
+    },
+  };
+  const ev = (over) => ({ event_id: 'E', plant_id: '001-MON', date: '2026-07-01', time: '09:00', source: 'user', ...over });
+
+  const spec = W.careChanges(st, [ev({ event_id: 'E1', type: 'Edit', field: 'water_interval_days', from: '7', to: '10' })]);
+  eq('a spec change is an intervention', [spec.length, spec[0].label, spec[0].kind],
+    [1, 'Watering interval', 'change']);
+  eq('with the ratings that bracket it', [spec[0].before.value, spec[0].after.value, spec[0].delta],
+    [5, 8, 3]);
+  eq('and the elapsed days, never the delta alone', spec[0].elapsed_days, 61);
+
+  // Moving a plant is the owner's most common intervention and was missing.
+  eq('moving a plant counts',
+    W.careChanges(st, [ev({ event_id: 'E2', type: 'Edit', field: 'spot', from: 'shelf', to: 'windowsill' })]).length, 1);
+
+  // Things done, not settings changed — a repot is bigger than any spec edit.
+  const repot = W.careChanges(st, [ev({ event_id: 'E3', type: 'Repot', note: 'up a pot size' })]);
+  eq('a repot counts, as an action', [repot.length, repot[0].label, repot[0].kind, repot[0].to],
+    [1, 'Repotted', 'action', 'up a pot size']);
+
+  // Routine is not an intervention. A rating either side of one watering out of
+  // hundreds means nothing, and including them would bury the repot.
+  eq('watering and feeding are not interventions',
+    W.careChanges(st, [
+      ev({ event_id: 'E4', type: 'Water' }),
+      ev({ event_id: 'E5', type: 'Feed' }),
+    ]).length, 0);
+
+  // The room/spot migration wrote a pair of edits per plant that left every
+  // plant exactly where it was. Left in, they filled this screen with moves
+  // that never happened — the first thing it showed on the owner's own record.
+  const migrated = W.careChanges(st, [
+    ev({ event_id: 'M1', type: 'Edit', field: 'room', from: 'Living room, by the window', to: 'Living Room' }),
+    ev({ event_id: 'M2', type: 'Edit', field: 'spot', from: '', to: 'by the window' }),
+  ]);
+  eq('splitting room from spot is not a move', migrated.length, 0);
+
+  // But a real move made the same way still counts.
+  const realMove = W.careChanges(st, [
+    ev({ event_id: 'M3', type: 'Edit', field: 'room', from: 'Living room, by the window', to: 'Kitchen' }),
+    ev({ event_id: 'M4', type: 'Edit', field: 'spot', from: '', to: 'on the sill' }),
+  ]);
+  eq('an actual move is not mistaken for the migration', realMove.length, 2);
+
+  // Scoping to one plant, which is how it is reached from that plant's page.
+  const two = { plants: { ...st.plants, '002-SNK': { plant_id: '002-SNK', name: 'Snake', health: { history: [] } } } };
+  const both = [
+    ev({ event_id: 'E6', type: 'Repot' }),
+    ev({ event_id: 'E7', type: 'Repot', plant_id: '002-SNK' }),
+  ];
+  eq('unscoped sees every plant', W.careChanges(two, both).length, 2);
+  eq('scoped sees one', W.careChanges(two, both, '002-SNK').map((c) => c.plant_id), ['002-SNK']);
+}
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -26,9 +26,15 @@ import './WhatWorks.css';
 export interface WhatWorksProps {
   state: DerivedState;
   events: readonly StoredEvent[];
+  /** One plant's changes, reached from its own page. Absent for the whole
+      collection. The owner's framing: "I want to be able to see what works
+      for the plants — this is the critical link." */
+  plant_id?: PlantId;
   backLabel: string;
   onBack: () => void;
   onOpenPlant: (plant_id: PlantId) => void;
+  /** Widen from one plant to the whole collection. Only offered when scoped. */
+  onSeeAll?: () => void;
 }
 
 function movement(delta: number | null, days: number | null): string {
@@ -38,17 +44,24 @@ function movement(delta: number | null, days: number | null): string {
   return `${size} over ${days} day${days === 1 ? '' : 's'}`;
 }
 
-export default function WhatWorks({ state, events, backLabel, onBack, onOpenPlant }: WhatWorksProps) {
-  const changes = useMemo(() => careChanges(state, events), [state, events]);
+export default function WhatWorks({
+  state, events, plant_id, backLabel, onBack, onOpenPlant, onSeeAll,
+}: WhatWorksProps) {
+  const changes = useMemo(
+    () => careChanges(state, events, plant_id),
+    [state, events, plant_id],
+  );
   const answered = answeredCount(changes);
+  const plant = plant_id ? state.plants[plant_id] : undefined;
 
   return (
     <main className="works">
       <button type="button" className="works-back" onClick={onBack}>‹ {backLabel}</button>
       <h1 className="works-title">What works</h1>
       <p className="works-dek">
-        Every change you made to how a plant is cared for, with your ratings
-        either side of it.
+        {plant
+          ? <>Everything you have changed or done to <strong>{plant.name}</strong>, with your ratings either side of it.</>
+          : 'Every change you made to how a plant is cared for, with your ratings either side of it.'}
       </p>
 
       {/* The screen's own conscience, stated before any data. */}
@@ -66,10 +79,10 @@ export default function WhatWorks({ state, events, backLabel, onBack, onOpenPlan
 
       {changes.length === 0 && (
         <p className="works-empty">
-          This fills in as you adjust a plant&rsquo;s watering interval, feed,
-          light, soil or pot — from Info and settings, or by approving an AI
-          proposal. Rate the plant before and after and the two readings appear
-          here side by side.
+          This fills in as you move {plant ? 'it' : 'a plant'}, repot, prune,
+          treat for pests, or adjust the watering interval, feed, light or
+          soil. Rate {plant ? 'it' : 'the plant'} before and after and the two
+          readings appear here side by side.
         </p>
       )}
 
@@ -77,18 +90,31 @@ export default function WhatWorks({ state, events, backLabel, onBack, onOpenPlan
         {changes.map((c) => (
           <section className="works-item" key={c.event_id}>
             <div className="works-head">
-              <button type="button" className="works-plant" onClick={() => onOpenPlant(c.plant_id)}>
-                {c.plant_name}
-              </button>
+              {/* Scoped to one plant, its name on every row is noise — the
+                  page already says whose it is. */}
+              {plant ? (
+                <span className="works-plant as-text">{c.label}</span>
+              ) : (
+                <button type="button" className="works-plant" onClick={() => onOpenPlant(c.plant_id)}>
+                  {c.plant_name}
+                </button>
+              )}
               <span className="works-date">{formatDayMonth(c.date)}</span>
             </div>
 
             <p className="works-what">
-              <span className="works-field">{c.label}</span>
-              {' '}
-              <span className="works-from">{c.from ?? 'not set'}</span>
-              <span className="works-arrow" aria-label="changed to"> → </span>
-              <span className="works-to">{c.to ?? 'not set'}</span>
+              {!plant && <><span className="works-field">{c.label}</span>{' '}</>}
+              {c.kind === 'change' ? (
+                <>
+                  <span className="works-from">{c.from ?? 'not set'}</span>
+                  <span className="works-arrow" aria-label="changed to"> → </span>
+                  <span className="works-to">{c.to ?? 'not set'}</span>
+                </>
+              ) : (
+                /* A thing done, not a value changed — its note is the only
+                   detail there is, and often the useful one. */
+                <span className={c.to ? 'works-to' : 'works-from'}>{c.to ?? 'no note'}</span>
+              )}
               {/* Section 8: which hand set a value is part of the record. */}
               {c.source === 'ai' && <span className="works-by">AI</span>}
             </p>
@@ -134,6 +160,12 @@ export default function WhatWorks({ state, events, backLabel, onBack, onOpenPlan
           </section>
         ))}
       </div>
+
+      {onSeeAll && (
+        <button type="button" className="works-seeall" onClick={onSeeAll}>
+          What works across every plant ›
+        </button>
+      )}
     </main>
   );
 }

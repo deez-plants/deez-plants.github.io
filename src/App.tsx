@@ -52,6 +52,7 @@ const PICKER_DESTINATION: Record<PlantScopedKind, string> = {
   photos: "that plant's photo gallery",
   more: 'more about that plant',
   info: "that plant's info and settings",
+  works: "what you have changed about that plant",
 };
 
 type Load =
@@ -164,6 +165,7 @@ export default function App() {
         // The mock labels this "Photos" but points at plant detail — a known
         // flaw (DESIGN_REFERENCE.md section 5.1). Renamed per its own fix note.
         { label: 'Plant detail', subtitle: 'Score, care, photo, calendar', go: () => pick('detail') },
+        { label: 'What works', subtitle: 'What you changed, and your ratings either side', go: () => pick('works') },
         { label: 'History', subtitle: 'Entry log and care calendar', go: () => pick('history') },
         { label: 'Photos', subtitle: 'Gallery and main photo', go: () => pick('photos') },
         { label: 'More about this plant', subtitle: 'Soil, care instructions, notes', go: () => pick('more') },
@@ -179,7 +181,6 @@ export default function App() {
         { label: 'Rooms and planters', subtitle: 'Rooms and shared planters', go: () => fromPages({ kind: 'rooms' }) },
         { label: 'Recordings', subtitle: 'Sessions held on this device', go: () => fromPages({ kind: 'recordings' }) },
         { label: 'Since last time', subtitle: 'Saved states stacked for comparison', go: () => fromPages({ kind: 'since' }) },
-        { label: 'What works', subtitle: 'Care changes with your ratings either side', go: () => fromPages({ kind: 'works' }) },
       ],
     },
     {
@@ -295,6 +296,7 @@ export default function App() {
           onCareCalendar={() => nav.push({ kind: 'calendar', plant_id: plant.plant_id }, plant.name)}
           onMoreAbout={() => nav.push({ kind: 'more', plant_id: plant.plant_id }, plant.name)}
           onInfo={() => nav.push({ kind: 'info', plant_id: plant.plant_id }, plant.name)}
+          onWhatWorks={() => nav.push({ kind: 'works', plant_id: plant.plant_id }, plant.name)}
           onPhotos={() => nav.push({ kind: 'photos', plant_id: plant.plant_id }, plant.name)}
         />
       );
@@ -486,9 +488,11 @@ export default function App() {
       <WhatWorks
         state={state}
         events={events}
+        plant_id={screen.plant_id}
         backLabel={nav.backLabel ?? 'All pages'}
         onBack={nav.back}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'What works')}
+        onSeeAll={screen.plant_id ? () => nav.push({ kind: 'works' }, 'What works') : undefined}
       />
     );
   } else if (screen.kind === 'how') {

@@ -22,8 +22,15 @@ import type { ISODate, PlantId } from '../types/ids';
  * showing the number alone would let the reader assume the second.
  */
 
-/** The care fields worth tracking. Changing any of these changes how the
-    plant is looked after; changing its name or its room does not. */
+/**
+ * What counts as an intervention — something a rating can meaningfully sit
+ * either side of.
+ *
+ * Room and spot are here because **moving a plant is the owner's most common
+ * intervention**, and an earlier version of this file left them out as "not
+ * care", which was wrong: where a plant stands is most of how it is looked
+ * after. Leaving them out made the screen narrower than its purpose.
+ */
 const CARE_FIELDS = new Set([
   'water_interval_days',
   'water_interval_days_winter',
@@ -31,6 +38,8 @@ const CARE_FIELDS = new Set([
   'light',
   'soil',
   'pot',
+  'room',
+  'spot',
 ]);
 
 export const CARE_FIELD_LABEL: Record<string, string> = {
@@ -40,6 +49,25 @@ export const CARE_FIELD_LABEL: Record<string, string> = {
   light: 'Light',
   soil: 'Soil',
   pot: 'Pot',
+  room: 'Moved room',
+  spot: 'Moved spot',
+};
+
+/**
+ * Things *done* to a plant, as opposed to settings changed about it. A repot
+ * or a hard prune is a bigger intervention than any spec edit, and looking
+ * only at edits missed them entirely.
+ *
+ * Watering and feeding are deliberately absent. They are the routine the
+ * adherence record already counts, and a rating either side of one watering
+ * out of hundreds means nothing — putting them here would bury the repot
+ * under the noise of ordinary care.
+ */
+const CARE_ACTIONS: Record<string, string> = {
+  Repot: 'Repotted',
+  Prune: 'Pruned',
+  'Pest treat': 'Treated for pests',
+  Support: 'Added support',
 };
 
 export interface CareChange {
@@ -51,6 +79,8 @@ export interface CareChange {
   label: string;
   from: string | null;
   to: string | null;
+  /** A setting that changed, or a thing that was done. */
+  kind: 'change' | 'action';
   /** Who made the change — the AI proposes care spec, the owner approves. */
   source: string;
   /** The last rating on or before the change. Null if the plant was unrated. */
@@ -61,6 +91,52 @@ export interface CareChange {
   delta: number | null;
   /** Days between the two readings — never show `delta` without it. */
   elapsed_days: number | null;
+}
+
+/**
+ * Room and spot used to be one field. `db/migrateRoomSpot.ts` split them by
+ * writing an `Edit` for each — so "Living room, by the window" became room
+ * "Living Room" plus spot "by the window", on 21 plants at once.
+ *
+ * Those are indistinguishable from real moves by type alone, and left in they
+ * would fill this screen with moves that never happened — on the owner's own
+ * record, the very first thing it showed. They cannot be retagged after the
+ * fact, because entries are append-only and rewriting history is the one thing
+ * this design will not do.
+ *
+ * So they are recognised by what they are: **a pair of edits, made together,
+ * that leave the plant in the same place.** Comparing the old combined string
+ * against the new room and spot joined back together catches the migration
+ * exactly, and catches any future edit that re-types a place without moving
+ * it — which is also not a move.
+ */
+const normalisePlace = (s: string): string =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+interface PlaceEdit { event_id: string; from: string | null; to: string | null }
+
+function migrationBatches(events: readonly StoredEvent[]): Set<string> {
+  const batches = new Map<string, { room?: PlaceEdit; spot?: PlaceEdit }>();
+  for (const e of events) {
+    if (e.type !== 'Edit' || !e.plant_id) continue;
+    if (e.field !== 'room' && e.field !== 'spot') continue;
+    const key = `${e.plant_id}|${e.date}|${e.time}`;
+    const batch = batches.get(key) ?? {};
+    batch[e.field] = { event_id: e.event_id, from: e.from, to: e.to };
+    batches.set(key, batch);
+  }
+
+  const skip = new Set<string>();
+  for (const { room, spot } of batches.values()) {
+    if (!room || !spot) continue;
+    const before = normalisePlace(room.from ?? '');
+    const after = normalisePlace(`${room.to ?? ''} ${spot.to ?? ''}`);
+    if (before && before === after) {
+      skip.add(room.event_id);
+      skip.add(spot.event_id);
+    }
+  }
+  return skip;
 }
 
 function daysBetween(a: ISODate, b: ISODate): number {
@@ -77,12 +153,23 @@ function daysBetween(a: ISODate, b: ISODate): number {
  * out until Update would make this screen look empty at the moment it is most
  * interesting. Its `after` will simply be null until you rate the plant.
  */
-export function careChanges(state: DerivedState, events: readonly StoredEvent[]): CareChange[] {
+export function careChanges(
+  state: DerivedState,
+  events: readonly StoredEvent[],
+  only?: PlantId,
+): CareChange[] {
   const out: CareChange[] = [];
+  const reRecorded = migrationBatches(events);
 
   for (const e of events) {
-    if (e.type !== 'Edit' || !e.plant_id) continue;
-    if (!CARE_FIELDS.has(e.field)) continue;
+    if (!e.plant_id) continue;
+    if (reRecorded.has(e.event_id)) continue;
+    if (only && e.plant_id !== only) continue;
+
+    const isEdit = e.type === 'Edit' && CARE_FIELDS.has(e.field);
+    const action = CARE_ACTIONS[e.type];
+    if (!isEdit && !action) continue;
+
     const plant = state.plants[e.plant_id];
     if (!plant) continue;
 
@@ -104,10 +191,14 @@ export function careChanges(state: DerivedState, events: readonly StoredEvent[])
       plant_id: e.plant_id,
       plant_name: plant.name,
       date: e.date,
-      field: e.field,
-      label: CARE_FIELD_LABEL[e.field] ?? e.field,
-      from: e.from,
-      to: e.to,
+      field: isEdit ? e.field : e.type,
+      label: isEdit ? (CARE_FIELD_LABEL[e.field] ?? e.field) : action,
+      // An action has no from/to — it is a thing that happened, not a value
+      // that changed. Its note is the only detail there is, and often the
+      // useful one ("moved up a pot size").
+      from: isEdit ? e.from : null,
+      to: isEdit ? e.to : (e.note ?? null),
+      kind: isEdit ? 'change' : 'action',
       source: e.source,
       before,
       after,
