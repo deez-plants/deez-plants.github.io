@@ -72,6 +72,18 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
   const [playing, setPlaying] = useState<SessionId | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  /**
+   * Whether the browser managed to decode what we handed it.
+   *
+   * The owner reported being unable to listen to a walk, sometimes. Two
+   * plausible causes were tested and disproved — a short walk losing its last
+   * chunk, and the chunk-versus-assembled size check — so rather than guess a
+   * third, this screen now says what it knows instead of presenting a control
+   * that silently does nothing. A player that never becomes playable is the
+   * other half of the same complaint, and that one is reproducible: Chrome
+   * will not decode the fragmented MP4 Safari writes.
+   */
+  const [playState, setPlayState] = useState<'loading' | 'ready' | 'stalled'>('loading');
 
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
 
@@ -85,6 +97,7 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(URL.createObjectURL(blob));
       setPlaying(session_id);
+      setPlayState('loading');
       return true;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -391,20 +404,45 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
               {playing === s.session_id && audioUrl && (
                 <div className="recs-player">
                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                  <audio ref={audioRef} className="recs-audio" src={audioUrl} controls preload="auto" />
+                  <audio
+                    ref={audioRef}
+                    className="recs-audio"
+                    src={audioUrl}
+                    controls
+                    preload="auto"
+                    onLoadedMetadata={() => setPlayState('ready')}
+                    onError={() => setPlayState('stalled')}
+                    onStalled={() => setPlayState('stalled')}
+                  />
+                  {playState === 'stalled' && (
+                    <p className="recs-playnote">
+                      This browser will not play the recording. The file is
+                      intact — {formatBytes(s.audio_bytes)} of it — and Whisper
+                      reads this format regardless, so exporting it still works.
+                      Safari on the phone is the one to try.
+                    </p>
+                  )}
                   <button type="button" className="recs-action" onClick={closePlayer}>Close player</button>
                 </div>
               )}
 
               <div className="recs-actions">
-                <button
-                  type="button"
-                  className="recs-action"
-                  disabled={s.audio_bytes === 0}
-                  onClick={() => (playing === s.session_id ? closePlayer() : void openPlayer(s.session_id))}
-                >
-                  {playing === s.session_id ? 'Hide player' : 'Listen'}
-                </button>
+                {/* A disabled button that never says why is how "I cannot
+                    listen to it" becomes unexplainable. If the audio is gone,
+                    the row says so in words instead. */}
+                {s.audio_bytes === 0 ? (
+                  <span className="recs-noaudio">
+                    {s.transcript ? 'Audio cleared · transcript kept' : 'No audio stored'}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="recs-action"
+                    onClick={() => (playing === s.session_id ? closePlayer() : void openPlayer(s.session_id))}
+                  >
+                    {playing === s.session_id ? 'Hide player' : `Listen · ${formatBytes(s.audio_bytes)}`}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="recs-action"

@@ -37,7 +37,6 @@ export interface PlantsListProps {
   /** media_id -> object URL. */
   thumbs: Map<string, string>;
   onOpen: (plant_id: PlantId) => void;
-  onCare: () => void;
 }
 
 type Filter = 'all' | 'attention' | 'due' | 'off-schedule';
@@ -89,7 +88,7 @@ function groupByPlanter(plants: DerivedPlant[]): Group[] {
   return groups;
 }
 
-export default function PlantsList({ state, thumbs, onOpen, onCare }: PlantsListProps) {
+export default function PlantsList({ state, thumbs, onOpen }: PlantsListProps) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [grouped, setGrouped] = useState(false);
@@ -139,9 +138,10 @@ export default function PlantsList({ state, thumbs, onOpen, onCare }: PlantsList
     <main className="plants">
       <h1 className="plants-title">Plants</h1>
 
-      <button type="button" className="plants-care" onClick={onCare}>
-        Log care
-      </button>
+      {/* The reference's "Log care all" row is gone from here. It duplicated
+          the Log tab, which reaches the same screen from anywhere — a
+          size-and-redundancy call the owner made on 2026-09-12, of a piece
+          with putting Log in the bar at all. */}
 
       <input
         type="search"

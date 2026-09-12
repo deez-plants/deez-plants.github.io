@@ -32,7 +32,6 @@ import HandoffLog from './pages/HandoffLog';
 import SinceLastTime from './pages/SinceLastTime';
 import WhatWorks from './pages/WhatWorks';
 import { enterScreen } from './capture/screenLog';
-import { getPhase, startSession } from './capture/recording';
 import './App.css';
 
 /**
@@ -122,17 +121,6 @@ export default function App() {
   // whatever you were looking at (section 4 rule 3). For a plant-scoped screen
   // that is the plant's own name, which is what the back button on every other
   // screen pushed from there reads too.
-  // The tab bar's centre button. Starting the walk is the point of it — see
-  // the comment on `nav/TabBar.tsx`. Navigation happens first so the screen is
-  // already up when Safari's microphone prompt appears and when `startSession`
-  // reports a failure; a prompt over whatever screen you happened to be on,
-  // with no explanation behind it, is how you get a denied permission.
-  const onRec = () => {
-    nav.goRoot('record');
-    const p = getPhase();
-    if (p === 'ready' || p === 'finished') void startSession(as_of);
-  };
-
   const openAllPages = () => {
     if (current.kind === 'all-pages') return;
     const on = 'plant_id' in current && current.plant_id
@@ -211,7 +199,6 @@ export default function App() {
         state={state}
         snapshots={snapshots}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Home')}
-        onCare={() => nav.push({ kind: 'care' }, 'Home')}
         onPlaceholder={(title, subtitle) => placeholder(title, subtitle, 'Home')}
         onArchived={() => nav.push({ kind: 'archive' }, 'Home')}
         onAdherenceHistory={() => nav.push({ kind: 'adherence' }, 'Home')}
@@ -250,7 +237,6 @@ export default function App() {
         state={state}
         thumbs={thumbs}
         onOpen={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Plants')}
-        onCare={() => nav.push({ kind: 'care' }, 'Plants')}
       />
     );
   } else if (screen.kind === 'care') {
@@ -548,7 +534,6 @@ export default function App() {
       <TabBar
         active={nav.activeTab}
         onTab={nav.goRoot}
-        onRec={onRec}
         onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
         onMore={openAllPages}
       />

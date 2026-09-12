@@ -34,7 +34,6 @@ export interface HomeProps {
   /** Oldest first. Frozen collection averages, one per Update commit. */
   snapshots: readonly Snapshot[];
   onOpenPlant: (plant_id: PlantId) => void;
-  onCare: () => void;
   onPlaceholder: (title: string, subtitle?: string) => void;
   onArchived: () => void;
   onAdherenceHistory: () => void;
@@ -58,7 +57,7 @@ const NEEDS_ATTENTION_CAP = 6;
 const MOST_URGENT_CAP = 6;
 
 export default function Home({
-  state, snapshots, onOpenPlant, onCare, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
+  state, snapshots, onOpenPlant, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
   onPreparePackage, onApplyUpdate, onBackup,
 }: HomeProps) {
   const active = useMemo(
@@ -146,14 +145,10 @@ export default function Home({
         <span className="home-tracked">{state.collection.active_count} TRACKED</span>
       </div>
 
-      {/* Directly under the title, above the score cards. This is the most-used
-          action in the app and it used to sit below DUE, which meant scrolling
-          past three cards to reach the thing you open the app to do. The cards
-          are worth reading; they are not worth reading *first*, every time. */}
-      <button type="button" className="home-care" onClick={onCare}>
-        <Icon name="water" size={24} />
-        Log care
-      </button>
+      {/* No Log care button here any more. It moved to the top of this screen
+          when the tab bar had no Log tab; now that it does, a second way in
+          from the screen you are already on is just a bigger target for the
+          same thing. Removed 2026-09-12 at the owner's request. */}
 
       <section className="home-card">
         <ScoreBlock {...collectionScore(state)} />

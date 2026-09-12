@@ -7,10 +7,6 @@ import './TabBar.css';
 export interface TabBarProps {
   active: RootTab | null;
   onTab: (tab: RootTab) => void;
-  /** Start a walk if none is running, and open the Record screen either way.
-      The decision lives in the shell, not here — this button only reports
-      that it was pressed. */
-  onRec: () => void;
   /** Log care, from anywhere. */
   onLog: () => void;
   onMore: () => void;
@@ -32,22 +28,19 @@ export interface TabBarProps {
  * own padding scales with them. The owner picked that size by looking at all
  * four options at their phone's real width, not by being asked to imagine it.
  *
- * **The centre button starts the walk.** The mock's `tapRec` does exactly
- * that, and an earlier pass of this file made it navigate only — the comment
- * justifying that change reasoned about the button's *label* and then drew
- * the wrong conclusion about its *action*. A walk recorder is used with the
- * phone in one hand, moving between plants; starting it should cost one tap
- * from anywhere.
+ * **The centre button opens the Record screen and does nothing else.** The
+ * mock's `tapRec` starts the walk, and a pass of this file followed it. The
+ * owner then used it and found the cost: an accidental tap makes a recording
+ * they have to notice and delete, and a stray tap while one is running is
+ * worse. The asymmetry decides it — starting a walk is deliberate, so one
+ * extra tap is free, while an accident costs a walk or a cleanup. Start,
+ * pause and stop live on the screen, where you can see what you are doing.
  *
- * **While a walk is running it opens the screen rather than pausing**, which
- * is the one place this deliberately departs from the mock. A mis-tap on a
- * tab bar is cheap; a mis-tap that silently pauses a walk mid-sentence is
- * not, and you would not find out until the transcript came back short.
- * Pause and stop live on the screen, where you can see what you are doing.
+ * **This is the mock being overridden knowingly, by someone who has used the
+ * app.** Do not restore tap-to-start from it.
  *
- * The label is the running timer rather than the mock's "Pause", for the same
- * reason: it has to be honest about what the button does, and the elapsed
- * time is the thing worth seeing from across the room.
+ * The button keeps its timer and red recording state, so a walk in progress
+ * is visible from anywhere — the owner asked for that to stay.
  */
 
 /** The owner's picks, 2026-09-11, from the comparison page's Round 2. */
@@ -61,7 +54,7 @@ const ICONS: Record<'home' | 'plants' | 'log' | 'more' | 'rec', IconName> = {
 
 const ICON_PX = 32;
 
-export function TabBar({ active, onTab, onRec, onLog, onMore }: TabBarProps) {
+export function TabBar({ active, onTab, onLog, onMore }: TabBarProps) {
   const phase = useSyncExternalStore(subscribe, getPhase, getPhase);
   const live = phase === 'recording' || phase === 'paused';
 
@@ -88,8 +81,8 @@ export function TabBar({ active, onTab, onRec, onLog, onMore }: TabBarProps) {
       <button
         type="button"
         className={live ? `tabbar-rec live ${phase}` : 'tabbar-rec'}
-        aria-label={live ? 'Open the walk in progress' : 'Start a walk'}
-        onClick={onRec}
+        aria-label={live ? 'Open the walk in progress' : 'Open the recorder'}
+        onClick={() => onTab('record')}
       >
         <span className="tabbar-rec-dot" aria-hidden="true">
           {/* The mock's ring: scales to 1.35 and fades, 1.6s, only while

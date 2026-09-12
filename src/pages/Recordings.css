@@ -351,3 +351,18 @@
 }
 
 .recs-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.recs-playnote {
+  margin: 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--amber);
+  text-wrap: pretty;
+}
+
+.recs-noaudio {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 0;
+  font: 400 21px/1.2 var(--sans);
+  color: var(--ink-45);
+}

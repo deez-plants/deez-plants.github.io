@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>does a short walk keep its audio?</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  The owner: "once I'm done and I want to listen to the audio it does not have
+  the button to listen — this seems an intermittent issue."
+  Run with the dev server up:
+    http://localhost:5173/check/browser/shortwalk.html
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+
+const ctx = new AudioContext();
+const osc = ctx.createOscillator();
+const dest = ctx.createMediaStreamDestination();
+osc.connect(dest); osc.start();
+navigator.mediaDevices.getUserMedia = async () => {
+  const d = ctx.createMediaStreamDestination(); osc.connect(d); return d.stream;
+};
+
+const rec = await import('/src/capture/recording.ts');
+const { listSessions } = await import('/src/capture/sessions.ts');
+const { openDeezPlants } = await import('/src/db/schema.ts');
+const db = await openDeezPlants();
+
+async function walk(seconds, label) {
+  await rec.startSession('2026-09-12');
+  const id = rec.getSnapshot().session_id;
+  await new Promise(r => setTimeout(r, seconds * 1000));
+  await rec.endSession();
+  rec.clearFinished();
+  const list = await listSessions(db);
+  const row = list.find((s) => s.session_id === id);
+  log(`  ${label}: ${row.audio_bytes} bytes on the summary`);
+  return row.audio_bytes;
+}
+
+// Shorter than one 10s chunk: the only data arrives with `stop`.
+const short = await walk(2, 'a 2-second walk');
+check('a short walk keeps its audio', short > 0, true);
+
+// Longer than one chunk: earlier chunks are already on disk.
+const long = await walk(12, 'a 12-second walk');
+check('a longer walk keeps its audio', long > 0, true);
+
+await Promise.all((await listSessions(db)).map((s) => rec.deleteSession(db, s.session_id)));
+log(fails === 0 ? '\nALL PASSED' : `\n${fails} FAILED`);
+</script>
+</body></html>
