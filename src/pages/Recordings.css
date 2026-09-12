@@ -342,3 +342,12 @@
 }
 
 .recs-failure:disabled .recs-failure-play { display: none; }
+
+.recs-clearable {
+  margin: 0 0 14px;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.recs-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -9,7 +9,7 @@ import {
   totalAudioBytes,
   type SessionSummary,
 } from '../capture/sessions';
-import { clearFinished, deleteSession, formatDuration, getPhase, readSessionAudio, subscribe } from '../capture/recording';
+import { clearFinished, deleteSession, deleteSessionAudio, formatDuration, getPhase, getSnapshot, readSessionAudio, subscribe } from '../capture/recording';
 import { saveBlob } from '../package/export';
 import type { SessionId } from '../types/ids';
 import './Recordings.css';
@@ -44,6 +44,7 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<SessionId | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<SessionId | null>(null);
+  const [confirmFree, setConfirmFree] = useState<SessionId | null>(null);
   const [transcribing, setTranscribing] = useState<SessionId | null>(null);
   const [draft, setDraft] = useState('');
 
@@ -116,6 +117,9 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
   // goes, so it is already in this list. Re-read when the recorder's phase
   // changes so ending one lands here without a manual refresh.
   const phase = useSyncExternalStore(subscribe, getPhase, getPhase);
+  // Which walk the recorder is actually holding. "Is anything running" is not
+  // enough — see `liveNow` below.
+  const liveSession = useSyncExternalStore(subscribe, getSnapshot, getSnapshot).session_id;
 
   // Bumped by anything that changes what is stored, so the list re-reads from
   // the database rather than being patched in place here.
@@ -182,6 +186,35 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
     }
   };
 
+  /**
+   * Drop a walk's audio and keep everything else.
+   *
+   * Audio is the only thing here that grows dangerously — a ten-minute walk is
+   * about 9MB, so weekly walks come to roughly half a gigabyte a year, while
+   * every event ever logged is half a megabyte a year. Once a transcript
+   * exists the audio's job is done: the transcript is what the AI reads and
+   * what the coverage gate checks.
+   *
+   * **Only offered when a transcript exists**, and never automatic. Dropping
+   * audio from an untranscribed walk loses the walk, and that must not be one
+   * tap away.
+   */
+  const doFreeSpace = async (session_id: SessionId) => {
+    setBusy(session_id);
+    setConfirmFree(null);
+    setError(null);
+    try {
+      if (playing === session_id) closePlayer();
+      const db = await openDeezPlants();
+      await deleteSessionAudio(db, session_id);
+      reload();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const doRemoveTranscript = async (session_id: SessionId) => {
     setBusy(session_id);
     try {
@@ -198,6 +231,11 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
   };
 
   const total = sessions ? totalAudioBytes(sessions) : 0;
+  // Walks whose audio has already done its job. Shown only when there is
+  // something to act on, so the page does not nag about storage nobody is
+  // short of.
+  const clearable = (sessions ?? []).filter((s) => s.transcript && s.audio_bytes > 0);
+  const clearableBytes = clearable.reduce((sum, s) => sum + s.audio_bytes, 0);
 
   return (
     <main className="recs">
@@ -213,6 +251,14 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
       </p>
 
       {error && <p className="recs-error">{error}</p>}
+
+      {clearable.length > 0 && (
+        <p className="recs-clearable">
+          {formatBytes(clearableBytes)} of that is on {clearable.length} walk
+          {clearable.length === 1 ? '' : 's'} already transcribed — the words are
+          kept whatever you do with the sound.
+        </p>
+      )}
 
       {/* The owner hit a closed loop here: "Add transcript" opened a panel
           asking them to add a transcript, with nothing saying where one comes
@@ -259,7 +305,19 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
 
       <div className="recs-list">
         {sessions?.map((s) => {
-          const liveNow = !s.closed && phase !== 'ready' && phase !== 'finished';
+          /**
+           * This walk, specifically, being recorded right now.
+           *
+           * It used to be "not closed, and the recorder is doing something",
+           * which was wrong twice over: it did not name *which* session was
+           * live, so every unfinished walk in the list claimed to be
+           * recording, and `interrupted` counts as "doing something" so a held
+           * walk lit them all up. The owner met the first version of this bug
+           * before the phase even existed.
+           */
+          const liveNow = s.session_id === liveSession
+            && (phase === 'recording' || phase === 'paused');
+          const heldNow = s.session_id === liveSession && phase === 'interrupted';
           return (
             <section key={s.session_id} className="recs-card">
               <div className="recs-card-head">
@@ -287,7 +345,8 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                   </span>
                 )}
                 {liveNow && <span className="recs-badge live">RECORDING NOW</span>}
-                {!liveNow && s.closed === false && (
+                {heldNow && <span className="recs-badge cut">INTERRUPTED &middot; CAN BE PICKED UP</span>}
+                {!liveNow && !heldNow && s.closed === false && (
                   <span className="recs-badge cut">ENDED UNEXPECTEDLY</span>
                 )}
               </div>
@@ -309,6 +368,24 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {confirmFree === s.session_id && (
+                <section className="recs-confirm">
+                  <p className="recs-confirm-body">
+                    Drop the audio for this walk? The transcript, the markers
+                    and the route all stay — only the sound goes, and it cannot
+                    be got back.
+                  </p>
+                  <div className="recs-confirm-actions">
+                    <button type="button" className="recs-action" onClick={() => setConfirmFree(null)}>
+                      Keep the audio
+                    </button>
+                    <button type="button" className="recs-delete" onClick={() => void doFreeSpace(s.session_id)}>
+                      Drop it
+                    </button>
+                  </div>
+                </section>
               )}
 
               {playing === s.session_id && audioUrl && (
@@ -346,6 +423,16 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                 >
                   {s.transcript ? 'Replace transcript' : 'Add transcript'}
                 </button>
+                {s.transcript && s.audio_bytes > 0 && (
+                  <button
+                    type="button"
+                    className="recs-action"
+                    disabled={busy === s.session_id}
+                    onClick={() => setConfirmFree(s.session_id)}
+                  >
+                    Free up {formatBytes(s.audio_bytes)}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="recs-delete"
