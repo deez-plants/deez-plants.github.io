@@ -353,6 +353,13 @@ let history be rewritten breaks the point of the project, not just a rule.
    hidden (nothing is recorded from that instant whatever iOS does next),
    listen for the track's `mute` event (iOS mutes long before it ends), and a
    watchdog on chunk arrival.
+
+   **Done 2026-09-11.** All three signals are in `capture/recording.ts`;
+   `check/browser/backgrounded.html` covers them and was run against the old
+   code first, where it reproduced the owner's symptom exactly. **A trip away
+   the capture survives resumes without counting the time away** — a walk's
+   duration stays the length of its audio, which is what the coverage gate
+   compares against.
 2. **Shorten the red recording warning to one line.** It was lengthened after
    their backgrounding test and became a paragraph shouting on every walk.
 3. **Re-lay-out Most urgent and Needs attention**: plant name on its own line,
