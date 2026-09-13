@@ -207,20 +207,30 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-**Build what is in "Specified and agreed, but NOT yet built" below.** As of
-2026-09-12 there are four specifications waiting: Plant Detail reordered with
-a full-width square hero, the What works top matter trimmed, Photos becoming
-where photo decisions are made, and the What works photo rule. All four were
-settled with the owner in conversation; **none needs further discussion, and
-none has been built.** The owner explicitly asked for the specs to be written
-down rather than built that day, because they were going out.
+**Build what is in "Decisions of 2026-09-13" below.** Four things were settled
+with the owner that day and drawn as Rounds 3 and 4 of the mock-up pages:
+six new care types, the tiered Log care screen, a pinned top bar on every
+screen, and the two missing What works bands. **All four are approved and
+none needs further discussion.** The owner said "comment only" in the same
+message, so the specs were written down and committed rather than built —
+the same pattern as 2026-09-12. **Their next word is the go-ahead.**
+
+**Build the six new care types first, before anything else on that list.**
+Entries are append-only. Every week the owner logs a top-dress or a rotate as
+`Other` is a week of record that can never be re-tagged, and `whatWorks.ts`
+already had to do structural detective work once (`migrationBatches`) to undo
+a model change made after real data existed. Nothing else in the queue has a
+clock on it.
+
+**The four specifications of 2026-09-12 are all built.** Plant Detail
+reordered with a full-width square hero, the What works top matter trimmed,
+Photos as the place photo decisions are made, and the What works photo rule.
 
 **Everything else is done or is the owner's.** The app is live, installed on
-their phone, holding their record. All 25 screens exist. The five things that
-are theirs: choose nothing further on the heroes (done — full-width square,
-rounded), retest the tab bar and the recorder on the phone, answer what they
-want Reminders to do, run a real walk through Whisper, and add their two new
-plants.
+their phone, holding their record. All 25 screens exist. The things that are
+theirs: retest the tab bar and the recorder on the phone, answer what they
+want Reminders to do, run a walk through Whisper, add their two new plants,
+and archive 009-SPD.
 
 **Only the desk console is left that is purely mine**, and it is deliberately
 last.
@@ -385,6 +395,204 @@ not a question: Rounds 1 and 2 are marked answered above it.
 
 Check the build against it. If the built screen and Round 3 disagree, one of
 them is wrong and it is worth knowing which before continuing.
+
+## Decisions of 2026-09-13 (settled — do not relitigate)
+
+All of this came out of one conversation that started as a status question
+about What works and turned into four build items. **Every one is approved.
+None was built that day** — the owner said "comment only" while approving,
+so the specifications and the mock-ups were finished and committed instead.
+
+### The gap that started it: What works is half built
+
+The agreed band order is **photos · the story · the routine · what you said**.
+Only the first two exist. `WhatWorks.tsx:91` carries a comment reciting all
+four as though they were implemented, which is how it went unnoticed — **be
+suspicious of comments in this codebase that describe a decision rather than
+the code underneath it.** That is the second time this exact failure has been
+recorded here; see "Plants list rows" in the numbered list below.
+
+Note that the band order was never one of the four specifications of
+2026-09-12. It is a separate decision that no commit ever closed, which is
+why "all four built" was true and the screen was still unfinished.
+
+### Six new care types (settled)
+
+`types/event.ts` had nine care types. The 2026-09-11 widening of "what counts
+as a change worth rating either side of" named several interventions that had
+nowhere to live, so they were being logged as `Other`.
+
+**Actions** — paired with the ratings either side, appear in the story band,
+go into `CARE_ACTIONS` in `score/whatWorks.ts`:
+
+- **Top-dress**
+- **Soil flush**
+- **Took cuttings**
+
+**Routine** — counted only, never paired, deliberately **not** in
+`CARE_ACTIONS`, exactly as Water and Feed are not:
+
+- **Rotate**
+- **Wipe leaves**
+- **Mist**
+
+**The seasonal balcony move gets no type.** It is already a `spot` edit, and
+`spot` already counts as a change. A type would record the same move twice.
+
+**This is the one item with a deadline.** Entries are append-only, so anything
+logged as `Other` before these ship is ambiguous for the life of the record.
+Build it before the rest of the queue.
+
+Each type also needs a colour and a one- or two-letter abbreviation in
+`lib/careTypeStyle.ts` for the Care calendar. Reuse the existing `--cal-*`
+tokens rather than inventing six more hues; if the legend turns out too long
+at fifteen entries, **fix the legend, do not drop a type.**
+
+### Log care becomes tiered, with both lower tiers collapsed
+
+Nine buttons becoming fifteen was put to the owner as Round 4 of the screens
+page — treatment A (all fifteen flat) against treatment B (tiered). **They
+chose B, and then went further than the mock-up:** the routine row is to sit
+behind a disclosure as well, not just the rare eight. Their words: *"lets add
+the routine to a drop down too to decrease screen clutter, 2 clicks ok."*
+
+So the screen opens as:
+
+```
+Most days       Water · Feed · Inspect · Prune     (4, large, 2 columns)
+Routine         collapsed                          (Rotate · Wipe leaves · Mist)
+Something else  collapsed                          (Photo · Repot · Support ·
+                                                    Pest treat · Top-dress ·
+                                                    Soil flush · Cuttings · Other)
+```
+
+**The principle to keep if this is ever revisited:** richer data, quieter
+screen. All fifteen types are real, all are logged properly, all are counted —
+but the screen gives them the weight they earn in use, not equal weight.
+Watering happens constantly; taking cuttings happens twice a year. **B with
+both tiers collapsed is shorter than the nine-button screen it replaces**,
+which is the answer to the owner's own question about whether this was adding
+clutter.
+
+### The pinned top bar — treatment F, in the app's own colour
+
+**The problem in the owner's words:** *"the back to previous page and then the
+link to all plants and the prev next plant with the plant label is supposed to
+always be there and not scroll up so I have to go find it to get to the next
+plant."* They called it a major design flaw and they are right — the strip
+exists to let them sweep through 22 plants on one screen, and scrolling to the
+top to reach it defeats the whole purpose.
+
+**Most of this is already built and nobody noticed.** Six screens — Plant
+Detail, History, All entries, Care calendar, More about, Info and settings —
+already keep you on the same screen type when you change plant (`App.tsx`
+lines 275, 305, 325, 344, 363, 383 all `nav.replace` rather than push). Tap
+Next on Info and settings and you land on Info and settings for the next
+plant. **The mechanism is the owner's design and it works. It just scrolls
+away, and three screens never got it.**
+
+Two gaps to close:
+
+1. **Lift the strip into one pinned component the shell owns**, so it cannot
+   scroll and cannot drift between screens.
+2. **Wire it into Log care, Photos and What works**, which have no `onNavigate`
+   at all. Those are exactly the three the owner named.
+
+**Chosen: treatment F, the two-row bar** — back button on one row, the
+Prev/ID/Next strip on the next. They accepted the cost knowingly (about 12% of
+the page against E's 7%; the arithmetic is drawn on the mock-up page).
+
+**And one change from the mock: the bar takes the app's own background, so it
+reads as text sitting at the top rather than as a bar.** No panel fill, no
+border. Their words: *"make the background the same as the app so these bars
+are invisible beside the text."* Keep the background **opaque** `--bg` rather
+than transparent — content has to scroll underneath it and stay hidden, or the
+text becomes unreadable the moment a card passes behind it. Invisible as a
+container, still solid as a surface.
+
+**Fourteen screens have no single plant** — Home, Plants list, Recordings,
+Rooms and planters, Adherence history, Health history, Since last time,
+Archived plants, Back up, Handoff log, How this app works, Prepare review
+package, Apply AI update, Add a plant. **Those get the same bar in the same
+place with the plant row simply absent** (treatment G on the mock-up). One
+component, one thumb position, every screen in the app.
+
+**The ID stays in the strip and nowhere else.** Settled 2026-09-12; pinning
+the strip does not reopen it. The strip itself is locked by
+`DESIGN_REFERENCE.md` section 6 and is not open for redesign.
+
+### The icons — use them as drawn
+
+Round 3 of the icons page drew twelve candidates, two per new type. The owner:
+*"your icons are good use em as is."* That means the suggested set:
+
+| Type | Icon |
+|---|---|
+| Top-dress | `topdress` — a pot with a fresh rippled surface, material dropping in |
+| Soil flush | `flush` — water in at the top, water out at the bottom |
+| Took cuttings | `cutting` — a stem with the cut drawn on it |
+| Rotate | `rotate2` — the turning arrow alone |
+| Wipe leaves | `wipe` — the leaf with two wipe strokes under it |
+| Mist | `mist` — a spray bottle, mid-spray |
+
+**Cuttings is deliberately not scissors.** Prune already owns those.
+
+**Be accurate about authorship if it ever comes up.** The original 22 icons are
+the owner's, from the mock Claude Design built to their brief. These six were
+drawn by this session and are badged NEW on the mock-up page. Anything else
+added later must match the same language — 24x24 grid, stroke widths 2.0–2.6,
+the same filled-and-stroked mix — or it reads as imported.
+
+### "What you said" needs no Whisper, and that changes the order
+
+This band was nearly deferred on the assumption that it needed walk
+transcripts. **It does not.** `notes/notesUser.ts` writes `notes_user` as an
+ordinary `Edit` event with `from`, `to` and a date — so **every version of
+every note the owner has ever typed is already in the log, dated.** It is a
+history, not a single overwritten field. Care events carry their own `note`
+field too.
+
+So the band can be built today from data that already exists, and the Whisper
+test comes off the critical path entirely. Spoken words can drop into the same
+band later as a second source.
+
+### The recording bug — reproducible at last
+
+**The owner supplied the trigger two earlier sessions were missing.** Their
+description: start a walk, leave the app to another app mid-recording, come
+back — resume or not — and finish. **That walk has no audio.** A walk recorded
+without ever leaving the app plays back fine.
+
+This retires the old "no button vs will not play" question: it is neither, it
+is audio that was never durably there. Both previous diagnoses tested the
+wrong thing — short walks, and interrupted-walk size checks — and **neither
+tested backgrounding.**
+
+Three candidate mechanisms, none yet confirmed. **Do not announce a fourth
+confident diagnosis; this file already records two that were wrong.**
+
+1. **A destructive gap in `endSession`** (`capture/recording.ts:660-662`). The
+   chunks are deleted and *then* the assembled file is written, in two separate
+   transactions. Anything interrupting between them loses the audio
+   permanently. A backgrounded, iOS-weakened app is exactly what would
+   interrupt there. **This is a real destructive window whether or not it is
+   the owner's bug, and it is reproducible on the laptop.**
+2. **A truncated final fragment.** iOS kills the mic mid-chunk; the assembled
+   fragmented MP4 ends incomplete and will not decode for anything, Safari
+   included. The walk looks saved and has a size, and plays nothing.
+3. **Chunk writes lost on suspend.** `ondataavailable` writes are
+   fire-and-forget (`recording.ts:536`); one in flight when Safari suspends may
+   never commit. **Only the owner's phone can prove this one.**
+
+Work 1 and 2 first — both are testable here.
+
+### Still unanswered by the owner
+
+**Is the routine list complete?** Rotate, wipe leaves and mist are agreed.
+Whether dusting, topping up a humidity tray, or checking soil without watering
+also deserve types has been asked twice and not answered. **Ask once more
+before building the types, not after** — append-only means the cost of asking
+late is permanent.
 
 ## Traps, and facts that cost something to learn
 
