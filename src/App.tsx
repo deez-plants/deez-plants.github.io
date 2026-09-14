@@ -7,6 +7,7 @@ import { TabBar } from './nav/TabBar';
 import AllPages, { type AllPagesGroup } from './nav/AllPages';
 import PlantPicker from './nav/PlantPicker';
 import { screenTitle } from './nav/screenTitle';
+import { useEdgeSwipeBack } from './nav/useEdgeSwipeBack';
 import Placeholder from './nav/Placeholder';
 import Home from './pages/Home';
 import PlantsList from './pages/PlantsList';
@@ -96,6 +97,11 @@ export default function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [screenKind, screenPlant]);
+
+  // Swipe from the left edge to go back, on every screen that has something
+  // behind it. The owner asked for a back that works everywhere and noted
+  // there may be no room for one — this costs no space at all.
+  useEdgeSwipeBack(nav.canGoBack, nav.back);
 
   if (load.status === 'loading') return <main className="shell"><p className="dim">Opening…</p></main>;
   if (load.status === 'error') {
@@ -254,6 +260,8 @@ export default function App() {
         detailPlantId={screen.plant_id}
         allPlants={activePlants}
         onNavigate={(plant_id) => nav.replace({ kind: 'care', plant_id })}
+        onOpenPlant={(plant_id) => nav.push({ kind: 'care', plant_id }, 'Log care')}
+        onAllPlants={() => nav.push({ kind: 'care' }, screenTitle(screen))}
       />
     );
   } else if (screen.kind === 'detail') {

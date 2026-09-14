@@ -518,51 +518,38 @@
   margin-bottom: 20px;
 }
 
-/* --- Which plant: the list that leaves this page (2026-09-14) ---------- *
+/* --- Which plant: the quiet way out of the round (2026-09-14) --------- *
  *
- * A list rather than a dropdown, and at the very top rather than under the
- * round. Tapping a row navigates to that plant's own Log care page - so the
- * plant named at the top of the page is always the plant you are logging
- * against, which is the thing that stops care landing on the wrong one.
+ * One bar, BELOW the round. It was a 22-row list at the top of the page for
+ * one revision and that was wrong - it buried the two-tap watering round,
+ * which is the whole reason this screen exists. Keep it small and keep it
+ * last.
  */
 .care-which {
-  margin-bottom: 26px;
+  margin: 26px 0 4px;
 }
 
-.care-which-list {
-  display: flex;
-  flex-direction: column;
+.care-which-select {
+  width: 100%;
+  margin-top: 10px;
 }
 
-.care-which-row {
+/* The title row, so a per-plant page can offer the way back across. */
+.care-titlerow {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 12px;
-  width: 100%;
-  padding: 15px 2px;
+}
+
+.care-allplants {
+  flex: none;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
+  padding: 8px 0;
+  font: 600 21px/1 var(--sans);
+  color: var(--accent);
   cursor: pointer;
-}
-
-.care-which-id {
-  font: 600 20px/1 var(--mono);
-  color: var(--ink-50);
-  white-space: nowrap;
-}
-
-.care-which-name {
-  font: 600 23px/1.2 var(--sans);
-}
-
-.care-which-go {
-  margin-left: auto;
-  font: 400 24px/1 var(--sans);
-  color: var(--ink-40);
 }
 
 /* The plant this page is for, under the title. */

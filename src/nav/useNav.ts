@@ -20,6 +20,9 @@ export function useNav(initialTab: RootTab = 'plants') {
   const activeTab: RootTab | null =
     root.kind === 'home' || root.kind === 'plants' || root.kind === 'record' ? root.kind : null;
   const backLabel = stack.length > 1 ? stack[stack.length - 1].backLabel : null;
+  /** There is something behind this screen. Roots have nothing behind them,
+      which is why the edge-swipe is inert on Home, Plants and Record. */
+  const canGoBack = stack.length > 1;
 
   const goRoot = (tab: RootTab) => {
     setStack([{ screen: { kind: tab }, backLabel: '' }]);
@@ -47,6 +50,7 @@ export function useNav(initialTab: RootTab = 'plants') {
     current,
     activeTab,
     backLabel,
+    canGoBack,
     goRoot,
     push,
     replace,

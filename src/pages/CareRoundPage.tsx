@@ -49,8 +49,16 @@ export interface CareRoundPageProps {
   detailPlantId?: PlantId;
   /** Active plants, in list order. Only used in single-plant mode. */
   allPlants?: readonly { plant_id: PlantId; name: string }[];
-  /** Swap plant without leaving Log care. */
+  /** Prev/Next: step sideways to another plant's Log care. Replaces rather
+      than pushes — browsing 22 plants should not take 22 taps to back out. */
   onNavigate?: (plant_id: PlantId) => void;
+  /** The Which-plant list: going to a plant is going somewhere NEW, so it
+      pushes and the all-plants page stays behind you. Using `onNavigate` here
+      was a real bug — it swapped this page out, which is exactly why there
+      was no way back to it. */
+  onOpenPlant?: (plant_id: PlantId) => void;
+  /** From a plant's own Log care back across to the all-plants round. */
+  onAllPlants?: () => void;
 }
 
 type Flash =
@@ -64,7 +72,7 @@ type DetailFlash =
 
 export default function CareRoundPage({
   state, events, registry, thumbs, as_of, onChanged, backLabel, onBack, detailPlantId,
-  allPlants, onNavigate,
+  allPlants, onNavigate, onOpenPlant, onAllPlants,
 }: CareRoundPageProps) {
   const [draft, setDraft] = useState<RoundDraft>(EMPTY_DRAFT);
   const [flash, setFlash] = useState<Flash | null>(null);
@@ -223,7 +231,14 @@ export default function CareRoundPage({
         <button type="button" className="screen-back care-back" onClick={onBack}>‹ {backLabel ?? 'Back'}</button>
       )}
 
-      <h1 className="care-title">Log care</h1>
+      <div className="care-titlerow">
+        <h1 className="care-title">Log care</h1>
+        {detailPlant && onAllPlants && (
+          <button type="button" className="care-allplants" onClick={onAllPlants}>
+            All plants ›
+          </button>
+        )}
+      </div>
       {detailPlant && <p className="care-whose">{detailPlant.name}</p>}
 
       {/* Two pages, not one screen with two moods (settled 2026-09-14).
@@ -233,26 +248,6 @@ export default function CareRoundPage({
           each other. */}
       {!detailPlant && (
       <>
-      {/* A list, not a dropdown, and at the top rather than buried under the
-          round: picking a plant LEAVES this page for that plant's own. */}
-      <section className="care-which">
-        <span className="care-detail-label">WHICH PLANT</span>
-        <div className="care-which-list">
-          {(allPlants ?? []).map((p) => (
-            <button
-              key={p.plant_id}
-              type="button"
-              className="care-which-row"
-              onClick={() => onNavigate?.(p.plant_id)}
-            >
-              <span className="care-which-id">{p.plant_id}</span>
-              <span className="care-which-name">{p.name}</span>
-              <span className="care-which-go">›</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
       {/* The collection score, rendered by the one score component. Nothing on
           this screen computes a health figure; it reads the one the ratings
           give and shows it in the same block as every other screen. */}
@@ -429,6 +424,29 @@ export default function CareRoundPage({
         </section>
       )}
 
+      {/* One compact bar, BELOW the round.
+          This list started life at the top of the page and that was wrong:
+          it buried the round, which is the whole reason the screen exists.
+          The owner: "that eliminates the entire let's make this easy, water
+          all the plants with 2 clicks idea, now I have to scroll down to
+          find it." The round comes first; this is the quiet way out of it. */}
+      <section className="care-which">
+        <label className="care-detail-label" htmlFor="care-which-select">WHICH PLANT</label>
+        <select
+          id="care-which-select"
+          className="care-detail-input care-which-select"
+          value=""
+          onChange={(e) => {
+            const id = e.target.value as PlantId;
+            if (id) onOpenPlant?.(id);
+          }}
+        >
+          <option value="">Select a plant…</option>
+          {(allPlants ?? []).map((p) => (
+            <option key={p.plant_id} value={p.plant_id}>{p.plant_id} · {p.name}</option>
+          ))}
+        </select>
+      </section>
       </>
       )}
 
