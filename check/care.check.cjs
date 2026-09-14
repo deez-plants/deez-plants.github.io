@@ -470,6 +470,7 @@ const runRated = (rateEvents, as_of) => derive({
 {
   const W = require('./build/score/whatWorks.js');
   const C = require('./build/lib/careTypeStyle.js');
+  const L = require('./build/lib/eventLabel.js');
 
   // Every care type must appear in exactly one tier. A type that exists in the
   // model but in no tier would be unloggable, and nothing else in the app
@@ -479,14 +480,26 @@ const runRated = (rateEvents, as_of) => derive({
   eq('the tiers and CARE_TYPES agree', [...R.CARE_TYPES].sort(), [...tiers].sort());
   eq('every care type has a calendar style',
     tiers.filter((t) => !C.CARE_TYPE_STYLE[t]), []);
-  eq('the calendar order holds every type once',
-    [...C.CARE_TYPE_ORDER].sort(), [...tiers].sort());
+
+  // Retired types are the exception, and the reason matters: entries are
+  // append-only, so a type can stop being OFFERED but must never stop being
+  // RENDERABLE. Prune was retired when Dead leaves, Trim back and Hard prune
+  // replaced it; the owner's historic Prune events still have to read.
+  eq('Prune is retired, not deleted', [...R.RETIRED_TYPES], ['Prune']);
+  for (const t of R.RETIRED_TYPES) {
+    eq(`a retired type is off the pickers · ${t}`, tiers.includes(t), false);
+    eq(`but still has a calendar style · ${t}`, !!C.CARE_TYPE_STYLE[t], true);
+    eq(`and still has a history label · ${t}`, !!L.eventLabel({ type: t }), true);
+  }
+
+  eq('the calendar order covers the tiers plus anything retired',
+    [...C.CARE_TYPE_ORDER].sort(), [...tiers, ...R.RETIRED_TYPES].sort());
 
   // The owner's own order, most frequent first. Not alphabetical, and not the
   // order CareEventType happens to declare: dead leaves leads because that is
   // what they actually do most.
   eq('routine is in the owner’s order', [...R.ROUTINE_TIER],
-    ['Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist']);
+    ['Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist', 'Inspect']);
 
   const ev = (event_id, type, date, over = {}) => ({
     event_id, plant_id: '001-MON', type, date, time: '09:00',
@@ -573,9 +586,12 @@ const runRated = (rateEvents, as_of) => derive({
 /* ------------------------------------------- the round, widened to routine */
 
 {
-  // Things you do in a sweep. The interventions stay single-plant.
-  eq('the round covers the sweep actions', [...R.ROUND_ACTIONS],
-    ['Water', 'Feed', 'Prune', 'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist']);
+  // One interface across both Log care screens, at the owner's request: the
+  // round offers exactly what a single plant's page offers. The rule that
+  // interventions "deserve" no batch was mine, not theirs, and a round writes
+  // one event per plant whatever the type.
+  eq('the round offers the same actions as a plant page',
+    [...R.ROUND_ACTIONS], [...R.CARE_TYPES]);
 
   for (const a of R.ROUND_ACTIONS) {
     const h = R.roundHeading(a);
@@ -592,10 +608,9 @@ const runRated = (rateEvents, as_of) => derive({
   eq('only water pre-selects',
     R.ROUND_ACTIONS.filter((a) => R.preselectFor(a, [past]).length), ['Water']);
 
-  // The interventions must NOT be batch actions.
-  eq('interventions stay single-plant',
-    ['Repot', 'Hard prune', 'Top-dress', 'Soil flush', 'Took cuttings', 'Support', 'Pest treat']
-      .filter((t) => R.ROUND_ACTIONS.includes(t)), []);
+  // A retired type cannot be logged from either screen.
+  eq('a retired type is not a round action',
+    R.RETIRED_TYPES.filter((t) => R.ROUND_ACTIONS.includes(t)), []);
 }
 
 console.log(`${pass} passed, ${fail} failed`);

@@ -558,3 +558,22 @@
   font: 400 26px/1.2 var(--sans);
   color: var(--ink-70);
 }
+
+/* The round's action picker now wears the same three tiers as the per-plant
+   grid - one interface across both Log care screens. */
+.care-actions.two { grid-template-columns: repeat(2, 1fr); }
+
+.care-action.big { padding: 22px 4px; }
+
+.care-action.quiet {
+  padding: 11px 4px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--ink-70);
+}
+
+.care-action.quiet.on {
+  background: var(--accent);
+  border-style: solid;
+  color: var(--on-accent);
+}

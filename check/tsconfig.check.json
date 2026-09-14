@@ -19,6 +19,7 @@
     "../src/db/seed.ts",
     "../src/lib/dates.ts",
     "../src/lib/careTypeStyle.ts",
+    "../src/lib/eventLabel.ts",
     "../src/care/careRound.ts",
     "../src/care/rate.ts",
     "../src/care/archive.ts",

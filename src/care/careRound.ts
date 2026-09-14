@@ -20,39 +20,93 @@ import { daysBetween } from '../lib/dates';
  */
 
 /**
- * What the round can do to many plants at once.
+ * The three tiers, shared by BOTH Log care screens.
  *
- * **The line is: things you do in a sweep.** You water fifteen plants in one
- * pass, and you mist, rotate and pick dead leaves off several in the same
- * pass — so all of those belong here. What stays single-plant is the
- * interventions: repot, hard prune, top-dress, soil flush, took cuttings,
- * support, pest treat. You do not repot fifteen plants in one go, and each
- * one wants its own note and its own moment.
+ * The owner asked for one interface: the all-plants round and a single
+ * plant's page offer the same actions in the same shape, so there is nothing
+ * to relearn between them. The only difference is what happens after you pick
+ * — the round asks which plants, the plant page asks for a note and a time.
  *
- * The five routine types joined on 2026-09-13. Before that the round was
- * Water/Feed/Prune only, which meant the types you are most likely to do in
- * a sweep were the ones you could only log one plant at a time — backwards,
- * and the owner spotted it.
+ * `Inspect` sits in routine because that is what it is: looking at a plant is
+ * something you do constantly and it is not an intervention a rating should
+ * sit either side of.
+ *
+ * **`Prune` is deliberately absent from all three.** Dead leaves, Trim back
+ * and Hard prune replaced it and say which, and a plain "Prune" between them
+ * means nothing. **The type still exists** — entries are append-only and the
+ * owner's historic Prune events must keep rendering — it simply can no longer
+ * be chosen. Retiring a button is not the same as deleting a type, and only
+ * one of those is safe.
  */
-export const ROUND_ACTIONS = [
-  'Water', 'Feed', 'Prune',
-  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist',
-] as const;
-export type RoundAction = (typeof ROUND_ACTIONS)[number];
+export const COMMON_TIER: readonly CareEventType[] = ['Water', 'Feed'];
+
+export const ROUTINE_TIER: readonly CareEventType[] = [
+  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist', 'Inspect',
+];
+
+export const RARE_TIER: readonly CareEventType[] = [
+  'Photo', 'Repot', 'Support', 'Pest treat',
+  'Hard prune', 'Top-dress', 'Soil flush', 'Took cuttings', 'Other',
+];
+
+/**
+ * Everything the grid offers, flattened.
+ *
+ * `check/care.check.cjs` asserts these cover `CareEventType` apart from the
+ * retired `Prune`, so a type added to the model but to no tier fails there
+ * rather than becoming quietly unloggable.
+ */
+export const CARE_TYPES: readonly CareEventType[] = [
+  ...COMMON_TIER, ...ROUTINE_TIER, ...RARE_TIER,
+];
+
+/** Retired from the pickers, kept in the model so old entries still read. */
+export const RETIRED_TYPES: readonly CareEventType[] = ['Prune'];
+
+/**
+ * What the round can do to many plants at once — now everything the plant
+ * page can do.
+ *
+ * It used to be Water, Feed and Prune, then those plus the routine five. The
+ * owner asked for the two screens to match, and they are right that a rule
+ * about which types "deserve" a batch was mine rather than theirs. A round
+ * writes one event per plant whatever the type, so nothing about the record
+ * changes.
+ *
+ * **The one real cost, and it is theirs to weigh:** a round applies ONE note
+ * to every plant in it. Repotting four plants from here gives four events
+ * with the same note. The per-plant page is where a note that differs
+ * belongs, and it is one tap away.
+ */
+export const ROUND_ACTIONS: readonly CareEventType[] = CARE_TYPES;
+export type RoundAction = CareEventType;
 
 /**
  * Copy per action. A template will not do: "Who did you water?" is fine and
  * "Who did you dead leaves?" is not.
+ *
+ * `past` is how a row reads when it has happened before — "Last fed 30 days
+ * ago". Types with no natural past tense fall back to the label itself.
  */
-const ROUND_COPY: Record<RoundAction, { heading: string; verb: string }> = {
-  Water: { heading: 'Who did you water?', verb: 'water' },
-  Feed: { heading: 'Who did you feed?', verb: 'feed' },
-  Prune: { heading: 'Who did you prune?', verb: 'prune' },
-  'Dead leaves': { heading: 'Whose dead leaves did you take off?', verb: 'dead leaves' },
-  'Trim back': { heading: 'Who did you trim back?', verb: 'trim back' },
-  Rotate: { heading: 'Who did you rotate?', verb: 'rotate' },
-  'Wipe leaves': { heading: 'Whose leaves did you wipe?', verb: 'leaf wipe' },
-  Mist: { heading: 'Who did you mist?', verb: 'mist' },
+const ROUND_COPY: Record<CareEventType, { heading: string; verb: string; past: string }> = {
+  Water: { heading: 'Who did you water?', verb: 'water', past: 'watered' },
+  Feed: { heading: 'Who did you feed?', verb: 'feed', past: 'fed' },
+  Prune: { heading: 'Who did you prune?', verb: 'prune', past: 'pruned' },
+  'Dead leaves': { heading: 'Whose dead leaves did you take off?', verb: 'dead leaves', past: 'tidied' },
+  'Trim back': { heading: 'Who did you trim back?', verb: 'trim back', past: 'trimmed back' },
+  Rotate: { heading: 'Who did you rotate?', verb: 'rotate', past: 'rotated' },
+  'Wipe leaves': { heading: 'Whose leaves did you wipe?', verb: 'leaf wipe', past: 'wiped' },
+  Mist: { heading: 'Who did you mist?', verb: 'mist', past: 'misted' },
+  Inspect: { heading: 'Who did you look over?', verb: 'inspection', past: 'inspected' },
+  Photo: { heading: 'Who did you photograph?', verb: 'photo', past: 'photographed' },
+  Repot: { heading: 'Who did you repot?', verb: 'repot', past: 'repotted' },
+  Support: { heading: 'Who did you add support to?', verb: 'support', past: 'staked' },
+  'Pest treat': { heading: 'Who did you treat for pests?', verb: 'pest treatment', past: 'treated' },
+  'Hard prune': { heading: 'Who did you cut back hard?', verb: 'hard prune', past: 'cut back' },
+  'Top-dress': { heading: 'Who did you top-dress?', verb: 'top-dress', past: 'top-dressed' },
+  'Soil flush': { heading: 'Whose soil did you flush?', verb: 'soil flush', past: 'flushed' },
+  'Took cuttings': { heading: 'Who did you take cuttings from?', verb: 'cuttings', past: 'taken from' },
+  Other: { heading: 'Who was it?', verb: 'it', past: 'logged' },
 };
 
 export interface RoundDraft {
@@ -198,7 +252,7 @@ export function rowStatus(
   }
 
   const last = lastOfType(events, p.plant_id, action);
-  const verb = action === 'Feed' ? 'fed' : 'pruned';
+  const verb = ROUND_COPY[action].past;
   if (!last) return { text: `Never ${verb}`, tone: 'quiet' };
   const ago = daysBetween(last, as_of);
   return { text: `Last ${verb} ${ago} day${ago === 1 ? '' : 's'} ago`, tone: 'quiet' };
@@ -296,50 +350,10 @@ export type { CommitResult } from '../db/events';
 /* -------------------------------------------------------------------------- */
 
 /**
- * The care-type grid: every type, for one plant, with a note and a time.
- * `ROUND_ACTIONS` is the subset you can do to many plants at once; this list
- * is deliberately the whole of `CareEventType`, because the one-plant path
- * has to be able to log anything. `source: 'user'`, never `'round'` — one
- * plant, one tap, not a batch.
- *
- * **Three tiers, two of them collapsed** (settled with the owner 2026-09-13,
- * drawn as Round 4 of the screens mock-up page). Nine types became eighteen,
- * and fifteen-plus equal buttons would have made watering — which happens
- * constantly — compete for the eye with taking cuttings, which happens twice
- * a year.
- *
- * The principle, in case this is ever flattened back: **richer data, quieter
- * screen.** Every type is real, logged properly and counted. The screen gives
- * each the weight it earns in use. With both lower tiers shut this is
- * *shorter* than the nine-button grid it replaces.
- *
- * `ROUTINE_TIER` is in the owner's own order, most frequent first. Do not
- * re-sort it alphabetically or by the order of `CareEventType` — dead leaves
- * leads because that is what they actually do most.
+ * The per-plant half of Log care. The tiers it renders are the shared ones
+ * declared at the top of this file — both screens offer the same actions in
+ * the same shape, which is what the owner asked for.
  */
-export const COMMON_TIER: readonly CareEventType[] = [
-  'Water', 'Feed', 'Inspect', 'Prune',
-];
-
-export const ROUTINE_TIER: readonly CareEventType[] = [
-  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist',
-];
-
-export const RARE_TIER: readonly CareEventType[] = [
-  'Photo', 'Repot', 'Support', 'Pest treat',
-  'Hard prune', 'Top-dress', 'Soil flush', 'Took cuttings', 'Other',
-];
-
-/**
- * Every type the grid offers, flattened.
- *
- * Kept exhaustive on purpose: a type that exists in the model but appears in
- * no tier would be unloggable, and nothing else in the app would notice.
- * `check/care.check.cjs` asserts the tiers cover `CareEventType` exactly.
- */
-export const CARE_TYPES: readonly CareEventType[] = [
-  ...COMMON_TIER, ...ROUTINE_TIER, ...RARE_TIER,
-];
 
 export interface DetailDraft {
   type: CareEventType | null;

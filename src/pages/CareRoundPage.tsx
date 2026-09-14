@@ -5,7 +5,7 @@ import type { DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import {
-  COMMON_TIER, EMPTY_DRAFT, NOTE_MAX, RARE_TIER, ROUND_ACTIONS, ROUTINE_TIER,
+  COMMON_TIER, EMPTY_DRAFT, NOTE_MAX, RARE_TIER, ROUTINE_TIER,
   addAll, commitUpdate, emptyDetailDraft,
   eventCount, groupLabel, logDetailEvent, logRound, preselectFor, roundButtonLabel,
   roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
@@ -107,6 +107,12 @@ export default function CareRoundPage({
     () => !!detailDraft.type && RARE_TIER.includes(detailDraft.type),
   );
 
+  // Picking an action from a tier must not close the tier under your thumb.
+  const openTierFor = (t: CareEventType) => {
+    if (ROUTINE_TIER.includes(t)) setRoutineOpen(true);
+    if (RARE_TIER.includes(t)) setRareOpen(true);
+  };
+
   const careTypeButton = (t: CareEventType, variant?: 'big' | 'quiet') => (
     <button
       key={t}
@@ -131,6 +137,26 @@ export default function CareRoundPage({
     </button>
   );
 
+  const roundActionButton = (action: RoundAction, variant?: 'big' | 'quiet') => {
+    const on = draft.action === action;
+    return (
+      <button
+        key={action}
+        type="button"
+        className={['care-action', variant ?? '', on ? 'on' : ''].filter(Boolean).join(' ')}
+        aria-pressed={on}
+        onClick={() => pickAction(action)}
+      >
+        <span className="care-action-label">{action}</span>
+        {action === 'Water' && (
+          <span className="care-action-sub">
+            {dueCount ? `${dueCount} past interval` : 'none past interval'}
+          </span>
+        )}
+      </button>
+    );
+  };
+
   const plants = useMemo(() => roundCandidates(state), [state]);
   const groups = useMemo(() => selectionGroups(plants, registry), [plants, registry]);
   const dueCount = useMemo(
@@ -147,6 +173,7 @@ export default function CareRoundPage({
     // Picking Water pre-selects what is past its interval — a starting point to
     // adjust, never a claim that those plants need water (rule 9).
     setFlash(null);
+    openTierFor(action);
     setDraft(draft.action === action
       ? EMPTY_DRAFT
       : { action, selected: preselectFor(action, plants), note: draft.note });
@@ -258,27 +285,43 @@ export default function CareRoundPage({
         </p>
       </section>
 
-      <div className="care-actions">
-        {ROUND_ACTIONS.map((action) => {
-          const on = draft.action === action;
-          return (
-            <button
-              key={action}
-              type="button"
-              className={on ? 'care-action on' : 'care-action'}
-              aria-pressed={on}
-              onClick={() => pickAction(action)}
-            >
-              <span className="care-action-label">{action}</span>
-              {action === 'Water' && (
-                <span className="care-action-sub">
-                  {dueCount ? `${dueCount} past interval` : 'none past interval'}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* The same three tiers the per-plant page uses. One interface, so
+          there is nothing to relearn moving between them — the owner asked
+          for exactly this. What differs is only what happens next: here you
+          then choose which plants. */}
+      <div className="care-actions two">
+        {COMMON_TIER.map((action) => roundActionButton(action, 'big'))}
       </div>
+
+      <button
+        type="button"
+        className="care-tier"
+        aria-expanded={routineOpen}
+        onClick={() => setRoutineOpen(!routineOpen)}
+      >
+        <span>Routine actions</span>
+        <span className="care-tier-mark">{routineOpen ? '−' : '+'}</span>
+      </button>
+      {routineOpen && (
+        <div className="care-actions quiet">
+          {ROUTINE_TIER.map((action) => roundActionButton(action, 'quiet'))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="care-tier"
+        aria-expanded={rareOpen}
+        onClick={() => setRareOpen(!rareOpen)}
+      >
+        <span>More actions</span>
+        <span className="care-tier-mark">{rareOpen ? '−' : '+'}</span>
+      </button>
+      {rareOpen && (
+        <div className="care-actions">
+          {RARE_TIER.map((action) => roundActionButton(action))}
+        </div>
+      )}
 
       {draft.action && (
         <section className="care-pick">
@@ -472,7 +515,7 @@ export default function CareRoundPage({
             aria-expanded={routineOpen}
             onClick={() => setRoutineOpen(!routineOpen)}
           >
-            <span>Routine</span>
+            <span>Routine actions</span>
             <span className="care-tier-mark">{routineOpen ? '−' : '+'}</span>
           </button>
           {routineOpen && (
@@ -487,7 +530,7 @@ export default function CareRoundPage({
             aria-expanded={rareOpen}
             onClick={() => setRareOpen(!rareOpen)}
           >
-            <span>Something else</span>
+            <span>More actions</span>
             <span className="care-tier-mark">{rareOpen ? '−' : '+'}</span>
           </button>
           {rareOpen && (
