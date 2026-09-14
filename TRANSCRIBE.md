@@ -88,6 +88,12 @@ Two things follow from it:
 **The surest way to avoid all of it is to stay in the app while recording.**
 Section 6 has always said so; this is why.
 
+**A short walk also keeps a note of what happened to it.** Open *What happened
+during this walk* on its card and you get the sequence — when it was
+backgrounded, whether the microphone came back, how much had been captured at
+each point. **Those same lines travel in the export as `what-happened.txt`**,
+so if you send a walk on for help, the explanation goes with it.
+
 ### How big a walk can be
 
 Audio runs at roughly **1 MB per minute**. Most transcription services cap an

@@ -905,6 +905,68 @@ remaining move, and **it is their decision, not one to take unilaterally.**
 going back returns you to the plant you were on. The two cheap navigation
 fixes should be lived with first.
 
+#### Late 2026-09-14 — one Log care interface, and a walk that explains itself
+
+**Log care, as the owner finally shaped it.** Both screens — the all-plants
+round and a single plant's page — now offer the same three tiers with the same
+names:
+
+```
+Water · Feed
+Routine actions   Dead leaves · Trim back · Rotate · Wipe leaves · Mist · Inspect
+More actions      Photo · Repot · Support · Pest treat · Hard prune ·
+                  Top-dress · Soil flush · Took cuttings · Other
+```
+
+The only difference between the screens is what happens after you pick: the
+round asks which plants, the plant page asks for a note and a time.
+
+**The round therefore offers every type**, not the eight "sweep" actions it
+held before. That restriction was mine, not the owner's, and they were right
+that it did not earn the asymmetry — a round writes one event per plant
+whatever the type. **The one real cost is recorded in `careRound.ts`: a round
+applies ONE note to every plant in it**, so a repot wanting its own note
+belongs on the per-plant page.
+
+**`Prune` is retired, not deleted, and the distinction is the point.** Dead
+leaves, Trim back and Hard prune say which, so a plain Prune between them
+means nothing and is gone from both pickers. The **type stays in the model**,
+keeps its calendar style and its history label, because entries are
+append-only and any Prune already logged still has to read.
+
+This laptop's copy holds zero Prune events — **but the owner records on their
+phone, which is a different database.** Deleting a type on the strength of one
+device's record is exactly the assumption this project keeps having to undo.
+`RETIRED_TYPES` exists for this, and the check suite asserts a retired type is
+off the pickers while still styled and still labelled.
+
+#### The recording: diagnostics, because guessing has cost enough
+
+The owner's third report — **37 seconds on the clock, 8 of audio, on the
+phone** — is the new short-walk warning working. The loss itself is not fixed,
+and it is the mechanism that was always going to need the phone: iOS handing
+back a microphone that never becomes live.
+
+**Three faults in this path have now been found by the owner reading two
+numbers off a screen.** That works and it costs a round of guessing every
+time. So a walk now keeps a trail of what happened to it — started,
+backgrounded, microphone stopped or never came back, interrupted, resumed,
+ended, with how much was captured at each point. Transitions only, capped at
+60 lines, plain strings because a person reads them.
+
+Recordings shows it **only on a walk that came back short**; a clean walk does
+not need a log of itself. The export carries the same lines as
+`what-happened.txt`.
+
+**What to do with the next report:** ask for the trail, not for a theory. It
+will say whether the microphone came back, when the audio stopped, and what
+the clock did about it. **Do not announce a fourth confident diagnosis from
+the two numbers alone.**
+
+**Still the owner's call, still not taken:** if the trail shows iOS simply
+refusing to reopen the microphone, the fallback is to stop pretending to
+resume — an interruption ends the walk and a fresh one starts on return.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
