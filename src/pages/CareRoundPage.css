@@ -455,3 +455,57 @@
   color: var(--ink-50);
   text-wrap: pretty;
 }
+
+/* --- The tiered care-type grid (2026-09-13) ---------------------------- *
+ *
+ * Three tiers, the lower two collapsed. The variants carry the meaning:
+ * `big` is what you do most days, `quiet` is routine care - counted on What
+ * works, never paired with a rating - and the plain button is everything
+ * else. Routine looks different on purpose: the screen should say what kind
+ * of thing a type is before you have read a word of it.
+ */
+
+.care-detail-grid.two { grid-template-columns: repeat(2, 1fr); }
+
+.care-detail-type.big {
+  padding: 22px 4px;
+  font-size: 23px;
+}
+
+/* Dashed and unfilled: present, tappable, and visibly not an intervention. */
+.care-detail-type.quiet {
+  padding: 11px 4px;
+  font-size: 20px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--ink-70);
+}
+
+.care-detail-type.quiet.on {
+  background: var(--accent);
+  border-style: solid;
+  color: var(--on-accent);
+}
+
+.care-tier {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  padding: 15px 16px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink-70);
+  font: 600 21px/1 var(--sans);
+  cursor: pointer;
+}
+
+.care-tier-mark {
+  font: 400 26px/1 var(--sans);
+  color: var(--ink-50);
+}
+
+.care-detail-grid.quiet { margin-bottom: 8px; }

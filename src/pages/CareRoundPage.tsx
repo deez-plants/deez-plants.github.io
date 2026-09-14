@@ -5,7 +5,8 @@ import type { DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import {
-  CARE_TYPES, EMPTY_DRAFT, NOTE_MAX, ROUND_ACTIONS, addAll, commitUpdate, emptyDetailDraft,
+  COMMON_TIER, EMPTY_DRAFT, NOTE_MAX, RARE_TIER, ROUND_ACTIONS, ROUTINE_TIER,
+  addAll, commitUpdate, emptyDetailDraft,
   eventCount, groupLabel, logDetailEvent, logRound, preselectFor, roundButtonLabel,
   roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
   type DetailDraft, type RoundAction, type RoundDraft,
@@ -67,6 +68,31 @@ export default function CareRoundPage({
   const [detailFlash, setDetailFlash] = useState<DetailFlash | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
   const detailPlant = detailPlantId ? state.plants[detailPlantId] : null;
+
+  // Both lower tiers start shut. They open if they hold what is already
+  // picked, so a selected type is never hidden behind a closed tier.
+  const [routineOpen, setRoutineOpen] = useState(
+    () => !!detailDraft.type && ROUTINE_TIER.includes(detailDraft.type),
+  );
+  const [rareOpen, setRareOpen] = useState(
+    () => !!detailDraft.type && RARE_TIER.includes(detailDraft.type),
+  );
+
+  const careTypeButton = (t: CareEventType, variant?: 'big' | 'quiet') => (
+    <button
+      key={t}
+      type="button"
+      className={[
+        'care-detail-type',
+        variant ?? '',
+        detailDraft.type === t ? 'on' : '',
+      ].filter(Boolean).join(' ')}
+      aria-pressed={detailDraft.type === t}
+      onClick={() => { setDetailFlash(null); setDetailDraft({ ...detailDraft, type: t }); }}
+    >
+      {t}
+    </button>
+  );
 
   const plants = useMemo(() => roundCandidates(state), [state]);
   const groups = useMemo(() => selectionGroups(plants, registry), [plants, registry]);
@@ -340,19 +366,47 @@ export default function CareRoundPage({
             {detailPlant.name} — for when you want a note, a photo, or a different time on it.
           </p>
 
-          <div className="care-detail-grid">
-            {CARE_TYPES.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={detailDraft.type === t ? 'care-detail-type on' : 'care-detail-type'}
-                aria-pressed={detailDraft.type === t}
-                onClick={() => { setDetailFlash(null); setDetailDraft({ ...detailDraft, type: t }); }}
-              >
-                {t}
-              </button>
-            ))}
+          {/* Three tiers, the lower two shut on arrival (settled 2026-09-13,
+              Round 4 of the screens page). Eighteen equal buttons would put
+              watering — constant — beside taking cuttings, which happens twice
+              a year. Shut, this is shorter than the nine-button grid it
+              replaced: the record got richer and the screen got quieter.
+
+              A tier opens if it holds what is already picked, so arriving with
+              a type selected never hides it. */}
+          <div className="care-detail-grid two">
+            {COMMON_TIER.map((t) => careTypeButton(t, 'big'))}
           </div>
+
+          <button
+            type="button"
+            className="care-tier"
+            aria-expanded={routineOpen}
+            onClick={() => setRoutineOpen(!routineOpen)}
+          >
+            <span>Routine</span>
+            <span className="care-tier-mark">{routineOpen ? '−' : '+'}</span>
+          </button>
+          {routineOpen && (
+            <div className="care-detail-grid quiet">
+              {ROUTINE_TIER.map((t) => careTypeButton(t, 'quiet'))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="care-tier"
+            aria-expanded={rareOpen}
+            onClick={() => setRareOpen(!rareOpen)}
+          >
+            <span>Something else</span>
+            <span className="care-tier-mark">{rareOpen ? '−' : '+'}</span>
+          </button>
+          {rareOpen && (
+            <div className="care-detail-grid">
+              {RARE_TIER.map((t) => careTypeButton(t))}
+            </div>
+          )}
 
           <label className="care-detail-field-label" htmlFor="care-detail-date">DATE &amp; TIME</label>
           <div className="care-detail-datetime">

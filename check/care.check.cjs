@@ -464,5 +464,110 @@ const runRated = (rateEvents, as_of) => derive({
     W.comparePhotos({ compare: ['m4', 'm1'] }, shots).pair.map((p) => p.media_id), ['m1', 'm4']);
 }
 
+
+/* ------------------------------------------- the tiers, and the routine band */
+
+{
+  const W = require('./build/score/whatWorks.js');
+  const C = require('./build/lib/careTypeStyle.js');
+
+  // Every care type must appear in exactly one tier. A type that exists in the
+  // model but in no tier would be unloggable, and nothing else in the app
+  // would notice - the screen would simply never offer it.
+  const tiers = [...R.COMMON_TIER, ...R.ROUTINE_TIER, ...R.RARE_TIER];
+  eq('the tiers hold every care type once', tiers.length, new Set(tiers).size);
+  eq('the tiers and CARE_TYPES agree', [...R.CARE_TYPES].sort(), [...tiers].sort());
+  eq('every care type has a calendar style',
+    tiers.filter((t) => !C.CARE_TYPE_STYLE[t]), []);
+  eq('the calendar order holds every type once',
+    [...C.CARE_TYPE_ORDER].sort(), [...tiers].sort());
+
+  // The owner's own order, most frequent first. Not alphabetical, and not the
+  // order CareEventType happens to declare: dead leaves leads because that is
+  // what they actually do most.
+  eq('routine is in the owner’s order', [...R.ROUTINE_TIER],
+    ['Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist']);
+
+  const ev = (event_id, type, date, over = {}) => ({
+    event_id, plant_id: '001-MON', type, date, time: '09:00',
+    source: 'user', device_id: 'd1', ...over,
+  });
+
+  const log = [
+    ev('r1', 'Rotate', '2026-06-01'),
+    ev('r2', 'Rotate', '2026-07-01'),
+    ev('r3', 'Rotate', '2026-08-01'),
+    ev('m1', 'Mist', '2026-07-15'),
+    ev('d1', 'Dead leaves', '2026-08-10'),
+    ev('h1', 'Hard prune', '2026-05-01'),
+    ev('w1', 'Water', '2026-08-12'),
+    ev('x1', 'Rotate', '2026-06-02', { plant_id: '002-FIC' }),
+  ];
+
+  const counts = W.routineCounts(log, '001-MON');
+  eq('routine counts, most frequent first',
+    counts.map((c) => [c.type, c.count]),
+    [['Rotate', 3], ['Dead leaves', 1], ['Mist', 1]]);
+  eq('a routine count carries when you last did it',
+    counts[0].last, '2026-08-01');
+
+  // The whole reason the split exists: routine must never reach the story.
+  eq('routine is not counted as a change',
+    W.careChanges({ plants: { '001-MON': {
+      name: 'Large Monstera', health: { history: [] },
+    } } }, log, '001-MON').map((c) => c.field),
+    ['Hard prune']);
+  eq('watering is not routine either',
+    counts.some((c) => c.type === 'Water'), false);
+  eq('another plant’s routine stays its own',
+    W.routineCounts(log, '002-FIC').map((c) => c.count), [1]);
+  // Ties fall back to the label, alphabetically. Arbitrary but stable, which
+  // is what matters: the band must not reshuffle itself between renders.
+  eq('a window drops what falls outside it',
+    W.routineCounts(log, '001-MON', '2026-07-05').map((c) => [c.type, c.count]),
+    [['Dead leaves', 1], ['Mist', 1], ['Rotate', 1]]);
+}
+
+/* ---------------------------------------------------- what you said --------- */
+
+{
+  const W = require('./build/score/whatWorks.js');
+
+  const said = W.saidThings([
+    { event_id: 'n1', plant_id: '001-MON', type: 'Edit', field: 'notes_user',
+      from: '', to: 'Leaves drooping again', date: '2026-03-14', time: '09:00',
+      source: 'user', device_id: 'd1' },
+    { event_id: 'n2', plant_id: '001-MON', type: 'Edit', field: 'notes_user',
+      from: 'Leaves drooping again', to: 'Looking much better', date: '2026-06-02',
+      time: '09:00', source: 'user', device_id: 'd1' },
+    { event_id: 'n3', plant_id: '001-MON', type: 'Edit', field: 'notes_user',
+      from: 'Looking much better', to: '   ', date: '2026-06-03', time: '09:00',
+      source: 'user', device_id: 'd1' },
+    { event_id: 'c1', plant_id: '001-MON', type: 'Repot', note: 'Moved up a pot size',
+      date: '2026-05-01', time: '09:00', source: 'user', device_id: 'd1' },
+    { event_id: 'e1', plant_id: '001-MON', type: 'Edit', field: 'room',
+      from: 'A', to: 'B', note: 'not a thing you said', date: '2026-05-02',
+      time: '09:00', source: 'user', device_id: 'd1' },
+    { event_id: 'o1', plant_id: '002-FIC', type: 'Edit', field: 'notes_user',
+      from: '', to: 'Someone else', date: '2026-05-03', time: '09:00',
+      source: 'user', device_id: 'd1' },
+  ], '001-MON');
+
+  // Newest first, and every version kept: the note history is already in the
+  // log because notes_user is written as an ordinary Edit event.
+  eq('what you said, newest first',
+    said.map((s) => [s.date, s.text, s.kind]),
+    [['2026-06-02', 'Looking much better', 'note'],
+     ['2026-05-01', 'Moved up a pot size', 'care'],
+     ['2026-03-14', 'Leaves drooping again', 'note']]);
+  eq('a care note says what it was about', said[1].about, 'Repotted');
+  eq('clearing a note is not something you said',
+    said.some((s) => s.event_id === 'n3'), false);
+  eq('a field edit’s note is not something you said',
+    said.some((s) => s.event_id === 'e1'), false);
+  eq('another plant’s notes stay its own',
+    said.some((s) => s.event_id === 'o1'), false);
+}
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

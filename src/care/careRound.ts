@@ -262,13 +262,48 @@ export type { CommitResult } from '../db/events';
 /* -------------------------------------------------------------------------- */
 
 /**
- * The nine-button grid. Distinct from `ROUND_ACTIONS`: the round is Water,
+ * The care-type grid. Distinct from `ROUND_ACTIONS`: the round is Water,
  * Feed, Prune only — everything else has always been a one-plant action
  * (`preselectFor`'s own comment). `source: 'user'`, never `'round'` — this is
  * one plant, one tap, not a batch.
+ *
+ * **Three tiers, two of them collapsed** (settled with the owner 2026-09-13,
+ * drawn as Round 4 of the screens mock-up page). Nine types became eighteen,
+ * and fifteen-plus equal buttons would have made watering — which happens
+ * constantly — compete for the eye with taking cuttings, which happens twice
+ * a year.
+ *
+ * The principle, in case this is ever flattened back: **richer data, quieter
+ * screen.** Every type is real, logged properly and counted. The screen gives
+ * each the weight it earns in use. With both lower tiers shut this is
+ * *shorter* than the nine-button grid it replaces.
+ *
+ * `ROUTINE_TIER` is in the owner's own order, most frequent first. Do not
+ * re-sort it alphabetically or by the order of `CareEventType` — dead leaves
+ * leads because that is what they actually do most.
+ */
+export const COMMON_TIER: readonly CareEventType[] = [
+  'Water', 'Feed', 'Inspect', 'Prune',
+];
+
+export const ROUTINE_TIER: readonly CareEventType[] = [
+  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist',
+];
+
+export const RARE_TIER: readonly CareEventType[] = [
+  'Photo', 'Repot', 'Support', 'Pest treat',
+  'Hard prune', 'Top-dress', 'Soil flush', 'Took cuttings', 'Other',
+];
+
+/**
+ * Every type the grid offers, flattened.
+ *
+ * Kept exhaustive on purpose: a type that exists in the model but appears in
+ * no tier would be unloggable, and nothing else in the app would notice.
+ * `check/care.check.cjs` asserts the tiers cover `CareEventType` exactly.
  */
 export const CARE_TYPES: readonly CareEventType[] = [
-  'Water', 'Feed', 'Prune', 'Repot', 'Photo', 'Inspect', 'Support', 'Pest treat', 'Other',
+  ...COMMON_TIER, ...ROUTINE_TIER, ...RARE_TIER,
 ];
 
 export interface DetailDraft {
