@@ -366,3 +366,16 @@
   font: 400 21px/1.2 var(--sans);
   color: var(--ink-45);
 }
+
+/* A walk that came back short. Amber, not red: nothing is broken now - it is
+   a report about what was captured, and the file itself is intact. */
+.recs-short {
+  margin: 10px 0 0;
+  padding: 11px 13px;
+  border-left: 3px solid var(--amber);
+  background: rgba(233, 161, 92, 0.08);
+  border-radius: 0 10px 10px 0;
+  font: 400 20px/1.35 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}

@@ -24,9 +24,19 @@ import type { ISODate, PlantId, SessionId } from '../types/ids';
  * recover, only a session whose `closed` never became true.
  */
 
-/** Section 6: roughly 1 MB per minute, and one file per walk. Ten seconds a
-    chunk keeps the write volume trivial and the worst-case loss small. */
-const CHUNK_MS = 10_000;
+/**
+ * Section 6: roughly 1 MB per minute, and one file per walk.
+ *
+ * **Three seconds, not ten** (2026-09-14). The owner lost 28 seconds of a
+ * 35-second walk to a microphone iOS handed back dead, and nothing noticed
+ * because the dead-capture watchdog waits `CHUNK_MS * 2.5` for silence — 25
+ * seconds at the old interval, and their stretch ended at about 20.
+ *
+ * At three seconds the watchdog trips in about eight, and the worst case loss
+ * is a three-second tail rather than a ten-second one. The cost is more
+ * writes; at one walk a week and 22 plants that is not a cost.
+ */
+const CHUNK_MS = 3_000;
 
 /** Section 6 asks for `audio/mp4` (AAC). Safari has it; Chrome and Firefox do
     not and give Opus in WebM instead. Both are fine for Whisper — what matters
@@ -153,6 +163,29 @@ function elapsedMs(): number {
 
 function elapsedSeconds(): number {
   return Math.floor(elapsedMs() / 1000);
+}
+
+/**
+ * Elapsed time with any silent tail cut off.
+ *
+ * A marker's `offset_s` has to line up with a position in the audio, so time
+ * that produced no audio is not merely cosmetic — it drags every later marker
+ * out of alignment with the recording. When the microphone dies, the clock
+ * keeps running and the audio does not, and this is what refuses to count it.
+ *
+ * A chunk is due every `CHUNK_MS`; anything beyond one and a half intervals
+ * since the last one is silence, not lateness.
+ */
+function capturedMs(): number {
+  const total = elapsedMs();
+  if (!lastChunkAt) return total;
+  const quiet = Date.now() - lastChunkAt;
+  if (quiet <= CHUNK_MS * 1.5) return total;
+  return Math.max(0, total - (quiet - CHUNK_MS * 1.5));
+}
+
+function capturedSeconds(): number {
+  return Math.floor(capturedMs() / 1000);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -296,6 +329,7 @@ function writeChunksTo(rec: MediaRecorder, session_id: SessionId): void {
   rec.ondataavailable = (e: BlobEvent) => {
     if (!e.data || !e.data.size) return;
     lastChunkAt = Date.now();
+    resumedAwaitingFirstChunk = false;
     const key = chunkKey(session_id, chunkIndex);
     chunkIndex += 1;
     trackChunkWrite(
@@ -333,6 +367,7 @@ async function persistProgress(closed = false): Promise<void> {
     session_id: sessionId,
     interrupted: heldInterrupted,
     chunk_count: chunkIndex,
+    captured_s: capturedSeconds(),
     started: startedIso,
     duration_s: elapsedSeconds(),
     markers: [...markers],
@@ -492,7 +527,10 @@ function onCaptureLost(): void {
   // disk; the timer stops dead and nothing keeps running, which is what the
   // owner asked for — but the session stays resumable instead of being closed
   // out from under them.
-  error = 'The microphone stopped — iOS ended the capture. Everything so far is saved, and the walk can be picked up where it left off.';
+  error = resumedAwaitingFirstChunk
+    ? 'The microphone did not come back. iOS sometimes refuses after an interruption — '
+      + 'end this walk and start a new one rather than recording silence.'
+    : 'The microphone stopped — iOS ended the capture. Everything so far is saved, and the walk can be picked up where it left off.';
   void interruptSession();
 }
 
@@ -508,6 +546,28 @@ function onCaptureLost(): void {
 const CHUNK_SILENCE_MS = CHUNK_MS * 2.5;
 let lastChunkAt = 0;
 let watchdog: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Has a resumed stretch produced any audio yet?
+ *
+ * **The owner's 35-second walk held 7 seconds of audio and every marker.**
+ * Markers are written by the app, not the microphone, so their presence
+ * proved the app was alive and counting while nothing was captured: iOS had
+ * handed back a microphone that was never live, and the recorder reported
+ * itself fine the whole time.
+ *
+ * The watchdog already notices silence. What it could not do is tell the two
+ * cases apart, and they need different words: a microphone that stopped
+ * partway can be picked up again, while one that never came back means iOS
+ * has refused and the walk should be ended rather than retried. This flag is
+ * the whole difference.
+ *
+ * An earlier attempt used a second timer running alongside the watchdog.
+ * Two mechanisms racing to report the same thing is how you get the wrong
+ * message, which is exactly what happened — the watchdog won and said
+ * "stopped" when the truth was "never started".
+ */
+let resumedAwaitingFirstChunk = false;
 
 function startWatchdog(): void {
   stopWatchdog();
@@ -616,6 +676,7 @@ export async function startSession(as_of: ISODate): Promise<void> {
     });
 
     recorder.start(CHUNK_MS);
+    resumedAwaitingFirstChunk = false;
     pushMarker({ type: 'session_start' });
     await persistProgress();
     attachLifecycle();
@@ -701,7 +762,7 @@ export async function endSession(): Promise<SessionId | null> {
   const session_id = sessionId;
   if (!session_id) return null;
 
-  accumulatedMs = elapsedMs();
+  accumulatedMs = capturedMs();
   runningSince = 0;
   heldInterrupted = false;
   pushMarker({ type: 'session_end' });
@@ -776,7 +837,10 @@ let interruptedAt = 0;
  */
 async function interruptSession(): Promise<void> {
   if (phase !== 'recording' && phase !== 'paused') return;
-  accumulatedMs = elapsedMs();
+  // Cut the silent tail: if the microphone died, the seconds since the last
+  // chunk are time the walk did not record, and keeping them would push every
+  // later marker out of line with the audio.
+  accumulatedMs = capturedMs();
   runningSince = 0;
   interruptedAt = Date.now();
   heldInterrupted = true;
@@ -855,6 +919,10 @@ export async function resumeInterrupted(): Promise<void> {
     interruptedAt = 0;
     pushMarker({ type: 'gap', gap_s });
 
+    // A fresh start fails loudly if the microphone is refused. A RESUME does
+    // not: iOS returns a track that looks live and produces nothing. Until a
+    // chunk actually arrives, treat this stretch as unproven.
+    resumedAwaitingFirstChunk = true;
     recorder.start(CHUNK_MS);
     attachLifecycle();
     startTicker();

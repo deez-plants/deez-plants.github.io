@@ -348,6 +348,22 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                 <span className="recs-dur">{formatDuration(s.duration_s)}</span>
               </div>
 
+              {/* A walk that came back short says so.
+                  The owner recorded 35 seconds and got 7, and the only way
+                  they found out was by listening. iOS can hand back a
+                  microphone that is never live after an interruption; the app
+                  cannot always prevent that, but it can refuse to be quiet
+                  about it. `captured_s` is the time that actually reached the
+                  disk as audio — absent on walks recorded before it existed,
+                  which is why this needs the explicit `!== undefined`. */}
+              {s.captured_s !== undefined && s.captured_s + 3 < s.duration_s && (
+                <p className="recs-short">
+                  Only {formatDuration(s.captured_s)} of this {formatDuration(s.duration_s)} walk
+                  was captured. The microphone stopped partway — the rest is not missing from the
+                  file, it was never recorded.
+                </p>
+              )}
+
               <div className="recs-meta">
                 <span className="recs-marks">
                   {s.marker_count} marker{s.marker_count === 1 ? '' : 's'} · {s.plant_count} plant

@@ -259,6 +259,70 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check('the resumed segment is in the saved walk', (both?.size ?? 0) > firstSize, true);
 }
 
+/* -- F: a resumed microphone that never actually works ------------------- */
+
+{
+  // The owner's third report: a 35-second walk holding 7 seconds of audio,
+  // with every marker present. Markers are written by the app and not the
+  // microphone, so their presence proved the app was alive and counting while
+  // nothing was captured — iOS had handed back a dead microphone.
+  //
+  // The app cannot make iOS behave. What it must not do is keep counting.
+  await R.startSession('2026-09-13');
+  const id = R.getSnapshot().session_id;
+  made.push(id);
+  await wait(1500);
+
+  setVisibility('hidden');
+  await wait(150);
+  for (const t of lastStream.getAudioTracks()) t.dispatchEvent(new Event('mute'));
+  for (let i = 0; i < 80 && R.getSnapshot().phase !== 'interrupted'; i++) await wait(100);
+  const capturedBefore = R.getSnapshot().elapsed_s;
+
+  // Resume onto a microphone that produces nothing at all — a stream whose
+  // track is live as far as the API is concerned, feeding a recorder that
+  // will never emit data.
+  setVisibility('visible');
+  const realGum = navigator.mediaDevices.getUserMedia;
+  navigator.mediaDevices.getUserMedia = async () => {
+    const stream = await realGum();
+    // Swallow the data the recorder would have produced.
+    stream.getAudioTracks().forEach((t) => t.enabled = false);
+    return stream;
+  };
+  let deadRecorder = null;
+  const RealMR = window.MediaRecorder;
+  window.MediaRecorder = class extends RealMR {
+    start() { deadRecorder = this; /* never emits */ }
+    stop() { this.dispatchEvent(new Event('stop')); }
+  };
+  try {
+    await R.resumeInterrupted();
+    check('a resume onto a dead mic still reports recording at first',
+      R.getSnapshot().phase, 'recording');
+
+    // It must notice, on its own, without being ended. Wait for the phase to
+    // SETTLE on interrupted rather than merely stop being 'recording' — there
+    // is a 'saving' step in between, and catching it there reads as a failure
+    // when nothing is wrong.
+    for (let i = 0; i < 200 && R.getSnapshot().phase !== 'interrupted'; i++) await wait(100);
+    check('the app works out the microphone never came back',
+      R.getSnapshot().phase, 'interrupted');
+    check('and says so in words', /microphone did not come back/i.test(R.getSnapshot().error || ''), true);
+
+    // And the clock must not have banked the silence. A grace of one and a
+    // half chunk intervals is legitimate and deliberate: a chunk is not
+    // overdue until then, so that much cannot be known to be silence. What
+    // must not survive is the rest of it.
+    const banked = R.getSnapshot().elapsed_s - capturedBefore;
+    check('most of the silent stretch is not counted as recorded time',
+      banked <= 6, true);
+  } finally {
+    window.MediaRecorder = RealMR;
+    navigator.mediaDevices.getUserMedia = realGum;
+  }
+}
+
 /* -- clean up ------------------------------------------------------------ */
 
 for (const id of made) {

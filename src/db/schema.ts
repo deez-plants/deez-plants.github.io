@@ -49,6 +49,20 @@ export interface SessionRecord {
       tomorrow's date while its own events carried today's. */
   started: string;
   duration_s: number;
+  /**
+   * Seconds of the walk that actually reached the disk as audio.
+   *
+   * Added 2026-09-14, after the owner recorded a 35-second walk holding 7
+   * seconds of audio: iOS had handed back a dead microphone and nothing
+   * noticed, because `duration_s` counts time and time kept passing. When
+   * this is meaningfully below `duration_s`, part of the walk is silence that
+   * was never captured — and Recordings says so rather than leaving it to be
+   * discovered by listening.
+   *
+   * Optional: walks recorded before this existed simply do not carry it, and
+   * an absent value means "not known", never "nothing captured".
+   */
+  captured_s?: number;
   /** Markers are written by the app as it goes — page opens, care, photos. */
   markers: SessionMarker[];
   transcript: string | null;
