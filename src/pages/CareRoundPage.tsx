@@ -73,22 +73,22 @@ export default function CareRoundPage({
   const [detailDraft, setDetailDraft] = useState<DetailDraft>(() => emptyDetailDraft(as_of));
   const [detailFlash, setDetailFlash] = useState<DetailFlash | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
-  // Which plant the detail section is for.
+  // **Two pages, and which one this is depends on `detailPlantId`.**
   //
-  // **The detail section is always on the screen now.** It used to appear only
-  // when you arrived from a plant's own page, which meant Log care was two
-  // different screens wearing one name: from the tab bar you got Water, Feed
-  // and Prune and nothing else, and every new care type was invisible. The
-  // owner found it. One screen, both sections, every route in.
+  // Log care was one screen with two sections and it satisfied nobody: from
+  // the tab bar you saw only the round, and from a plant you saw both, so the
+  // same name led to two different things. The owner's answer, and it is the
+  // right one: keep BOTH, as two real pages.
   //
-  // Arriving from a plant preselects it. Arriving from the tab bar you pick,
-  // and it deliberately starts empty rather than defaulting to the first
-  // plant: a silent default means a distracted tap logs care against the
-  // wrong plant, and entries are append-only, so the fix for that is another
-  // event rather than a delete. One tap is cheaper than a wrong record.
-  const [pickedPlantId, setPickedPlantId] = useState<PlantId | ''>('');
-  const activeDetailId = detailPlantId ?? (pickedPlantId || null);
-  const detailPlant = activeDetailId ? state.plants[activeDetailId] ?? null : null;
+  //   no plant  - the all-plants round, with a list at the top that leaves
+  //               this page for whichever plant you tap
+  //   a plant   - that plant's own care grid, with the pinned Prev/Next strip,
+  //               so you can step 001 -> 002 -> 003 logging detail as you go
+  //
+  // There is deliberately no in-place plant picker any more. Choosing a plant
+  // navigates, so the page you are on always matches the plant named at the
+  // top of it - which is what stops care being logged against the wrong one.
+  const detailPlant = detailPlantId ? state.plants[detailPlantId] ?? null : null;
 
   // Both lower tiers start shut. They open if they hold what is already
   // picked, so a selected type is never hidden behind a closed tier.
@@ -224,6 +224,34 @@ export default function CareRoundPage({
       )}
 
       <h1 className="care-title">Log care</h1>
+      {detailPlant && <p className="care-whose">{detailPlant.name}</p>}
+
+      {/* Two pages, not one screen with two moods (settled 2026-09-14).
+          Everything from here to the end of the round belongs to the
+          ALL-PLANTS page; the per-plant page shows the care grid and nothing
+          else. The owner asked for both to exist and to stop pretending to be
+          each other. */}
+      {!detailPlant && (
+      <>
+      {/* A list, not a dropdown, and at the top rather than buried under the
+          round: picking a plant LEAVES this page for that plant's own. */}
+      <section className="care-which">
+        <span className="care-detail-label">WHICH PLANT</span>
+        <div className="care-which-list">
+          {(allPlants ?? []).map((p) => (
+            <button
+              key={p.plant_id}
+              type="button"
+              className="care-which-row"
+              onClick={() => onNavigate?.(p.plant_id)}
+            >
+              <span className="care-which-id">{p.plant_id}</span>
+              <span className="care-which-name">{p.name}</span>
+              <span className="care-which-go">›</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* The collection score, rendered by the one score component. Nothing on
           this screen computes a health figure; it reads the one the ratings
@@ -401,37 +429,11 @@ export default function CareRoundPage({
         </section>
       )}
 
-      <section className="care-detail">
-        <span className="care-detail-label">ONE PLANT, WITH DETAIL</span>
+      </>
+      )}
 
-        {detailPlantId ? (
-          <p className="care-detail-sub">
-            {detailPlant?.name} — for when you want a note, a photo, or a different time on it.
-          </p>
-        ) : (
-          <>
-            <p className="care-detail-sub">
-              Every care type, for one plant, with a note and a time.
-            </p>
-            <label className="care-detail-field-label" htmlFor="care-detail-plant">WHICH PLANT</label>
-            <select
-              id="care-detail-plant"
-              className="care-detail-input care-detail-plant"
-              value={pickedPlantId}
-              onChange={(e) => {
-                setDetailFlash(null);
-                setPickedPlantId(e.target.value as PlantId | '');
-              }}
-            >
-              <option value="">Pick a plant…</option>
-              {(allPlants ?? []).map((p) => (
-                <option key={p.plant_id} value={p.plant_id}>{p.plant_id} · {p.name}</option>
-              ))}
-            </select>
-          </>
-        )}
-
-        {detailPlant && (
+      {detailPlant && (
+        <section className="care-detail">
           <>
 
           {/* Three tiers, the lower two shut on arrival (settled 2026-09-13,
@@ -534,11 +536,11 @@ export default function CareRoundPage({
             {detailDraft.type ? `Log ${detailDraft.type.toLowerCase()}` : 'Pick what you did'}
           </button>
           <p className="care-save-note">
-            Saves one event, same as the round above — not folded in until you tap Update.
+            Saves one event — not folded in until you tap Update.
           </p>
           </>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* The commit. Present whether or not an action is picked — it is the same
           action as the Update button on Home, not a second implementation. */}
