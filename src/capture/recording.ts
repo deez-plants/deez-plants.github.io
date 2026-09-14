@@ -241,6 +241,39 @@ export function retagMarker(index: number, plant_id: PlantId): void {
 /* Persistence                                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Chunk writes in flight.
+ *
+ * The writes stay fire-and-forget so a slow disk can never stall the
+ * recorder, but ending a walk has to know when they have landed. It used to
+ * yield for a single macrotask (`setTimeout(0)`) and hope, which is not a
+ * guarantee of anything: an IndexedDB write takes as long as it takes, and
+ * the last chunk of a walk is written at exactly the moment the walk is being
+ * assembled.
+ */
+const chunkWrites = new Set<Promise<unknown>>();
+
+function trackChunkWrite(p: Promise<unknown>): void {
+  chunkWrites.add(p);
+  void p.finally(() => chunkWrites.delete(p));
+}
+
+/**
+ * Wait for outstanding chunk writes, but never for ever.
+ *
+ * A write that has wedged must not leave the walk stuck in `saving`, which is
+ * a freeze the owner can only clear by force-quitting. Waiting a bounded time
+ * and carrying on costs at most one ten-second chunk; not waiting at all cost
+ * the last chunk of every walk.
+ */
+async function settleChunkWrites(ms = 3000): Promise<void> {
+  if (!chunkWrites.size) return;
+  await Promise.race([
+    Promise.allSettled([...chunkWrites]),
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+}
+
 function chunkKey(session_id: SessionId, index: number): string {
   return `${session_id}#${String(index).padStart(4, '0')}`;
 }
@@ -306,9 +339,19 @@ export async function readSessionAudio(db: DeezDB, session_id: SessionId): Promi
   return new Blob(parts, { type: parts[0].type });
 }
 
-/** Both forms, so deleting a walk leaves nothing behind. */
-export async function deleteSessionAudio(db: DeezDB, session_id: SessionId): Promise<void> {
-  await db.delete('audio', session_id);
+/**
+ * Both forms, so deleting a walk leaves nothing behind.
+ *
+ * `keepWhole` drops only the chunks, for the one caller that has just written
+ * the assembled blob and is tidying up behind itself. Everywhere else this
+ * means what it says and removes the audio entirely.
+ */
+export async function deleteSessionAudio(
+  db: DeezDB,
+  session_id: SessionId,
+  opts: { keepWhole?: boolean } = {},
+): Promise<void> {
+  if (!opts.keepWhole) await db.delete('audio', session_id);
   for (const key of await db.getAllKeys('audio')) {
     if (typeof key === 'string' && key.startsWith(`${session_id}#`)) {
       await db.delete('audio', key);
@@ -531,11 +574,16 @@ export async function startSession(as_of: ISODate): Promise<void> {
       lastChunkAt = Date.now();
       const key = chunkKey(session_id, chunkIndex);
       chunkIndex += 1;
-      // Fire and forget: a slow write must never stall the recorder.
-      void openDeezPlants()
-        .then((handle) => handle.put('audio', e.data, key))
-        .then(() => persistProgress())
-        .catch(() => { /* the next chunk will try again */ });
+      // Still fire-and-forget — a slow write must never stall the recorder —
+      // but the promise is now tracked, so `settleChunkWrites` can wait for
+      // it before the walk is assembled. Without that, ending a walk raced
+      // the write of its own last chunk.
+      trackChunkWrite(
+        openDeezPlants()
+          .then((handle) => handle.put('audio', e.data, key))
+          .then(() => persistProgress())
+          .catch(() => { /* the next chunk will try again */ }),
+      );
     };
     recorder.onerror = () => {
       error = 'The recorder reported an error. Everything captured so far has been saved.';
@@ -653,13 +701,29 @@ export async function endSession(): Promise<SessionId | null> {
 
     const db = await openDeezPlants();
     // The recorder's last `ondataavailable` fires just before `stop` and writes
-    // asynchronously; give it the turn it needs before assembling.
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // asynchronously. Wait for that write to actually land — a single macrotask
+    // used to be the whole of this, which is not long enough to guarantee an
+    // IndexedDB put has committed.
+    await settleChunkWrites();
 
+    // Assemble, WRITE, and only then drop the pieces.
+    //
+    // This used to delete the chunks and then write the assembled blob, which
+    // left a window where the walk existed only in memory. Anything that
+    // killed the page in that window destroyed the audio permanently — and a
+    // backgrounded, iOS-weakened tab is exactly the thing likely to be killed
+    // there. This is the owner's reported bug: leave the app mid-walk, come
+    // back, finish, and Recordings says there is no audio.
+    //
+    // Write-then-delete cannot lose anything. The worst case is that both
+    // forms exist for a moment, and `readSessionAudio` already prefers the
+    // whole blob over the chunks, so there is never any ambiguity about which
+    // one is the walk. A crash between the two leaves both, which is a
+    // harmless duplicate rather than a lost recording.
     const whole = await readSessionAudio(db, session_id);
     if (whole) {
-      await deleteSessionAudio(db, session_id);
       await db.put('audio', whole, session_id);
+      await deleteSessionAudio(db, session_id, { keepWhole: true });
     }
     await persistProgress(true);
   } catch {
@@ -704,6 +768,10 @@ async function interruptSession(): Promise<void> {
 
   try {
     await stopRecorder();
+    // The same race as `endSession`, and this path matters more: an interrupt
+    // is usually iOS pulling the rug, so the last chunk's write is both the
+    // most likely to be in flight and the most likely to be lost.
+    await settleChunkWrites();
     await persistProgress();
   } catch {
     /* The chunks are the record and they are already written. */
