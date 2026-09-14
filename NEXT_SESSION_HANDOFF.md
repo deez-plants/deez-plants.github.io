@@ -729,6 +729,43 @@ record was verified afterwards: 132 events, 26 photos, 22 plants, no sessions,
 no audio. **This is the second time this trap has been hit. Clean up after any
 harness that starts a session.**
 
+### 2026-09-14 — what the owner found on the second day of use
+
+**The resumed half of a walk was being thrown away.** Their evidence: a
+24-second walk holding 9 seconds of audio. A walk has two recorders — the one
+`startSession` creates and the one `resumeInterrupted` creates after iOS takes
+the microphone — and they were two near-identical copies of the same handler.
+When chunk writes were made trackable on 2026-09-13, **only the first copy got
+it**, so a resumed segment's writes were invisible to `settleChunkWrites`.
+Ending the walk assembled it without them and deleted the chunks straight
+after.
+
+There is now one `writeChunksTo()` used by both. **No second copy left to
+drift** — which is the actual fix. Tracking the second handler alone would
+have left the same trap for the next person.
+
+**Section C of the audio harness passed against this bug.** Its resumed
+segment is under a second, so on a fast laptop the write landed in time.
+Section E removes the luck: it slows chunk writes deliberately and asserts the
+finished walk is *larger* than the first segment alone. **That is the second
+time this harness has had to be corrected for claiming more than it checked.**
+Run the negative control — put the bug back, watch the test fail — before
+trusting any new section of it.
+
+**Log care is two pages now, not one screen with two sections.** The owner
+tried the combined version and rejected it: *"this format doesn't work."*
+
+- **All plants** carries a WHICH PLANT list at the top — a list, not a
+  dropdown, and with no explaining text. Tapping a plant *leaves* the page.
+- **One plant** is that plant's own care grid, with the pinned Prev/Next strip,
+  so you can step 001 → 002 → 003 logging detail as you go. No round, no
+  collection score: neither says anything about one plant.
+
+**Do not reintroduce an in-place picker.** Navigating is what keeps the plant
+named at the top of the page identical to the plant being logged against —
+a better guard against a mislogged plant than the empty-default compromise it
+replaced, and free.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
