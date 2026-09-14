@@ -766,6 +766,98 @@ named at the top of the page identical to the plant being logged against —
 a better guard against a mislogged plant than the empty-default compromise it
 replaced, and free.
 
+### 2026-09-14 evening — agreed, then built
+
+All of this was settled with the owner and then built in the same session.
+Recorded before the work started, so a session that ends mid-way loses the
+work and not the reasoning.
+
+#### The recording, third mechanism: iOS gives back a dead microphone
+
+**The owner's measurement: a 35-second walk holding 7 seconds of audio, with
+the markers all present.** They backgrounded twice; the first 7 seconds
+survived and everything after was gone.
+
+That combination is diagnostic. **Markers are written by the app, not the
+microphone**, so their presence proves the app was alive and counting while no
+audio arrived at all. The first 7 seconds surviving proves the 2026-09-13 and
+2026-09-14 fixes are holding — what fails now is further down.
+
+The numbers fit exactly. Chunks were written every 10s and the dead-capture
+watchdog needed `CHUNK_MS * 2.5` = **25 seconds** of silence to trip. Their
+second stretch was about 20 seconds. **It ended below the threshold, so nothing
+ever warned them.**
+
+So: after an interruption, iOS handed back a microphone that was never live.
+The recorder reported itself fine, the clock counted, and nothing was captured.
+
+**Four changes, none of which can make iOS behave, all of which stop it being
+silent:**
+
+1. **Chunk interval 10s → 3s.** Smaller loss window, and the watchdog trips in
+   about 8 seconds instead of 25. At 22 plants and weekly walks the extra
+   writes cost nothing.
+2. **Prove the microphone is alive before counting time.** After a resume,
+   demand a chunk within a few seconds; if none arrives, say so rather than
+   recording nothing.
+3. **The clock must only count captured audio.** A duration that includes time
+   the microphone was dead is what made 35-versus-7 possible without anyone
+   noticing.
+4. **Say so afterwards.** Recordings compares audio against counted time and
+   flags a walk that came back short.
+
+**The limit, stated plainly: whether iOS will reopen the microphone at all
+after an interruption is a platform question that only the owner's phone can
+settle.** These four guarantee they find out in seconds instead of losing half
+a walk. They do not guarantee the walk.
+
+**The fallback, agreed but NOT yet taken:** if the microphone still does not
+come back, stop pretending to resume — an interruption **ends** the walk and a
+fresh one starts on return. Two files instead of one with a hole in it; Whisper
+reads both and the markers keep them on the same route. **This is the owner's
+decision to make and they have not made it.** Do not take it unilaterally.
+
+#### Log care, corrected again
+
+The WHICH PLANT list was put at the top of the all-plants page and **that was
+wrong**: it buried the round, which is the whole reason the screen exists.
+The owner: *"that eliminates the entire let's make this easy, water all the
+plants with 2 clicks idea, now I have to scroll down to find it."*
+
+The round comes first. Below the planter chips sits **one compact bar** —
+Which plant → Select a plant → a dropdown that navigates. Out of the way, and
+the two-tap watering round is the first thing the thumb meets.
+
+#### Back navigation
+
+**`replace` was used where `push` belonged**, so tapping a plant in the
+Which-plant list *swapped out* the all-plants page instead of stacking it —
+which is why there was no way back to it. Every `replace` call site was
+audited. The rule:
+
+- **`push`** when you have gone somewhere new
+- **`replace`** only for stepping sideways between plants (Prev/Next and the
+  plant picker), where 22 taps to back out would be absurd
+
+Plus **swipe from the left edge to go back**, which is the answer to the
+owner's *"I know there may not be room for this anywhere but I want its
+function"* — it is the gesture they already use everywhere else on iOS and it
+costs no screen space.
+
+**Still open, deliberately not built:** tapping a tab clears the stack, so
+going Log → back does not return you to the plant you were on. Per-tab memory
+would fix it, it is a change to the nav model, and the owner should live with
+the two cheap fixes first.
+
+#### Planters
+
+The glass planter chip on Log care is generated from any planter holding more
+than one plant, so it could not be removed without planter editing — and
+`planter` was read-only on a plant. Now: add a planter, assign or unassign a
+plant, remove a planter with a guard so it cannot strand plants pointing at
+it. **The glass planter was left exactly where it is** — the owner asked for
+the controls so they could test archiving it themselves.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
