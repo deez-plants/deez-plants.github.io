@@ -569,5 +569,34 @@ const runRated = (rateEvents, as_of) => derive({
     said.some((s) => s.event_id === 'o1'), false);
 }
 
+
+/* ------------------------------------------- the round, widened to routine */
+
+{
+  // Things you do in a sweep. The interventions stay single-plant.
+  eq('the round covers the sweep actions', [...R.ROUND_ACTIONS],
+    ['Water', 'Feed', 'Prune', 'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist']);
+
+  for (const a of R.ROUND_ACTIONS) {
+    const h = R.roundHeading(a);
+    // A template would produce "Who did you dead leaves?" - every action needs
+    // copy written for it, and a missing entry must fail here rather than ship.
+    eq(`heading reads as English for ${a}`, /^Wh[oa].+\?$/.test(h) && !/undefined/.test(h), true);
+    const label = R.roundButtonLabel({ action: a, selected: ['001-MON'], note: '' });
+    eq(`button label is written for ${a}`, /undefined/.test(label), false);
+  }
+
+  // Rule 9 by the back door: nothing in the record says how often a plant
+  // should be rotated, so no routine action may pre-select anything.
+  const past = { plant_id: '001-MON', adherence: { days_past: 9, interval_days: 7 } };
+  eq('only water pre-selects',
+    R.ROUND_ACTIONS.filter((a) => R.preselectFor(a, [past]).length), ['Water']);
+
+  // The interventions must NOT be batch actions.
+  eq('interventions stay single-plant',
+    ['Repot', 'Hard prune', 'Top-dress', 'Soil flush', 'Took cuttings', 'Support', 'Pest treat']
+      .filter((t) => R.ROUND_ACTIONS.includes(t)), []);
+}
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

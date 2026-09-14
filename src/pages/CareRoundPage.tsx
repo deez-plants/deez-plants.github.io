@@ -73,7 +73,22 @@ export default function CareRoundPage({
   const [detailDraft, setDetailDraft] = useState<DetailDraft>(() => emptyDetailDraft(as_of));
   const [detailFlash, setDetailFlash] = useState<DetailFlash | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
-  const detailPlant = detailPlantId ? state.plants[detailPlantId] : null;
+  // Which plant the detail section is for.
+  //
+  // **The detail section is always on the screen now.** It used to appear only
+  // when you arrived from a plant's own page, which meant Log care was two
+  // different screens wearing one name: from the tab bar you got Water, Feed
+  // and Prune and nothing else, and every new care type was invisible. The
+  // owner found it. One screen, both sections, every route in.
+  //
+  // Arriving from a plant preselects it. Arriving from the tab bar you pick,
+  // and it deliberately starts empty rather than defaulting to the first
+  // plant: a silent default means a distracted tap logs care against the
+  // wrong plant, and entries are append-only, so the fix for that is another
+  // event rather than a delete. One tap is cheaper than a wrong record.
+  const [pickedPlantId, setPickedPlantId] = useState<PlantId | ''>('');
+  const activeDetailId = detailPlantId ?? (pickedPlantId || null);
+  const detailPlant = activeDetailId ? state.plants[activeDetailId] ?? null : null;
 
   // Both lower tiers start shut. They open if they hold what is already
   // picked, so a selected type is never hidden behind a closed tier.
@@ -94,7 +109,15 @@ export default function CareRoundPage({
         detailDraft.type === t ? 'on' : '',
       ].filter(Boolean).join(' ')}
       aria-pressed={detailDraft.type === t}
-      onClick={() => { setDetailFlash(null); setDetailDraft({ ...detailDraft, type: t }); }}
+      // Tapping the selected type again clears it. The round's own action
+      // buttons have always worked this way; this grid did not, so once you
+      // had picked Water there was no way back to nothing. Same screen, two
+      // behaviours — the owner hit it. Clearing a *pick* is not editing
+      // history: nothing is written until you tap the log button.
+      onClick={() => {
+        setDetailFlash(null);
+        setDetailDraft({ ...detailDraft, type: detailDraft.type === t ? null : t });
+      }}
     >
       {t}
     </button>
@@ -188,7 +211,7 @@ export default function CareRoundPage({
           out each time — one of the three screens the owner named as
           missing it. Reached as the collection round, there is no single
           plant to step through. */}
-      {detailPlant && allPlants && onNavigate ? (
+      {detailPlantId && detailPlant && allPlants && onNavigate ? (
         <PlantChrome
           plant={detailPlant}
           backLabel={backLabel ?? 'Back'}
@@ -378,12 +401,38 @@ export default function CareRoundPage({
         </section>
       )}
 
-      {detailPlant && (
-        <section className="care-detail">
-          <span className="care-detail-label">ONE PLANT, WITH DETAIL</span>
+      <section className="care-detail">
+        <span className="care-detail-label">ONE PLANT, WITH DETAIL</span>
+
+        {detailPlantId ? (
           <p className="care-detail-sub">
-            {detailPlant.name} — for when you want a note, a photo, or a different time on it.
+            {detailPlant?.name} — for when you want a note, a photo, or a different time on it.
           </p>
+        ) : (
+          <>
+            <p className="care-detail-sub">
+              Every care type, for one plant, with a note and a time.
+            </p>
+            <label className="care-detail-field-label" htmlFor="care-detail-plant">WHICH PLANT</label>
+            <select
+              id="care-detail-plant"
+              className="care-detail-input care-detail-plant"
+              value={pickedPlantId}
+              onChange={(e) => {
+                setDetailFlash(null);
+                setPickedPlantId(e.target.value as PlantId | '');
+              }}
+            >
+              <option value="">Pick a plant…</option>
+              {(allPlants ?? []).map((p) => (
+                <option key={p.plant_id} value={p.plant_id}>{p.plant_id} · {p.name}</option>
+              ))}
+            </select>
+          </>
+        )}
+
+        {detailPlant && (
+          <>
 
           {/* Three tiers, the lower two shut on arrival (settled 2026-09-13,
               Round 4 of the screens page). Eighteen equal buttons would put
@@ -487,8 +536,9 @@ export default function CareRoundPage({
           <p className="care-save-note">
             Saves one event, same as the round above — not folded in until you tap Update.
           </p>
-        </section>
-      )}
+          </>
+        )}
+      </section>
 
       {/* The commit. Present whether or not an action is picked — it is the same
           action as the Update button on Home, not a second implementation. */}

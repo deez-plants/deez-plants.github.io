@@ -509,3 +509,11 @@
 }
 
 .care-detail-grid.quiet { margin-bottom: 8px; }
+
+/* The plant chooser, shown when Log care is reached from the tab bar rather
+   than from a plant's own page. Starts empty on purpose - see the comment in
+   CareRoundPage.tsx about why there is no default plant. */
+.care-detail-plant {
+  width: 100%;
+  margin-bottom: 20px;
+}

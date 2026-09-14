@@ -19,9 +19,41 @@ import { daysBetween } from '../lib/dates';
  * a database.
  */
 
-/** The three big buttons. Everything else is a one-plant action with detail. */
-export const ROUND_ACTIONS = ['Water', 'Feed', 'Prune'] as const;
+/**
+ * What the round can do to many plants at once.
+ *
+ * **The line is: things you do in a sweep.** You water fifteen plants in one
+ * pass, and you mist, rotate and pick dead leaves off several in the same
+ * pass — so all of those belong here. What stays single-plant is the
+ * interventions: repot, hard prune, top-dress, soil flush, took cuttings,
+ * support, pest treat. You do not repot fifteen plants in one go, and each
+ * one wants its own note and its own moment.
+ *
+ * The five routine types joined on 2026-09-13. Before that the round was
+ * Water/Feed/Prune only, which meant the types you are most likely to do in
+ * a sweep were the ones you could only log one plant at a time — backwards,
+ * and the owner spotted it.
+ */
+export const ROUND_ACTIONS = [
+  'Water', 'Feed', 'Prune',
+  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist',
+] as const;
 export type RoundAction = (typeof ROUND_ACTIONS)[number];
+
+/**
+ * Copy per action. A template will not do: "Who did you water?" is fine and
+ * "Who did you dead leaves?" is not.
+ */
+const ROUND_COPY: Record<RoundAction, { heading: string; verb: string }> = {
+  Water: { heading: 'Who did you water?', verb: 'water' },
+  Feed: { heading: 'Who did you feed?', verb: 'feed' },
+  Prune: { heading: 'Who did you prune?', verb: 'prune' },
+  'Dead leaves': { heading: 'Whose dead leaves did you take off?', verb: 'dead leaves' },
+  'Trim back': { heading: 'Who did you trim back?', verb: 'trim back' },
+  Rotate: { heading: 'Who did you rotate?', verb: 'rotate' },
+  'Wipe leaves': { heading: 'Whose leaves did you wipe?', verb: 'leaf wipe' },
+  Mist: { heading: 'Who did you mist?', verb: 'mist' },
+};
 
 export interface RoundDraft {
   action: RoundAction | null;
@@ -50,8 +82,10 @@ export function isPastInterval(p: DerivedPlant): boolean {
 
 /**
  * Only `Water` has an interval to be past — adherence counts waterings and
- * nothing else. Feed and Prune therefore start empty rather than guessing at a
- * schedule the record does not hold.
+ * nothing else. Every other round action therefore starts empty rather than
+ * guessing at a schedule the record does not hold. That includes the five
+ * routine types: nothing anywhere says how often a plant should be rotated,
+ * and inventing one would be rule 9 by the back door.
  */
 export function preselectFor(action: RoundAction, plants: DerivedPlant[]): PlantId[] {
   if (action !== 'Water') return [];
@@ -175,7 +209,7 @@ export function rowStatus(
 /* -------------------------------------------------------------------------- */
 
 export function roundHeading(action: RoundAction): string {
-  return `Who did you ${action.toLowerCase()}?`;
+  return ROUND_COPY[action].heading;
 }
 
 /** The chip is tight on space — "Decorative" doesn't earn its width there. */
@@ -187,7 +221,7 @@ export function roundButtonLabel(draft: RoundDraft): string {
   if (!draft.action) return 'Pick an action';
   if (!draft.selected.length) return 'Select at least one plant';
   const n = draft.selected.length;
-  return `Log ${draft.action.toLowerCase()} for ${n} plant${n === 1 ? '' : 's'}`;
+  return `Log ${ROUND_COPY[draft.action].verb} for ${n} plant${n === 1 ? '' : 's'}`;
 }
 
 export function eventCount(count: number): string {
@@ -262,10 +296,11 @@ export type { CommitResult } from '../db/events';
 /* -------------------------------------------------------------------------- */
 
 /**
- * The care-type grid. Distinct from `ROUND_ACTIONS`: the round is Water,
- * Feed, Prune only — everything else has always been a one-plant action
- * (`preselectFor`'s own comment). `source: 'user'`, never `'round'` — this is
- * one plant, one tap, not a batch.
+ * The care-type grid: every type, for one plant, with a note and a time.
+ * `ROUND_ACTIONS` is the subset you can do to many plants at once; this list
+ * is deliberately the whole of `CareEventType`, because the one-plant path
+ * has to be able to log anything. `source: 'user'`, never `'round'` — one
+ * plant, one tap, not a batch.
  *
  * **Three tiers, two of them collapsed** (settled with the owner 2026-09-13,
  * drawn as Round 4 of the screens mock-up page). Nine types became eighteen,
