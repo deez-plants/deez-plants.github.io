@@ -294,10 +294,20 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
               This phone cannot do it — Whisper does not run here.
             </li>
             <li>
-              <strong>Add transcript</strong>, back on whichever device you
-              like, and give it the Whisper file.
+              <strong>Add transcript</strong> — <strong>back on this phone</strong>,
+              on this same walk. Paste in what Whisper wrote.
             </li>
           </ol>
+          <p className="recs-how-note">
+            {/* This used to read "back on whichever device you like", which is
+                wrong and would have sent the owner to the laptop with nothing
+                to attach the transcript to. A transcript attaches to a walk,
+                and storage is per-origin with no server between — the walk
+                exists on the device that recorded it and nowhere else. The
+                laptop's job is running Whisper, not holding the record. */}
+            The laptop only runs Whisper. The walk itself lives on the phone
+            that recorded it, so the transcript has to come back here.
+          </p>
           <p className="recs-how-note">
             Typing or pasting words yourself works too and is accepted whole —
             it is marked <strong>unverified</strong> because there are no
