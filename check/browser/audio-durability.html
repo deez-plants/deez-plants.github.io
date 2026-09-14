@@ -207,6 +207,58 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check('because its chunks were never dropped first', (await chunkKeys(id)).length > 0, true);
 }
 
+/* -- E: the resumed segment must not be dropped -------------------------- */
+
+{
+  // The owner, on their phone: a 24-second walk that held 9 seconds of audio.
+  // The first segment survived and the whole resumed stretch was gone.
+  //
+  // Section C already resumes and ends, and it PASSED against this bug —
+  // because its resumed segment is under a second, so on a fast laptop the
+  // write happened to land before the walk was assembled. A test that passes
+  // by luck is worse than no test.
+  //
+  // So this one removes the luck: chunk writes are made slow, deterministically.
+  // If the resumed recorder's writes are not tracked, ending the walk does not
+  // wait for them, assembles without them, and then deletes the chunks.
+  await R.startSession('2026-09-13');
+  const id = R.getSnapshot().session_id;
+  made.push(id);
+  await wait(1200);
+
+  setVisibility('hidden');
+  await wait(150);
+  for (const t of lastStream.getAudioTracks()) t.dispatchEvent(new Event('mute'));
+  for (let i = 0; i < 80 && R.getSnapshot().phase !== 'interrupted'; i++) await wait(100);
+
+  const firstOnly = await R.readSessionAudio(db, id);
+  const firstSize = firstOnly ? firstOnly.size : 0;
+  check('the first segment is on disk', firstSize > 0, true);
+
+  setVisibility('visible');
+  await R.resumeInterrupted();
+  check('the walk resumes', R.getSnapshot().phase, 'recording');
+  await wait(1400);
+
+  // Slow every chunk write. The resumed segment's last chunk is written during
+  // `stopRecorder`, which is exactly the moment the walk is being assembled.
+  const realPut = db.put.bind(db);
+  db.put = async (store, value, key) => {
+    if (store === 'audio' && String(key).includes('#')) await wait(400);
+    return realPut(store, value, key);
+  };
+  try {
+    await R.endSession();
+  } finally {
+    db.put = realPut;
+  }
+
+  const both = await R.readSessionAudio(db, id);
+  check('the finished walk still exists', !!both && both.size > 0, true);
+  // The whole point: it has to be LARGER than the first segment alone.
+  check('the resumed segment is in the saved walk', (both?.size ?? 0) > firstSize, true);
+}
+
 /* -- clean up ------------------------------------------------------------ */
 
 for (const id of made) {

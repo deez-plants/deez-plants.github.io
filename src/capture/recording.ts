@@ -274,6 +274,39 @@ async function settleChunkWrites(ms = 3000): Promise<void> {
   ]);
 }
 
+/**
+ * Send a recorder's chunks to the `audio` store.
+ *
+ * **There are two recorders in a walk's life** — the one `startSession`
+ * creates and the one `resumeInterrupted` creates after iOS pulls the
+ * microphone — and they must behave identically. They used to be two
+ * near-identical copies of this code, and the copies drifted: tracking was
+ * added to the first and not the second, so a *resumed* segment's writes were
+ * invisible to `settleChunkWrites`. Ending the walk then assembled it before
+ * that audio had landed and deleted the chunks straight afterwards.
+ *
+ * The owner caught it on their phone: a 24-second walk that held 9 seconds of
+ * audio — the first segment kept, the whole resumed stretch gone. One
+ * function, used by both, so there is no second copy left to drift.
+ *
+ * The write stays fire-and-forget, because a slow write must never stall the
+ * recorder. It is the *tracking* that matters.
+ */
+function writeChunksTo(rec: MediaRecorder, session_id: SessionId): void {
+  rec.ondataavailable = (e: BlobEvent) => {
+    if (!e.data || !e.data.size) return;
+    lastChunkAt = Date.now();
+    const key = chunkKey(session_id, chunkIndex);
+    chunkIndex += 1;
+    trackChunkWrite(
+      openDeezPlants()
+        .then((handle) => handle.put('audio', e.data, key))
+        .then(() => persistProgress())
+        .catch(() => { /* the next chunk will try again */ }),
+    );
+  };
+}
+
 function chunkKey(session_id: SessionId, index: number): string {
   return `${session_id}#${String(index).padStart(4, '0')}`;
 }
@@ -569,22 +602,7 @@ export async function startSession(as_of: ISODate): Promise<void> {
     const session_id = sessionId;
     startedIso = nowLocalStamp();
 
-    recorder.ondataavailable = (e: BlobEvent) => {
-      if (!e.data || !e.data.size) return;
-      lastChunkAt = Date.now();
-      const key = chunkKey(session_id, chunkIndex);
-      chunkIndex += 1;
-      // Still fire-and-forget — a slow write must never stall the recorder —
-      // but the promise is now tracked, so `settleChunkWrites` can wait for
-      // it before the walk is assembled. Without that, ending a walk raced
-      // the write of its own last chunk.
-      trackChunkWrite(
-        openDeezPlants()
-          .then((handle) => handle.put('audio', e.data, key))
-          .then(() => persistProgress())
-          .catch(() => { /* the next chunk will try again */ }),
-      );
-    };
+    writeChunksTo(recorder, session_id);
     recorder.onerror = () => {
       error = 'The recorder reported an error. Everything captured so far has been saved.';
       void endSession();
@@ -818,16 +836,7 @@ export async function resumeInterrupted(): Promise<void> {
     recorder = new MediaRecorder(stream, chosen ? { mimeType: chosen } : undefined);
     mime = chosen ?? (recorder.mimeType || null);
 
-    recorder.ondataavailable = (e: BlobEvent) => {
-      if (!e.data || !e.data.size) return;
-      lastChunkAt = Date.now();
-      const key = chunkKey(session_id, chunkIndex);
-      chunkIndex += 1;
-      void openDeezPlants()
-        .then((handle) => handle.put('audio', e.data, key))
-        .then(() => persistProgress())
-        .catch(() => { /* the next chunk will try again */ });
-    };
+    writeChunksTo(recorder, session_id);
     recorder.onerror = () => {
       error = 'The recorder reported an error. Everything captured so far has been saved.';
       void interruptSession();
