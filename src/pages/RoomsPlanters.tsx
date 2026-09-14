@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
-import { addRoom } from '../boot';
+import { addPlanter, addRoom, removePlanter } from '../boot';
 import './RoomsPlanters.css';
 
 /**
@@ -23,6 +23,10 @@ export interface RoomsPlantersProps {
 export default function RoomsPlanters({ state, registry, backLabel, onBack, onChanged }: RoomsPlantersProps) {
   const [newRoom, setNewRoom] = useState('');
   const [busy, setBusy] = useState(false);
+  const [newPlanter, setNewPlanter] = useState('');
+  const [newPlanterShared, setNewPlanterShared] = useState(true);
+  const [confirmDrop, setConfirmDrop] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
@@ -38,6 +42,37 @@ export default function RoomsPlanters({ state, registry, backLabel, onBack, onCh
     planter,
     members: active.filter((p) => p.planter === planter.name),
   }));
+
+  const submitPlanter = async () => {
+    const trimmed = newPlanter.trim();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await addPlanter(trimmed, newPlanterShared);
+      setNewPlanter('');
+      await onChanged();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const dropPlanter = async (name: string, members: number) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setConfirmDrop(null);
+    try {
+      await removePlanter(name, members);
+      await onChanged();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submitRoom = async () => {
     const trimmed = newRoom.trim();
@@ -102,10 +137,72 @@ export default function RoomsPlanters({ state, registry, backLabel, onBack, onCh
                 <span key={p.plant_id} className="rooms-planter-chip">{p.name}</span>
               ))}
             </div>
+
+            {/* Removing a planter is a registry edit and really does remove
+                it — the registry is not the append-only record. It refuses
+                while plants still point at it, because a plant naming a
+                planter that no longer exists would just stop appearing in
+                its group, with nothing to say why. */}
+            {confirmDrop === planter.name ? (
+              <div className="rooms-confirm">
+                <span>
+                  {members.length
+                    ? `Move its ${members.length} plant${members.length === 1 ? '' : 's'} out first — from each plant's Info and settings.`
+                    : 'Remove this planter?'}
+                </span>
+                <div className="rooms-confirm-row">
+                  <button
+                    type="button"
+                    className="rooms-drop go"
+                    disabled={busy || members.length > 0}
+                    onClick={() => void dropPlanter(planter.name, members.length)}
+                  >
+                    Remove
+                  </button>
+                  <button type="button" className="rooms-drop" onClick={() => setConfirmDrop(null)}>
+                    Keep
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="rooms-drop"
+                onClick={() => { setError(null); setConfirmDrop(planter.name); }}
+              >
+                Remove planter
+              </button>
+            )}
           </section>
         ))}
         {planterGroups.length === 0 && <p className="rooms-empty">No shared planters yet.</p>}
       </div>
+
+      <div className="rooms-add">
+        <input
+          className="rooms-input"
+          value={newPlanter}
+          onChange={(e) => setNewPlanter(e.target.value)}
+          placeholder="Add a planter, e.g. Glass bowl"
+          aria-label="New planter name"
+        />
+        <button type="button" className="rooms-add-btn" disabled={!newPlanter.trim() || busy} onClick={() => void submitPlanter()}>
+          Add
+        </button>
+      </div>
+      {/* Shared soil is a care fact, not a grouping preference: one soak
+          really does serve every plant in the pot. Decorative means the pots
+          are separate and each still needs checking. */}
+      <label className="rooms-shared">
+        <input
+          type="checkbox"
+          checked={newPlanterShared}
+          onChange={(e) => setNewPlanterShared(e.target.checked)}
+        />
+        <span>Shared soil — one soak serves all</span>
+      </label>
+
+      {error && <p className="rooms-error">{error}</p>}
 
       <p className="rooms-note">
         Rooms set the walk order during an inspection and the grouping on the

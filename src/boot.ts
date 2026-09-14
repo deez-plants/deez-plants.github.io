@@ -194,6 +194,59 @@ export async function addRoom(name: string): Promise<void> {
   await db.put('registry', { ...registry, rooms: [...registry.rooms, trimmed], updated: todayISO() }, REGISTRY_KEY);
 }
 
+/**
+ * Add a shared planter. Same shape as `addRoom`: a registry write, not an
+ * event.
+ *
+ * `FIELD_DEFINITIONS.md` section 4 calls rooms and planters "a user-editable
+ * registry" rather than something events fold, and the AI cannot propose
+ * changes here because it cannot see the flat. Which plants sit in a planter
+ * IS event-shaped, though — that is the `planter` field on each plant, edited
+ * from Info and settings like any other.
+ */
+export async function addPlanter(name: string, shared_water: boolean): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const db = await openDeezPlants();
+  const stored = await db.get('registry', REGISTRY_KEY);
+  const registry = stored ?? EMPTY_REGISTRY;
+  if (registry.planters.some((p) => p.name === trimmed)) return;
+  await db.put('registry', {
+    ...registry,
+    planters: [...registry.planters, { name: trimmed, shared_water }],
+    updated: todayISO(),
+  }, REGISTRY_KEY);
+}
+
+/**
+ * Remove a planter from the registry.
+ *
+ * **Refuses while any plant still points at it**, and says how many. A plant
+ * whose `planter` names something the registry no longer holds is not an
+ * error the app would notice — it would simply stop appearing in its group,
+ * and the reason would be invisible. Move the plants out first, from each
+ * plant's Info and settings, which writes a proper `Edit` event for each one.
+ *
+ * The registry is not append-only, so this really does remove it. That is the
+ * difference between a registry and the record.
+ */
+export async function removePlanter(name: string, members: number): Promise<void> {
+  if (members > 0) {
+    throw new Error(
+      `${members} plant${members === 1 ? ' is' : 's are'} still in this planter. `
+      + 'Move them out from each plant’s Info and settings first.',
+    );
+  }
+  const db = await openDeezPlants();
+  const stored = await db.get('registry', REGISTRY_KEY);
+  const registry = stored ?? EMPTY_REGISTRY;
+  await db.put('registry', {
+    ...registry,
+    planters: registry.planters.filter((p) => p.name !== name),
+    updated: todayISO(),
+  }, REGISTRY_KEY);
+}
+
 export interface NewPlantInput {
   plant_id: PlantId;
   name: string;
