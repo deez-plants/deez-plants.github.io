@@ -207,20 +207,20 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-**Build what is in "Decisions of 2026-09-13" below.** Four things were settled
-with the owner that day and drawn as Rounds 3 and 4 of the mock-up pages:
-six new care types, the tiered Log care screen, a pinned top bar on every
-screen, and the two missing What works bands. **All four are approved and
-none needs further discussion.** The owner said "comment only" in the same
-message, so the specs were written down and committed rather than built —
-the same pattern as 2026-09-12. **Their next word is the go-ahead.**
+**The queue is empty. Fix the recording bug next** — it is the only thing
+left that is both mine and known-broken, it loses data, and the owner has
+asked for it as the functional check on everything just built. The three
+candidate mechanisms are in "The recording bug" below. **Do not announce a
+fourth confident diagnosis; two are already recorded here as wrong.**
 
-**Build the six new care types first, before anything else on that list.**
-Entries are append-only. Every week the owner logs a top-dress or a rotate as
-`Other` is a week of record that can never be re-tagged, and `whatWorks.ts`
-already had to do structural detective work once (`migrationBatches`) to undo
-a model change made after real data existed. Nothing else in the queue has a
-clock on it.
+**Everything decided on 2026-09-13 is built and pushed**: the nine care
+types, the tiered Log care screen, both missing What works bands, and the
+pinned top bar on every screen. See that section for what was decided and
+why.
+
+**One thing the owner should be asked at the next opportunity**, because it
+is cheap now and permanent later: whether anything else belongs in the
+routine list. See the end of that section.
 
 **The four specifications of 2026-09-12 are all built.** Plant Detail
 reordered with a full-width square hero, the What works top matter trimmed,
@@ -396,12 +396,36 @@ not a question: Rounds 1 and 2 are marked answered above it.
 Check the build against it. If the built screen and Round 3 disagree, one of
 them is wrong and it is worth knowing which before continuing.
 
-## Decisions of 2026-09-13 (settled — do not relitigate)
+## Decisions of 2026-09-13 — ALL FOUR NOW BUILT
 
 All of this came out of one conversation that started as a status question
-about What works and turned into four build items. **Every one is approved.
-None was built that day** — the owner said "comment only" while approving,
-so the specifications and the mock-ups were finished and committed instead.
+about What works and turned into four build items.
+
+**Built and committed the same day**, after the owner said "go ahead":
+`7c7b2de` the nine care types, `05f6c04` the tiered Log care screen,
+`dd7ff75` the two missing What works bands, `d0c2278` the pinned top bar.
+The sections below are kept as written — the reasoning behind a decision is
+worth more later than the decision.
+
+**Two things the owner settled that differ from what is written below**, and
+the code follows the owner, not this file:
+
+1. **Dead leaves and Trim back are routine, not a sub-menu under Prune.** An
+   earlier proposal here put three severities behind the Prune button. The
+   owner instead put both in the routine tier and gave the order themselves:
+   dead leaves, trim back, rotate, wipe leaves, mist. Hard prune stayed an
+   action. There is a test pinning that order.
+2. **"Deadhead" was the wrong word and is not used anywhere.** Deadheading
+   is removing spent flowers. What the owner does constantly is taking off
+   dead and yellowing leaves, which is `Dead leaves`; what they do to stop
+   a pothos getting longer is `Trim back`. Using the wrong word would have
+   put a wrong label in the record permanently.
+
+**Still the owner's, and still open:** whether anything else belongs in
+routine. They ruled out a humidity tray and rinsing. Adding routine types
+late is cheap — routine is only counted, so a late addition costs an
+incomplete tally. Adding an *action* late is not: it costs a pairing that
+can never be reconstructed.
 
 ### The gap that started it: What works is half built
 
