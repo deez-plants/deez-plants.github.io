@@ -858,6 +858,53 @@ plant, remove a planter with a guard so it cannot strand plants pointing at
 it. **The glass planter was left exactly where it is** — the owner asked for
 the controls so they could test archiving it themselves.
 
+#### All of the above is built (2026-09-14 evening)
+
+Five commits: `443eb96` navigation, `04fc27e` the recording, `d1cdcd6`
+planters, plus the guide and this file.
+
+**What the recording work can and cannot promise.** Chunks are every 3s now,
+so the watchdog trips in about 8 seconds rather than 25. A resumed stretch is
+unproven until a chunk actually arrives, and the message distinguishes *"the
+microphone stopped"* (resumable) from *"the microphone did not come back"*
+(iOS refused — end the walk). The clock no longer banks silence, which
+matters beyond tidiness: a marker's `offset_s` has to line up with a position
+in the audio, and counting time that produced none drags every later marker
+out of alignment. `captured_s` is persisted and Recordings says when a walk
+came back short.
+
+**None of that makes iOS behave.** It guarantees the owner knows in seconds
+instead of losing half a walk.
+
+**One design note worth keeping.** The first attempt at proving a resumed
+microphone used a second timer running alongside the watchdog, and the two
+raced: the watchdog won and reported "stopped" when the truth was "never
+started". It is one flag on the existing mechanism now. **Two mechanisms
+reporting the same condition is how you ship the wrong message.**
+
+**Navigation.** `onOpenPlant` pushes, `onNavigate` replaces. Every other
+`replace` call site was audited and is correct — they are Prev/Next, the
+plant picker, and Add-a-plant landing on its new plant. Edge-swipe back is in
+`nav/useEdgeSwipeBack.ts`: edge-started within 28px, passive listeners, no
+animation, inert on roots.
+
+**Planters.** Assigning a plant to one already worked through Info and
+settings. What was missing was creating and removing, which is why the glass
+planter could not be got rid of. `addPlanter`/`removePlanter` sit beside
+`addRoom` as registry writes. **Removing refuses while plants still point at
+the planter** — a plant naming one the registry no longer holds would just
+vanish from its group with nothing to explain why.
+
+**Still the owner's, and the recording still needs their phone:** one
+backgrounded walk, and the two numbers — clock and audio. That ratio is what
+made all three faults findable. If it still comes back short, the fallback
+(an interruption ends the walk rather than pretending to resume) is the
+remaining move, and **it is their decision, not one to take unilaterally.**
+
+**Still deliberately not built:** per-tab memory, so tapping Log and then
+going back returns you to the plant you were on. The two cheap navigation
+fixes should be lived with first.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL

@@ -65,6 +65,29 @@ back, not the walk.
 there too, you can do step 5 on either — but then remember the two copies
 have diverged until you back up and restore again.)
 
+### If a walk comes back shorter than it should
+
+**The app now tells you.** A walk whose audio is meaningfully briefer than the
+time it counted says so on its card in Recordings, in words: *"Only 0:07 of
+this 0:35 walk was captured."*
+
+That is not a corrupt file and nothing is recoverable from it — **the missing
+part was never recorded.** iOS sometimes hands back a microphone that is not
+actually live after an interruption, and until 2026-09-14 the app had no way
+to tell that apart from working normally: the timer ran, the markers were
+written, and the audio simply was not there.
+
+Two things follow from it:
+
+- **If it happens mid-walk**, the app now notices within about eight seconds
+  and says *"the microphone stopped"* — that walk can be picked up again.
+- **If it happens on a resume**, it says *"the microphone did not come back"*.
+  That one means iOS has refused. **End the walk and start a new one** rather
+  than carrying on: a second recording is fine, and Whisper reads both.
+
+**The surest way to avoid all of it is to stay in the app while recording.**
+Section 6 has always said so; this is why.
+
 ### How big a walk can be
 
 Audio runs at roughly **1 MB per minute**. Most transcription services cap an
