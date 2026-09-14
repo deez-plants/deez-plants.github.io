@@ -2,7 +2,10 @@ import { useMemo } from 'react';
 import type { DerivedState } from '../types/derived';
 import type { StoredEvent } from '../types/event';
 import type { PlantId } from '../types/ids';
-import { answeredCount, careChanges, comparePhotos, type ComparePhoto } from '../score/whatWorks';
+import {
+  answeredCount, careChanges, comparePhotos, routineCounts, saidThings,
+  type ComparePhoto,
+} from '../score/whatWorks';
 import { formatDayMonth, formatDayMonthYear } from '../lib/dates';
 import { healthBand } from '../score/score';
 import './WhatWorks.css';
@@ -58,6 +61,15 @@ export default function WhatWorks({
   const answered = answeredCount(changes);
   const plant = plant_id ? state.plants[plant_id] : undefined;
 
+  const routine = useMemo(
+    () => (plant_id ? routineCounts(events, plant_id) : []),
+    [events, plant_id],
+  );
+  const said = useMemo(
+    () => (plant_id ? saidThings(events, plant_id) : []),
+    [events, plant_id],
+  );
+
   // The photographs band. Scoped to one plant only — a then-and-now pair means
   // nothing across a collection.
   const photos = useMemo<ComparePhoto[]>(() => {
@@ -87,10 +99,17 @@ export default function WhatWorks({
           one line that carries information. */}
       {plant && (
         <section className="works-photos">
-          {/* First on the page, at the owner's request: photographs, the
-              story, the routine, what you said. "See it thrive" was their
-              phrase, and two photographs answer that faster than any number
-              on this screen. */}
+          {/* First on the page, at the owner's request. "See it thrive" was
+              their phrase, and two photographs answer that faster than any
+              number on this screen.
+
+              The agreed band order is **photos · the story · the routine ·
+              what you said**, and all four are now on the page in that order.
+              This comment previously recited all four while only two existed,
+              which is how the gap survived a whole session unnoticed. If you
+              change the order, change it here too — or delete the sentence
+              rather than leave it describing something the code no longer
+              does. */}
           {compare.pair.length === 2 ? (
             <>
               <div className="works-pair">
@@ -216,6 +235,51 @@ export default function WhatWorks({
           </section>
         ))}
       </div>
+
+      {/* The routine band. Counted, never paired — the whole reason five care
+          types are kept out of `CARE_ACTIONS`. The owner's reasoning: keep
+          routine separate and merely counted, "or a weekly rotate buries the
+          annual repot". Scoped to one plant: a tally across the collection
+          would answer a question nobody asked. */}
+      {plant && routine.length > 0 && (
+        <section className="works-routine">
+          <h2 className="works-band-title">The routine</h2>
+          <ul className="works-tally">
+            {routine.map((r) => (
+              <li key={r.type}>
+                <span className="works-tally-count">{r.count}</span>
+                <span className="works-tally-label">{r.label}</span>
+                {r.last && <span className="works-tally-last">last {formatDayMonth(r.last)}</span>}
+              </li>
+            ))}
+          </ul>
+          {/* No deltas, no ratings, no "so it must be working". This band is a
+              tally and says so, because a count next to a rating would read as
+              a claim within about two seconds. */}
+          <p className="works-routine-note">Counted, not compared.</p>
+        </section>
+      )}
+
+      {/* What you said — your own notes, dated, in your own words. Needed no
+          new storage: `notes_user` is written as an ordinary Edit event, so
+          every version is already in the log. Walk transcripts can join this
+          band later as a second source. */}
+      {plant && said.length > 0 && (
+        <section className="works-said">
+          <h2 className="works-band-title">What you said</h2>
+          <ul className="works-quotes">
+            {said.map((s) => (
+              <li key={s.event_id}>
+                <p className="works-quote">{s.text}</p>
+                <p className="works-quote-when">
+                  {formatDayMonthYear(s.date)}
+                  {s.about && <> · when you logged “{s.about.toLowerCase()}”</>}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {onSeeAll && (
         <button type="button" className="works-seeall" onClick={onSeeAll}>

@@ -251,3 +251,85 @@
   color: var(--accent);
   cursor: pointer;
 }
+
+/* --- The routine band, and what you said (2026-09-13) ------------------ *
+ *
+ * Both sit below the story on purpose, in the agreed band order: photos,
+ * the story, the routine, what you said.
+ *
+ * The routine band is deliberately plainer than the story above it. It
+ * carries counts and nothing else - no ratings, no deltas, no colour that
+ * could read as a verdict. A tally rendered like evidence would become
+ * evidence in the reader's head, which is the one thing screen 18 must not
+ * let happen.
+ */
+
+.works-band-title {
+  font: 600 22px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+  margin: 34px 0 12px;
+}
+
+.works-tally {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.works-tally li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.works-tally-count {
+  min-width: 2.2ch;
+  font: 600 26px/1 var(--sans);
+  color: var(--ink);
+  text-align: right;
+}
+
+.works-tally-label {
+  font: 400 22px/1.25 var(--sans);
+  color: var(--ink);
+}
+
+.works-tally-last {
+  margin-left: auto;
+  font: 600 19px/1 var(--mono);
+  color: var(--ink-40);
+  white-space: nowrap;
+}
+
+.works-routine-note {
+  margin: 12px 0 0;
+  font: 400 20px/1.35 var(--sans);
+  color: var(--ink-50);
+}
+
+.works-quotes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.works-quotes li { margin-bottom: 18px; }
+
+.works-quote {
+  margin: 0;
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid rgba(155, 227, 155, 0.35);
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.works-quote-when {
+  margin: 6px 0 0 17px;
+  font: 600 19px/1 var(--mono);
+  color: var(--ink-40);
+}
