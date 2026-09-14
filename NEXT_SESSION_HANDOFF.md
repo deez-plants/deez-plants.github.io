@@ -207,11 +207,17 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-**The queue is empty. Fix the recording bug next** — it is the only thing
-left that is both mine and known-broken, it loses data, and the owner has
-asked for it as the functional check on everything just built. The three
-candidate mechanisms are in "The recording bug" below. **Do not announce a
-fourth confident diagnosis; two are already recorded here as wrong.**
+**The queue is empty, and the recording bug is fixed** (`4d15a59`). Two real
+defects were found and both are closed; see "The recording bug" below for
+what they were and how they were proved. **One possibility remains untested
+and only the phone can settle it:** whether iOS also loses chunk writes when
+it suspends the page. If the owner still loses a walk after backgrounding,
+that is the remaining candidate — and it is the third one in that section,
+not a fourth theory.
+
+**What is left is the owner's**: the Whisper run, the AI round-trip test,
+their two new plants, archiving 009-SPD, Reminders, and the iPhone retest of
+the tab bar. Mine is the desk console, still deliberately last.
 
 **Everything decided on 2026-09-13 is built and pushed**: the nine care
 types, the tiered Log care screen, both missing What works bands, and the
@@ -592,8 +598,10 @@ is audio that was never durably there. Both previous diagnoses tested the
 wrong thing — short walks, and interrupted-walk size checks — and **neither
 tested backgrounding.**
 
-Three candidate mechanisms, none yet confirmed. **Do not announce a fourth
-confident diagnosis; this file already records two that were wrong.**
+Three candidate mechanisms. **1 and 2 were both real and are both fixed**
+(`4d15a59`, and see "The recording bug — found, fixed, and proved" above).
+**3 remains untested and only the phone can settle it.** Do not announce a
+fourth confident diagnosis; this file already records two that were wrong.
 
 1. **A destructive gap in `endSession`** (`capture/recording.ts:660-662`). The
    chunks are deleted and *then* the assembled file is written, in two separate
@@ -617,6 +625,109 @@ Whether dusting, topping up a humidity tray, or checking soil without watering
 also deserve types has been asked twice and not answered. **Ask once more
 before building the types, not after** — append-only means the cost of asking
 late is permanent.
+
+## The second 2026-09-13 pass — what the owner found by using it
+
+Four things, all from the owner actually using what had just shipped. Every
+one of them was a real fault.
+
+### Log care was two screens wearing one name
+
+Their words: *"there seems a flaw, the log care screen is different depending
+on how I access it."* It was. Log care has a round section and a one-plant
+section, and the one-plant section only appeared when you arrived from a
+plant's own page — so from the tab bar you saw Water, Feed and Prune and
+nothing else, and every care type added that morning was invisible.
+
+**Fixed** (`11ff616`): the detail section is always on the screen, with a
+plant chooser when you arrive without one.
+
+**The chooser starts empty, and that was a deliberate departure from what the
+owner suggested.** They proposed defaulting to 001-MON. A silent default means
+a distracted tap logs care against the wrong plant, and entries are
+append-only, so the fix is another event rather than a delete. One tap is
+cheaper than a wrong record. They were told rather than overruled quietly.
+
+**The round also gained the five routine types**, which was the owner's own
+observation pushed one step further. The line is *things you do in a sweep*:
+you water fifteen plants in one pass, and you mist, rotate and pick dead
+leaves off several in the same pass. Interventions stay single-plant — you do
+not repot fifteen plants in one go, and each wants its own note. Before this,
+the types most likely to be done in a sweep were the only ones that could not
+be logged as one.
+
+Every round action needs copy written for it. "Who did you water?" is fine;
+"Who did you dead leaves?" is not. A test fails on any action missing a
+heading or a button label, rather than letting `undefined` ship.
+
+### Clearing a pick
+
+Tapping the selected care type again now clears it. The round's action buttons
+always worked that way and the grid did not, so once you had picked Water
+there was no way back to nothing. **The owner was explicit that this means
+unselecting a pending choice, not editing old entries** — nothing is written
+until the log button is tapped, so this touches no history.
+
+### The recording bug — found, fixed, and proved
+
+**Two defects, not one.**
+
+1. **`endSession` deleted the chunks and then wrote the assembled blob.**
+   Between those two steps the whole walk existed only in memory, and a
+   backgrounded iOS tab is exactly what gets killed in a window like that.
+   Now it writes first and drops the pieces after. Write-then-delete cannot
+   lose anything: worst case both forms exist briefly, and `readSessionAudio`
+   already prefers the assembled blob.
+2. **Chunk writes were fire-and-forget and ending a walk waited one
+   macrotask** before assembling, which guarantees nothing. They are now
+   tracked and awaited, bounded at 3s so a wedged write cannot leave the walk
+   stuck in `saving` — a freeze the owner can only clear by force-quitting.
+   The interrupt path waits too, and matters more: an interrupt is usually iOS
+   pulling the rug.
+
+**`check/browser/audio-durability.html` covers it, and section D is the only
+part that actually catches the bug.** Sections A to C pass against the *old*
+order too, because none of them kills the page inside the window and the wrong
+order still reaches the right answer when nothing interrupts it. D makes the
+assembled write fail — what a kill looks like from the database's side — and
+only the new order survives. Verified both ways: with the fix 18 passed; with
+the old order restored, D failed and the walk was gone.
+
+**An earlier draft of that harness claimed all its checks caught the bug. They
+did not.** The header was corrected, because a harness trusted further than it
+deserves is worse than no harness.
+
+Two harness faults worth not repeating: it reused a stopped audio track (so
+the second `MediaRecorder.start` failed), and it called `resumeSession` — which
+resumes a **paused** walk — instead of `resumeInterrupted`. Both are commented
+in place.
+
+**Still unproven, and only the phone can settle it:** whether iOS also loses
+chunk writes when it suspends the page. That is candidate 3 below. If a walk
+still loses audio after backgrounding, start there.
+
+### The Whisper guide sent the owner to the wrong device
+
+`TRANSCRIBE.md` said to add the transcript "in the app on the laptop", and the
+app's own instructions said "back on whichever device you like". **Both are
+wrong.** A transcript attaches to a walk, storage is per-origin, and the walk
+exists only on the device that recorded it. The laptop runs Whisper; it does
+not hold the record. Move the text back, not the walk.
+
+Also corrected: the labels were stale (it is **Export for Whisper** and **Add
+transcript**), export produces a single ZIP rather than loose files, and the
+guide never said to unzip it. Added the size ceiling — roughly 1 MB per
+minute, so a 25 MB service cap lands near 27 minutes. The local script has no
+such limit.
+
+### Harness cleanup, again
+
+This pass and `resume.html` left **26 test sessions and stray audio** at
+`localhost:5173`. All were seconds long, started within minutes of each other,
+and none had a transcript — checked before deleting rather than assumed. The
+record was verified afterwards: 132 events, 26 photos, 22 plants, no sessions,
+no audio. **This is the second time this trap has been hit. Clean up after any
+harness that starts a session.**
 
 ## Traps, and facts that cost something to learn
 
