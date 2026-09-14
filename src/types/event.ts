@@ -6,7 +6,10 @@ import type { EditableField, Health, MediaLabel } from './plant';
 /** Section 5. */
 export type EventType =
   | 'Water' | 'Feed' | 'Prune' | 'Repot' | 'Photo' | 'Inspect'
-  | 'Support' | 'Pest treat' | 'Rate' | 'Other' | 'Edit' | 'Archive';
+  | 'Support' | 'Pest treat' | 'Rate' | 'Other' | 'Edit' | 'Archive'
+  // Added 2026-09-13 alongside the CareEventType additions below.
+  | 'Top-dress' | 'Soil flush' | 'Took cuttings' | 'Hard prune'
+  | 'Dead leaves' | 'Trim back' | 'Rotate' | 'Wipe leaves' | 'Mist';
 
 /**
  * Section 5 lists `user | ai | round`. Section 6b's seed example writes
@@ -14,10 +17,38 @@ export type EventType =
  */
 export type EventSource = 'user' | 'ai' | 'round' | 'seed';
 
-/** The care actions. Only `Water` feeds adherence — see DECISION 3. */
+/**
+ * The care actions. Only `Water` feeds adherence — see DECISION 3.
+ *
+ * The nine after `Other` were added 2026-09-13. Purely additive: no existing
+ * entry changes shape or meaning, and no migration was needed — unlike the
+ * room/spot split, which had to append `Edit` events to catch old records up
+ * (`db/migrateRoomSpot.ts`).
+ *
+ * **Why they were added when they were.** Entries are append-only, so every
+ * week one of these was logged as `Other` was a week of record nobody could
+ * ever re-tag. That is the whole reason this landed before the screens that
+ * display it.
+ *
+ * Two distinctions that the split is *for*, and that a later pass must not
+ * collapse back together:
+ *
+ * 1. **Severity of a cut, not its season.** The owner asked for "spring prune
+ *    and winter prune". The date already says which season it was; what the
+ *    date can never say is how much came off. `Dead leaves` and `Trim back`
+ *    are tidying, `Hard prune` is an intervention — and only the last pairs
+ *    with ratings on What works.
+ * 2. **Routine versus action.** `Rotate`, `Wipe leaves`, `Mist`, `Dead leaves`
+ *    and `Trim back` are counted and never paired. Without that, a plant
+ *    rotated weekly would bury its own annual repot.
+ */
 export type CareEventType =
   | 'Water' | 'Feed' | 'Prune' | 'Repot' | 'Photo'
-  | 'Inspect' | 'Support' | 'Pest treat' | 'Other';
+  | 'Inspect' | 'Support' | 'Pest treat' | 'Other'
+  // Actions — a rating can sit either side of these.
+  | 'Top-dress' | 'Soil flush' | 'Took cuttings' | 'Hard prune'
+  // Routine — counted only, never paired with a rating.
+  | 'Dead leaves' | 'Trim back' | 'Rotate' | 'Wipe leaves' | 'Mist';
 
 interface EventCommon {
   event_id: EventId;

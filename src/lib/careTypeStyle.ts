@@ -27,10 +27,38 @@ export const CARE_TYPE_STYLE: Record<CareEventType, CareTypeStyle> = {
   Support: { label: 'Support added', abbr: 'S', colorVar: 'var(--cal-support)' , icon: 'support' },
   'Pest treat': { label: 'Pest treated', abbr: 'Pt', colorVar: 'var(--cal-pest)' , icon: 'pest' },
   Other: { label: 'Other', abbr: 'O', colorVar: 'var(--cal-other)' , icon: 'other' },
+
+  /* --- added 2026-09-13 --- *
+   *
+   * Colours reuse the existing `--cal-*` tokens wherever the meaning is close,
+   * rather than inventing nine more hues for a legend that already carries
+   * nine. Soil work borrows the repot brown, water work borrows the water
+   * blue, and everything routine takes the neutral grey — which is the point:
+   * routine should read as background on the calendar, because that is
+   * exactly what it is.
+   *
+   * The three pruning types share the `prune` icon and the warn colour, and
+   * are told apart by abbreviation alone. Three near-identical pairs of
+   * scissors in a day cell would be worse than one plus a letter.
+   */
+  'Top-dress': { label: 'Top-dressed', abbr: 'Td', colorVar: 'var(--cal-repot)', icon: 'topdress' },
+  'Soil flush': { label: 'Soil flushed', abbr: 'Sf', colorVar: 'var(--cal-water)', icon: 'flush' },
+  'Took cuttings': { label: 'Took cuttings', abbr: 'Ct', colorVar: 'var(--accent)', icon: 'cutting' },
+  'Hard prune': { label: 'Hard pruned', abbr: 'Hp', colorVar: 'var(--warn)', icon: 'prune' },
+  'Dead leaves': { label: 'Dead leaves off', abbr: 'Dl', colorVar: 'var(--cal-other)', icon: 'prune' },
+  'Trim back': { label: 'Trimmed back', abbr: 'Tb', colorVar: 'var(--cal-other)', icon: 'prune' },
+  Rotate: { label: 'Rotated', abbr: 'Rt', colorVar: 'var(--cal-other)', icon: 'rotate' },
+  'Wipe leaves': { label: 'Leaves wiped', abbr: 'Wl', colorVar: 'var(--cal-other)', icon: 'wipe' },
+  Mist: { label: 'Misted', abbr: 'M', colorVar: 'var(--cal-other)', icon: 'mist' },
 };
 
 /** Canonical order the legend and stacked chips follow, so the same day never
     reorders its icons between renders. */
 export const CARE_TYPE_ORDER: CareEventType[] = [
-  'Water', 'Feed', 'Prune', 'Repot', 'Photo', 'Inspect', 'Support', 'Pest treat', 'Other',
+  'Water', 'Feed', 'Prune', 'Hard prune', 'Repot', 'Top-dress', 'Soil flush',
+  'Took cuttings', 'Photo', 'Inspect', 'Support', 'Pest treat',
+  // Routine last, together: on a calendar legend they should read as one
+  // quiet group rather than interleaved with the interventions.
+  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist',
+  'Other',
 ];

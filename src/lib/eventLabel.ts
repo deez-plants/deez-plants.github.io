@@ -1,8 +1,12 @@
 import type { CareEventType, StoredEvent } from '../types/event';
 
-/** Past-tense row labels for the nine care types — the raw `type` string
+/** Past-tense row labels for the care types — the raw `type` string
     ("Water", "Pest treat") reads as an imperative, not a record of what
-    happened. */
+    happened.
+
+    This is a total `Record`, so adding a care type without a label here is a
+    compile error rather than a row that silently reads "Top-dress". That is
+    deliberate: it is how the nine added on 2026-09-13 were caught. */
 const CARE_LABELS: Record<CareEventType, string> = {
   Water: 'Watered',
   Feed: 'Fed',
@@ -13,6 +17,15 @@ const CARE_LABELS: Record<CareEventType, string> = {
   Support: 'Support added',
   'Pest treat': 'Pest treated',
   Other: 'Other',
+  'Top-dress': 'Top-dressed',
+  'Soil flush': 'Soil flushed',
+  'Took cuttings': 'Took cuttings',
+  'Hard prune': 'Hard pruned',
+  'Dead leaves': 'Dead leaves off',
+  'Trim back': 'Trimmed back',
+  Rotate: 'Rotated',
+  'Wipe leaves': 'Leaves wiped',
+  Mist: 'Misted',
 };
 
 /** What a History row's tag reads, for any event type that can name a

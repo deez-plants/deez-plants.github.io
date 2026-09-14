@@ -68,7 +68,77 @@ const CARE_ACTIONS: Record<string, string> = {
   Prune: 'Pruned',
   'Pest treat': 'Treated for pests',
   Support: 'Added support',
+  // Added 2026-09-13. Each is a real intervention the owner named.
+  'Top-dress': 'Top-dressed',
+  'Soil flush': 'Flushed the soil',
+  'Took cuttings': 'Took cuttings',
+  'Hard prune': 'Hard pruned',
 };
+
+/**
+ * Routine care: counted, never paired with a rating.
+ *
+ * **These are deliberately absent from `CARE_ACTIONS` above**, for exactly the
+ * reason Water and Feed are. A plant rotated every week would produce fifty
+ * entries a year in the story band, and the one repot that actually mattered
+ * would be somewhere on page four. The owner's own framing: keep routine
+ * separate and merely counted, "or a weekly rotate buries the annual repot".
+ *
+ * `Dead leaves` and `Trim back` sit here rather than with `Hard prune` because
+ * the split that matters is **how much came off, not when**. Taking two yellow
+ * leaves off is tidying; cutting a plant back is an intervention. Logging both
+ * as one type would put a hundred tidies in the same band as the annual
+ * cut-back — which is the failure this whole distinction exists to prevent.
+ *
+ * Anything added here must be genuinely frequent. A type that happens twice a
+ * year belongs in `CARE_ACTIONS`, where a rating can sit either side of it.
+ */
+const ROUTINE_CARE: Record<string, string> = {
+  'Dead leaves': 'Dead leaves off',
+  'Trim back': 'Trimmed back',
+  Rotate: 'Rotated',
+  'Wipe leaves': 'Leaves wiped',
+  Mist: 'Misted',
+};
+
+export interface RoutineCount {
+  type: string;
+  label: string;
+  count: number;
+  /** The most recent one, so the band can say when you last did it. */
+  last: ISODate | null;
+}
+
+/**
+ * How much routine care a plant has had, newest-first by count.
+ *
+ * No ratings, no deltas, no judgement — this is a tally and nothing more.
+ * A type nobody has ever logged is omitted rather than shown as zero: an
+ * empty row would imply the app expected it of you.
+ */
+export function routineCounts(
+  events: readonly StoredEvent[],
+  only?: PlantId,
+  since?: ISODate,
+): RoutineCount[] {
+  const tally = new Map<string, { count: number; last: ISODate | null }>();
+
+  for (const e of events) {
+    if (!e.plant_id) continue;
+    if (only && e.plant_id !== only) continue;
+    if (!(e.type in ROUTINE_CARE)) continue;
+    if (since && e.date < since) continue;
+
+    const row = tally.get(e.type) ?? { count: 0, last: null };
+    row.count += 1;
+    if (!row.last || e.date > row.last) row.last = e.date;
+    tally.set(e.type, row);
+  }
+
+  return [...tally.entries()]
+    .map(([type, row]) => ({ type, label: ROUTINE_CARE[type], count: row.count, last: row.last }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
 
 export interface CareChange {
   event_id: string;
@@ -216,6 +286,73 @@ export function careChanges(
 /** How many changes have a rating on both sides — the rest are still open. */
 export function answeredCount(changes: readonly CareChange[]): number {
   return changes.filter((c) => c.delta !== null).length;
+}
+
+/* -------------------------------------------------------------------------- */
+/* What you said                                                               */
+/* -------------------------------------------------------------------------- */
+
+export interface SaidThing {
+  event_id: string;
+  date: ISODate;
+  text: string;
+  /** `note` — your own note field. `care` — typed while logging something. */
+  kind: 'note' | 'care';
+  /** For a care note, what you were logging at the time. */
+  about: string | null;
+}
+
+/**
+ * Everything you have written about a plant, in your own words, newest first.
+ *
+ * **This needed no new storage and no transcription.** An earlier pass nearly
+ * deferred this band on the assumption it had to come from walk transcripts.
+ * It does not: `notes/notesUser.ts` writes `notes_user` as an ordinary `Edit`
+ * event with `from`, `to` and a date, so **every version of every note is
+ * already in the log, dated** — a history, not a single overwritten field.
+ * That is rule 5 paying for itself again.
+ *
+ * The `to` side is used, never `from`: what you wrote is what you wrote, and
+ * showing the text you replaced would be showing you a draft you rejected.
+ *
+ * Care notes are included because a note typed at the moment you logged a
+ * repot is about that repot, and is often the useful detail ("moved up a pot
+ * size"). It carries what it was about so the two never blur together.
+ *
+ * Spoken words from a verified walk transcript can join this list later. They
+ * are a second source for the same band, not a prerequisite for it.
+ */
+export function saidThings(
+  events: readonly StoredEvent[],
+  only?: PlantId,
+): SaidThing[] {
+  const out: SaidThing[] = [];
+
+  for (const e of events) {
+    if (!e.plant_id) continue;
+    if (only && e.plant_id !== only) continue;
+
+    if (e.type === 'Edit' && e.field === 'notes_user') {
+      const text = (e.to ?? '').trim();
+      // Clearing a note is a real action, but it is not something you said.
+      if (!text) continue;
+      out.push({ event_id: e.event_id, date: e.date, text, kind: 'note', about: null });
+      continue;
+    }
+
+    const note = (e.note ?? '').trim();
+    if (!note) continue;
+    if (e.type === 'Edit' || e.type === 'Rate') continue;
+    out.push({
+      event_id: e.event_id,
+      date: e.date,
+      text: note,
+      kind: 'care',
+      about: CARE_ACTIONS[e.type] ?? ROUTINE_CARE[e.type] ?? e.type,
+    });
+  }
+
+  return out.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
 
 /* -------------------------------------------------------------------------- */

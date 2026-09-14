@@ -65,6 +65,54 @@ const ICONS = {
     s: 'M8.8 4.8H6.4a1.6 1.6 0 0 0-1.6 1.6v13a1.6 1.6 0 0 0 1.6 1.6h11.2a1.6 1.6 0 0 0 1.6-1.6v-13a1.6 1.6 0 0 0-1.6-1.6h-2.4M9.6 2.8h4.8a1 1 0 0 1 1 1v1.6a1 1 0 0 1-1 1H9.6a1 1 0 0 1-1-1V3.8a1 1 0 0 1 1-1zM8.6 13.2l2.4 2.4 4.4-4.4',
     sw: 2,
   },
+
+  /* ------------------------------------------------------------------ *
+   * Six more that are NOT the owner's.
+   *
+   * Drawn 2026-09-13 for the new care types, in this set's language —
+   * 24x24, stroke widths 2.0-2.6, the same filled-or-stroked-or-both mix.
+   * Shown to the owner as Round 3 of the icons mock-up page, badged NEW
+   * there so the page never implied they were part of the original 22.
+   * Their answer: "your icons are good use em as is."
+   *
+   * The three pruning types deliberately have no icon of their own — they
+   * reuse `prune`, and are told apart by colour and abbreviation. Adding
+   * three near-identical pairs of scissors would weaken the one icon that
+   * already reads instantly at day-cell size.
+   * ------------------------------------------------------------------ */
+
+  /** Fresh compost laid on the surface: a rippled top, material dropping in. */
+  topdress: {
+    f: 'M4.4 10.2h15.2L18.1 20H5.9z',
+    s: 'M3.6 8.6c1.5-1.4 3.3.5 4.9 0 1.6-.5 3-1.5 4.6-.6 1.6.9 3.2 1.3 4.6.6M8.6 3.2v2.4M12 2.4v3.2M15.4 3.2v2.4',
+    sw: 2.2,
+  },
+  /** Water in at the top, water out at the bottom — run right through. */
+  flush: {
+    f: 'M4.2 7.4h15.6L17.9 17.6H6.1z',
+    s: 'M12 1.8v3.4M8.6 3.2v2M15.4 3.2v2M9.6 19.4v2.4M12 19.8v2.4M14.4 19.4v2.4',
+    sw: 2.2,
+  },
+  /** A stem with the cut drawn on it. Deliberately not scissors: that is Prune. */
+  cutting: {
+    f: 'M16.4 3.2c-3.9 0-7 2.9-7 6.6v2.2h1.4c4.1 0 7-3.3 7-7.4V3.2z',
+    s: 'M9.4 20.8V10.4M6.4 18.4l5.8-2.6',
+    sw: 2.4,
+  },
+  /** The turning arrow alone. Chosen over a pot-plus-arrow: it reads at any size. */
+  rotate: { s: 'M20.4 12a8.4 8.4 0 1 1-2.7-6.2M21 2.8v5.4h-5.4', sw: 2.4 },
+  /** The leaf, with two wipe strokes under it. */
+  wipe: {
+    f: 'M20.6 2.8C11 2.8 5.2 7.7 5.2 13.8c0 1.1.3 2.1.8 3l1.5-2c1.7-3 4.7-5.3 8.1-6.3-3.2 1.7-5.6 4.1-6.8 7 .9.5 2.1.8 3.3.8 6.5 0 8.5-7 8.5-13.5z',
+    s: 'M2.8 19.6h7.6M5.8 22.2h7.6',
+    sw: 2.4,
+  },
+  /** A spray bottle, mid-spray. Not the water drop: misting is not watering. */
+  mist: {
+    f: 'M10.4 9.2h6a2.2 2.2 0 0 1 2.2 2.2v8a2.2 2.2 0 0 1-2.2 2.2h-6a2.2 2.2 0 0 1-2.2-2.2v-8a2.2 2.2 0 0 1 2.2-2.2zM6.2 4.4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM6.2 8.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM3.2 6.6a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z',
+    s: 'M11.6 9.2V6.4h4.6M10.6 4.2h5.6',
+    sw: 2,
+  },
 } satisfies Record<string, IconDef>;
 
 export type IconName = keyof typeof ICONS;
