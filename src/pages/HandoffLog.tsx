@@ -64,7 +64,7 @@ export default function HandoffLog({ backLabel, onBack }: HandoffLogProps) {
 
   return (
     <main className="hand">
-      <button type="button" className="hand-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back hand-back" onClick={onBack}>‹ {backLabel}</button>
       <h1 className="hand-title">Handoff log</h1>
       <p className="hand-sub">
         {rounds === null

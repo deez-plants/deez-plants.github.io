@@ -51,7 +51,7 @@ export default function HealthHistory({ state, snapshots, backLabel, onBack }: H
 
   return (
     <main className="hlh">
-      <button type="button" className="hlh-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back hlh-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="hlh-title">Health history</h1>
       <p className="hlh-sub">

@@ -35,8 +35,17 @@ export function PlantChrome({ plant, backLabel, onBack, allPlants, onNavigate }:
     onNavigate(id);
   };
 
+  /* Both rows are pinned together — treatment F from Round 4 of the screens
+     page, chosen by the owner over the tighter one-row version. It costs
+     about 12% of the page against the one-row bar's 7%, and they took that
+     trade knowingly to keep the back button and the strip on separate lines.
+
+     The picker deliberately sits OUTSIDE the sticky element: a 22-row list
+     pinned to the top of the screen would cover the plant you are choosing
+     for. It scrolls, as a menu should. */
   return (
     <>
+      <div className="chrome-sticky">
       <div className="chrome-row">
         <button type="button" className="chrome-back" onClick={onBack}>‹ {backLabel}</button>
         <button
@@ -67,6 +76,7 @@ export function PlantChrome({ plant, backLabel, onBack, allPlants, onNavigate }:
         >
           Next ›
         </button>
+      </div>
       </div>
 
       {pickerOpen && (

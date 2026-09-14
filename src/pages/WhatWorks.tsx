@@ -8,6 +8,7 @@ import {
 } from '../score/whatWorks';
 import { formatDayMonth, formatDayMonthYear } from '../lib/dates';
 import { healthBand } from '../score/score';
+import { PlantChrome } from '../components/PlantChrome';
 import './WhatWorks.css';
 
 /**
@@ -42,6 +43,10 @@ export interface WhatWorksProps {
   thumbs?: Map<string, string>;
   /** Photos is where the pair is chosen; this is the way there. */
   onPhotos?: () => void;
+  /** Active plants, in list order. Only used when scoped to one plant. */
+  allPlants?: readonly { plant_id: PlantId; name: string }[];
+  /** Swap plant without leaving What works. */
+  onNavigate?: (plant_id: PlantId) => void;
 }
 
 function movement(delta: number | null, days: number | null): string {
@@ -53,6 +58,7 @@ function movement(delta: number | null, days: number | null): string {
 
 export default function WhatWorks({
   state, events, plant_id, backLabel, onBack, onOpenPlant, onSeeAll, thumbs, onPhotos,
+  allPlants, onNavigate,
 }: WhatWorksProps) {
   const changes = useMemo(
     () => careChanges(state, events, plant_id),
@@ -88,7 +94,21 @@ export default function WhatWorks({
 
   return (
     <main className="works">
-      <button type="button" className="works-back" onClick={onBack}>‹ {backLabel}</button>
+      {/* Scoped to one plant this gets the shared pinned chrome, so you can
+          sweep What works across the collection without backing out each
+          time — the owner named this screen specifically. Unscoped there is
+          no plant to step through, so a plain back button is all there is. */}
+      {plant && allPlants && onNavigate ? (
+        <PlantChrome
+          plant={plant}
+          backLabel={backLabel}
+          onBack={onBack}
+          allPlants={allPlants}
+          onNavigate={onNavigate}
+        />
+      ) : (
+        <button type="button" className="screen-back works-back" onClick={onBack}>‹ {backLabel}</button>
+      )}
       <h1 className="works-title">What works</h1>
 
       {/* Four blocks used to stand between the title and any content — an

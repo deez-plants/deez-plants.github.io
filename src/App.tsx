@@ -252,6 +252,8 @@ export default function App() {
         backLabel={nav.backLabel ?? 'Plants'}
         onBack={nav.back}
         detailPlantId={screen.plant_id}
+        allPlants={activePlants}
+        onNavigate={(plant_id) => nav.replace({ kind: 'care', plant_id })}
       />
     );
   } else if (screen.kind === 'detail') {
@@ -438,6 +440,8 @@ export default function App() {
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
           onChanged={reload}
+          allPlants={activePlants}
+          onNavigate={(plant_id) => nav.replace({ kind: 'photos', plant_id })}
         />
       );
     }
@@ -484,6 +488,8 @@ export default function App() {
         onPhotos={screen.plant_id
           ? () => nav.push({ kind: 'photos', plant_id: screen.plant_id as PlantId }, 'What works')
           : undefined}
+        allPlants={activePlants}
+        onNavigate={(plant_id) => nav.replace({ kind: 'works', plant_id })}
       />
     );
   } else if (screen.kind === 'how') {

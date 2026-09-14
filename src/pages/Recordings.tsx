@@ -252,7 +252,7 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
 
   return (
     <main className="recs">
-      <button type="button" className="recs-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back recs-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="recs-title">Recordings</h1>
       <p className="recs-sub">

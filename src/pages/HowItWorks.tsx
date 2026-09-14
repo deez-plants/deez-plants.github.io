@@ -85,7 +85,7 @@ const NEVER: string[] = [
 export default function HowItWorks({ backLabel, onBack }: HowItWorksProps) {
   return (
     <main className="how">
-      <button type="button" className="how-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back how-back" onClick={onBack}>‹ {backLabel}</button>
       <h1 className="how-title">How this app works</h1>
       <p className="how-dek">
         Three parties decide things here, and they are kept apart on purpose.

@@ -108,7 +108,7 @@ export default function AddPlant({ state, registry, as_of, backLabel, onBack, on
 
   return (
     <main className="addplant">
-      <button type="button" className="addplant-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back addplant-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="addplant-title">Add a plant</h1>
 

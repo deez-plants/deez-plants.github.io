@@ -103,7 +103,7 @@ export default function RecordSession({
 
   return (
     <main className="rec">
-      {backLabel && <button type="button" className="rec-back" onClick={onBack}>‹ {backLabel}</button>}
+      {backLabel && <button type="button" className="screen-back rec-back" onClick={onBack}>‹ {backLabel}</button>}
 
       <h1 className="rec-title">Inspection session</h1>
 

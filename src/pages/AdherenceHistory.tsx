@@ -64,7 +64,7 @@ export default function AdherenceHistory({ state, snapshots, backLabel, onBack }
 
   return (
     <main className="adh">
-      <button type="button" className="adh-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back adh-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="adh-title">Care adherence history</h1>
       <p className="adh-sub">{snapshots.length} state{snapshots.length === 1 ? '' : 's'} on record</p>

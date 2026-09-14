@@ -11,6 +11,7 @@ import {
   roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
   type DetailDraft, type RoundAction, type RoundDraft,
 } from '../care/careRound';
+import { PlantChrome } from '../components/PlantChrome';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore } from '../score/score';
 import './CareRoundPage.css';
@@ -46,6 +47,10 @@ export interface CareRoundPageProps {
       from every other entry point (screen 05: this section only makes sense
       once there's a specific plant to detail-log for). */
   detailPlantId?: PlantId;
+  /** Active plants, in list order. Only used in single-plant mode. */
+  allPlants?: readonly { plant_id: PlantId; name: string }[];
+  /** Swap plant without leaving Log care. */
+  onNavigate?: (plant_id: PlantId) => void;
 }
 
 type Flash =
@@ -59,6 +64,7 @@ type DetailFlash =
 
 export default function CareRoundPage({
   state, events, registry, thumbs, as_of, onChanged, backLabel, onBack, detailPlantId,
+  allPlants, onNavigate,
 }: CareRoundPageProps) {
   const [draft, setDraft] = useState<RoundDraft>(EMPTY_DRAFT);
   const [flash, setFlash] = useState<Flash | null>(null);
@@ -177,8 +183,21 @@ export default function CareRoundPage({
 
   return (
     <main className="care">
-      {onBack && (
-        <button type="button" className="care-back" onClick={onBack}>‹ {backLabel ?? 'Back'}</button>
+      {/* Reached from one plant, this gets the shared pinned chrome so you
+          can log the same thing down the whole collection without backing
+          out each time — one of the three screens the owner named as
+          missing it. Reached as the collection round, there is no single
+          plant to step through. */}
+      {detailPlant && allPlants && onNavigate ? (
+        <PlantChrome
+          plant={detailPlant}
+          backLabel={backLabel ?? 'Back'}
+          onBack={onBack ?? (() => {})}
+          allPlants={allPlants}
+          onNavigate={onNavigate}
+        />
+      ) : onBack && (
+        <button type="button" className="screen-back care-back" onClick={onBack}>‹ {backLabel ?? 'Back'}</button>
       )}
 
       <h1 className="care-title">Log care</h1>

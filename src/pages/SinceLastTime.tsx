@@ -88,7 +88,7 @@ export default function SinceLastTime({
 
   return (
     <main className="since">
-      <button type="button" className="since-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back since-back" onClick={onBack}>‹ {backLabel}</button>
       <h1 className="since-title">Since last time</h1>
 
       {choices.length === 0 ? (

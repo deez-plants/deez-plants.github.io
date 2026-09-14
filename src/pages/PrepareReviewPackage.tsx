@@ -62,7 +62,7 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
 
   return (
     <main className="prep">
-      <button type="button" className="prep-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back prep-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="prep-title">Prepare review package</h1>
       <p className="prep-sub">

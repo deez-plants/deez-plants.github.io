@@ -28,7 +28,7 @@ export default function ArchivedPlants({ state, backLabel, onBack }: ArchivedPla
 
   return (
     <main className="archived">
-      <button type="button" className="archived-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back archived-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="archived-title">Archived</h1>
       <p className="archived-sub">IDs are never reused. Records and history are kept.</p>

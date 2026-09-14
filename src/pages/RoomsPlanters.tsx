@@ -54,7 +54,7 @@ export default function RoomsPlanters({ state, registry, backLabel, onBack, onCh
 
   return (
     <main className="rooms">
-      <button type="button" className="rooms-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back rooms-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="rooms-title">Rooms and planters</h1>
       <p className="rooms-sub">

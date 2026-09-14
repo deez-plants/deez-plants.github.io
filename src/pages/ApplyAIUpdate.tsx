@@ -103,7 +103,7 @@ export default function ApplyAIUpdate({ state, as_of, backLabel, onBack, onChang
 
   return (
     <main className="apply">
-      <button type="button" className="apply-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back apply-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="apply-title">Apply AI update</h1>
 

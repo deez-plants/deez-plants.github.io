@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ISODate, MediaId } from '../types/ids';
+import type { ISODate, MediaId, PlantId } from '../types/ids';
 import type { StoredEvent } from '../types/event';
 import type { DerivedPlant } from '../types/derived';
 import type { MediaLabel } from '../types/plant';
@@ -8,14 +8,20 @@ import { openDeezPlants } from '../db/schema';
 import { ensureThumbs } from '../boot';
 import { editPlantFields } from '../care/editField';
 import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
+import { PlantChrome } from '../components/PlantChrome';
 import './PhotosPage.css';
 
 /**
- * DESIGN_REFERENCE.md screen 13: the gallery for one plant, grouped by date.
- * No `PlantChrome` here — unlike History/Calendar/More about/Info, the
- * mock's own screenshot for this screen shows a plain "‹ Home" back button,
- * not the Prev/Next strip, so this one screen intentionally doesn't match
- * the others.
+ * DESIGN_REFERENCE.md screen 13: the gallery for one plant.
+ *
+ * **`PlantChrome` is here now, and the mock is overridden.** The mock's own
+ * screenshot for this screen shows a plain "‹ Home" back button and no
+ * Prev/Next strip, and this file used to match it. The owner asked for the
+ * opposite after living with the app: "same for log care and photos and
+ * basically all pages that have a diff page for each plant ... the idea was
+ * I could scroll through here easy for each thing for each plant". That is
+ * the mock being overridden knowingly by the person using it, the same way
+ * the tab bar was — do not "restore" the plain back button from the mock.
  *
  * The gallery lists photos off the raw `events` log directly, the same way
  * History/Entries already do, rather than through `plant.photos` (the
@@ -37,6 +43,10 @@ export interface PhotosPageProps {
   backLabel: string;
   onBack: () => void;
   onChanged: () => Promise<void> | void;
+  /** Active plants, in list order — Prev/Next and the picker walk this. */
+  allPlants: readonly { plant_id: PlantId; name: string }[];
+  /** Swap plant without leaving Photos. */
+  onNavigate: (plant_id: PlantId) => void;
 }
 
 const LABEL_TEXT: Record<MediaLabel, string> = {
@@ -49,7 +59,9 @@ interface Entry {
   label: MediaLabel | null;
 }
 
-export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, onBack, onChanged }: PhotosPageProps) {
+export default function PhotosPage({
+  plant, events, thumbs, as_of, backLabel, onBack, onChanged, allPlants, onNavigate,
+}: PhotosPageProps) {
   const [busyHero, setBusyHero] = useState<MediaId | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -169,7 +181,13 @@ export default function PhotosPage({ plant, events, thumbs, as_of, backLabel, on
 
   return (
     <main className="photos">
-      <button type="button" className="photos-back" onClick={onBack}>‹ {backLabel}</button>
+      <PlantChrome
+        plant={plant}
+        backLabel={backLabel}
+        onBack={onBack}
+        allPlants={allPlants}
+        onNavigate={onNavigate}
+      />
 
       <h1 className="photos-title">{plant.name}</h1>
       <p className="photos-sub">{entries.length} photo{entries.length === 1 ? '' : 's'} · {groups.length} session{groups.length === 1 ? '' : 's'}</p>

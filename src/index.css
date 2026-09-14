@@ -61,3 +61,46 @@ button {
   font: inherit;
   color: inherit;
 }
+
+/* --- The bar that stays put (2026-09-13) ------------------------------- *
+ *
+ * The owner: "the back to previous page and then the link to all plants and
+ * the prev next plant with the plant label is supposed to always be there
+ * and not scroll up so I have to go find it to get to the next plant."
+ *
+ * They are right, and the strip exists precisely to let them sweep through
+ * 22 plants on one screen - which scrolling to the top to reach it defeats.
+ *
+ * Three things worth not undoing:
+ *
+ * 1. **The background is the app's own, and opaque.** They asked for the
+ *    bars to be "invisible beside the text". Opaque rather than transparent
+ *    is not a hedge: content has to scroll underneath and stay hidden, or
+ *    the text becomes unreadable the moment a card passes behind it.
+ *    Invisible as a container, still solid as a surface.
+ * 2. **No border, no panel fill.** Same reason. It should read as text
+ *    sitting at the top, not as a bar bolted on.
+ * 3. **The negative margins are load-bearing.** Every screen is padded
+ *    16px 20px, so the strip has to reach back out over that padding or
+ *    content shows through at the edges as it scrolls under.
+ *
+ * Every screen in the app gets this in the same place, so the thumb learns
+ * one position - plant screens with the Prev/Next strip, collection screens
+ * without it.
+ */
+
+.screen-back,
+.chrome-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  margin: -16px -20px 0;
+  padding: 16px 20px 10px;
+}
+
+.screen-back {
+  display: block;
+  width: auto;
+  text-align: left;
+}

@@ -81,7 +81,7 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
 
   return (
     <main className="backup">
-      <button type="button" className="backup-back" onClick={onBack}>‹ {backLabel}</button>
+      <button type="button" className="screen-back backup-back" onClick={onBack}>‹ {backLabel}</button>
 
       <h1 className="backup-title">Back up</h1>
       <p className="backup-sub">
