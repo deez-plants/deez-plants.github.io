@@ -329,6 +329,12 @@ function writeChunksTo(rec: MediaRecorder, session_id: SessionId): void {
   rec.ondataavailable = (e: BlobEvent) => {
     if (!e.data || !e.data.size) return;
     lastChunkAt = Date.now();
+    // Only while the walk is genuinely running: the last chunk of a walk
+    // arrives during `stopRecorder`, and noting it there put "the microphone
+    // came back" AFTER "ended" in a log meant to be read in order.
+    if (resumedAwaitingFirstChunk && phase === 'recording') {
+      note('microphone came back — audio is arriving again');
+    }
     resumedAwaitingFirstChunk = false;
     const key = chunkKey(session_id, chunkIndex);
     chunkIndex += 1;
@@ -368,6 +374,7 @@ async function persistProgress(closed = false): Promise<void> {
     interrupted: heldInterrupted,
     chunk_count: chunkIndex,
     captured_s: capturedSeconds(),
+    trail: [...trail],
     started: startedIso,
     duration_s: elapsedSeconds(),
     markers: [...markers],
@@ -486,6 +493,7 @@ function onVisibilityChange(): void {
 
   if (document.visibilityState === 'hidden') {
     backgrounded = true;
+    note('app sent to the background — clock frozen');
     if (phase === 'recording' && runningSince) {
       accumulatedMs = elapsedMs();
       runningSince = 0;
@@ -527,6 +535,9 @@ function onCaptureLost(): void {
   // disk; the timer stops dead and nothing keeps running, which is what the
   // owner asked for — but the session stays resumable instead of being closed
   // out from under them.
+  note(resumedAwaitingFirstChunk
+    ? 'microphone never produced anything after the resume'
+    : `microphone stopped · ${Math.round((Date.now() - lastChunkAt) / 1000)}s since the last audio`);
   error = resumedAwaitingFirstChunk
     ? 'The microphone did not come back. iOS sometimes refuses after an interruption — '
       + 'end this walk and start a new one rather than recording silence.'
@@ -568,6 +579,28 @@ let watchdog: ReturnType<typeof setInterval> | null = null;
  * "stopped" when the truth was "never started".
  */
 let resumedAwaitingFirstChunk = false;
+
+/**
+ * What happened to this walk, in order.
+ *
+ * Every fault found in this path so far was found by the owner reading two
+ * numbers off a screen and reporting them. That works, but it costs a round
+ * of guessing each time, and this file already records two confident
+ * diagnoses that were wrong. A walk that can describe itself removes the
+ * guessing: whatever happens next, the evidence is attached to the walk it
+ * happened to, and it travels in the export.
+ *
+ * Kept small on purpose — transitions only, never per-chunk.
+ */
+let trail: string[] = [];
+
+function note(what: string): void {
+  const at = Math.max(0, Math.round(elapsedMs() / 1000));
+  trail.push(`${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')} ${what}`);
+  // A walk cannot be allowed to grow an unbounded log. Sixty lines is far
+  // more than any real walk produces and still a trivial thing to store.
+  if (trail.length > 60) trail = trail.slice(-60);
+}
 
 function startWatchdog(): void {
   stopWatchdog();
@@ -677,6 +710,8 @@ export async function startSession(as_of: ISODate): Promise<void> {
 
     recorder.start(CHUNK_MS);
     resumedAwaitingFirstChunk = false;
+    trail = [];
+    note(`started · ${mime ?? 'unknown format'}`);
     pushMarker({ type: 'session_start' });
     await persistProgress();
     attachLifecycle();
@@ -767,6 +802,7 @@ export async function endSession(): Promise<SessionId | null> {
   heldInterrupted = false;
   pushMarker({ type: 'session_end' });
   phase = 'saving';
+  note(`ended · ${capturedSeconds()}s captured of ${elapsedSeconds()}s on the clock`);
   registerLiveSession(null);
   notify();
 
@@ -845,6 +881,7 @@ async function interruptSession(): Promise<void> {
   interruptedAt = Date.now();
   heldInterrupted = true;
   phase = 'saving';
+  note(`interrupted · ${capturedSeconds()}s captured`);
   registerLiveSession(null);
   notify();
 
@@ -923,6 +960,7 @@ export async function resumeInterrupted(): Promise<void> {
     // not: iOS returns a track that looks live and produces nothing. Until a
     // chunk actually arrives, treat this stretch as unproven.
     resumedAwaitingFirstChunk = true;
+    note('resumed — waiting for the microphone to prove itself');
     recorder.start(CHUNK_MS);
     attachLifecycle();
     startTicker();

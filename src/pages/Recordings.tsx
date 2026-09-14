@@ -364,6 +364,21 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                 </p>
               )}
 
+              {/* What happened to this walk, when it did not go smoothly.
+                  Shown only when there is something to explain — a clean walk
+                  does not need a log of itself. This is what turns "it lost my
+                  audio again" into evidence. */}
+              {s.trail && s.trail.length > 0
+                && s.captured_s !== undefined && s.captured_s + 3 < s.duration_s && (
+                <details className="recs-trail">
+                  <summary>What happened during this walk</summary>
+                  <ol>
+                    {s.trail.map((line, i) => <li key={i}>{line}</li>)}
+                  </ol>
+                  <p>Export this walk and the same lines travel with it.</p>
+                </details>
+              )}
+
               <div className="recs-meta">
                 <span className="recs-marks">
                   {s.marker_count} marker{s.marker_count === 1 ? '' : 's'} · {s.plant_count} plant

@@ -116,6 +116,19 @@ export async function exportSession(db: DeezDB, session_id: SessionId): Promise<
   const zip = new JSZip();
   if (audio) zip.file(audio_name, audio);
   zip.file('markers.json', JSON.stringify(sidecarFor(session), null, 2));
+  // What happened to the walk, when something did. It travels with the export
+  // so a walk that came back short can be explained by whoever looks at it
+  // next, rather than being re-guessed from two numbers.
+  if (session.trail?.length) {
+    const lines = [
+      session.session_id,
+      `clock ${session.duration_s}s · captured ${session.captured_s ?? '?'}s`,
+      '',
+      ...session.trail,
+      '',
+    ];
+    zip.file('what-happened.txt', lines.join('\n'));
+  }
   zip.file('screen_log.json', JSON.stringify(screenLogFileFor(session, entries), null, 2));
   if (session.transcript) {
     zip.file('transcript.txt', session.transcript);

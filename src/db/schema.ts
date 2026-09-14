@@ -63,6 +63,19 @@ export interface SessionRecord {
    * an absent value means "not known", never "nothing captured".
    */
   captured_s?: number;
+  /**
+   * What happened to this walk, in order, as plain lines.
+   *
+   * Added 2026-09-14. Three separate faults in this path have now been found
+   * by the owner reporting two numbers off a screen, and each one cost a
+   * round of guessing first — this file records two confident diagnoses that
+   * were wrong. A walk should be able to say what happened to it instead.
+   *
+   * Deliberately plain strings, not structured events: they are read by a
+   * person, they travel in the export where someone else may read them, and
+   * a shape would invite code to depend on them.
+   */
+  trail?: string[];
   /** Markers are written by the app as it goes — page opens, care, photos. */
   markers: SessionMarker[];
   transcript: string | null;

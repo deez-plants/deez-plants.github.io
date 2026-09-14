@@ -379,3 +379,33 @@
   color: var(--ink-70);
   text-wrap: pretty;
 }
+
+/* The walk's own account of itself, shown only when it came back short. */
+.recs-trail {
+  margin-top: 10px;
+  font: 400 19px/1.4 var(--sans);
+  color: var(--ink-70);
+}
+
+.recs-trail summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+  padding: 6px 0;
+}
+
+.recs-trail ol {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  font-family: var(--mono);
+  font-size: 17px;
+  color: var(--ink-50);
+}
+
+.recs-trail ol li { margin-bottom: 5px; }
+
+.recs-trail p {
+  margin: 10px 0 0;
+  font-size: 18px;
+  color: var(--ink-40);
+}
