@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import type { DeezDB, ScreenLogEntry, SessionRecord } from '../db/schema';
 import { extensionFor, readSessionSegments, sessionAudioBytes } from './recording';
-import { checkCoverage, parseTranscript } from './coverage';
+import { checkCoverage, parseQuiet, parseTranscript } from './coverage';
 import { screenLogForSession } from './screenLog';
 import { routeMarkerCount } from './liveSession';
 import type { SessionId } from '../types/ids';
@@ -186,8 +186,11 @@ export async function attachTranscript(
   if (!text) throw new Error('That transcript is empty.');
 
   const verified = segments.length > 0;
+  // The script measures where the audio was quiet and writes it into the
+  // transcript; without it, gaps are judged the old way rather than wrongly
+  // forgiven.
   const coverage = verified
-    ? checkCoverage(segments, session.duration_s, session.markers)
+    ? checkCoverage(segments, session.duration_s, session.markers, parseQuiet(raw))
     : null;
 
   await db.put('sessions', {

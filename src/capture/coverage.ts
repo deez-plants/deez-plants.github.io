@@ -45,10 +45,43 @@ const MAX_GAP_S = 20;
 /** Matching offsets to a named instant: a marker, a seam, the end of a walk. */
 const NEAR_S = 5;
 
+export interface QuietRange { from: number; to: number }
+
+/**
+ * Stretches where the AUDIO was quiet, as measured on the laptop.
+ *
+ * `transcribe_walk.py` writes a `quiet:` line into the transcript because it
+ * has the decoder open anyway. The phone never has to analyse audio for this.
+ *
+ * It exists to answer the question assertion 2 could not previously ask. A
+ * gap in a transcript means one of two things — nobody was talking, or
+ * someone was and Whisper missed it — and **only the second is a fault**.
+ * Without this the gate had to treat every silence as a failure, which fails
+ * a walk for the crime of watering a plant properly.
+ *
+ * Absent for a pasted transcript or an older script, in which case gaps are
+ * judged the old way rather than wrongly forgiven.
+ */
+export function parseQuiet(raw: string): QuietRange[] {
+  const line = raw
+    .split('\n')
+    .find((l) => l.trim().toLowerCase().startsWith('quiet:'));
+  if (!line) return [];
+
+  const out: QuietRange[] = [];
+  const pairs = line.slice(line.indexOf(':') + 1).split(',');
+  for (const pair of pairs) {
+    const [a, b] = pair.split('-').map((n) => Number(n.trim()));
+    if (Number.isFinite(a) && Number.isFinite(b) && b > a) out.push({ from: a, to: b });
+  }
+  return out;
+}
+
 export function checkCoverage(
   segments: readonly TranscriptSegment[],
   duration_s: number,
   markers: readonly SessionMarker[],
+  quiet: readonly QuietRange[] = [],
 ): CoverageReport {
   const failures: CoverageReport['failures'] = [];
 
@@ -93,10 +126,24 @@ export function checkCoverage(
     if (to - from <= MAX_GAP_S) continue;
     const explained = seams.some((at) => at >= from - NEAR_S && at <= to + NEAR_S);
     if (explained) continue;
+
+    // How much of this gap was measured as quiet. Silence is a fact about a
+    // walk, not a fault in a transcript: watering a plant properly is a
+    // minute of it, and looking at one is longer. Only sound that produced no
+    // words is worth failing over.
+    const covered = quiet.reduce(
+      (sum, q) => sum + Math.max(0, Math.min(to, q.to) - Math.max(from, q.from)),
+      0,
+    );
+    const noisy = Math.round((to - from) - covered);
+    if (noisy <= MAX_GAP_S) continue;
+
     failures.push({
       assertion: 2,
       offset_s: Math.max(0, Math.round(from)),
-      detail: `${Math.round(to - from)}s of audio between segments has no transcript.`,
+      detail: covered > 0
+        ? `${noisy}s of audio between segments has sound but no transcript.`
+        : `${Math.round(to - from)}s of audio between segments has no transcript.`,
     });
   }
 

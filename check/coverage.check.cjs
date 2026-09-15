@@ -11,7 +11,7 @@
  * Run with `npm run check:coverage`.
  */
 
-const { checkCoverage, parseTranscript } = require('./build/capture/coverage.js');
+const { checkCoverage, parseQuiet, parseTranscript } = require('./build/capture/coverage.js');
 
 let pass = 0, fail = 0;
 const eq = (name, got, want) => {
@@ -181,6 +181,39 @@ eq('malformed JSON falls back to prose rather than throwing',
   ];
   eq('a gap marker excuses its own seam only',
     checkCoverage(twoGaps, 330, seam).failures.filter((f) => f.assertion === 2).length, 1);
+}
+
+
+/* ------------------------------------------ silence is not a coverage fault */
+
+{
+  eq('no quiet line means no ranges', parseQuiet('session: x\nsegments: 3'), []);
+  eq('a quiet line is read',
+    parseQuiet('coverage: pass\nquiet: 12.0-45.5, 61.0-70.25\n'),
+    [{ from: 12, to: 45.5 }, { from: 61, to: 70.25 }]);
+  eq('a malformed range is dropped rather than throwing',
+    parseQuiet('quiet: 10-5, banana, 20.0-30.0'), [{ from: 20, to: 30 }]);
+
+  // A 90-second hole in a transcript. Knowing nothing about the audio, that is
+  // a failure - it might be 90 seconds of missed speech.
+  const holed = [{ start: 0, end: 10, text: 'a' }, { start: 100, end: 120, text: 'b' }];
+  eq('a long gap still fails when nothing says the audio was quiet',
+    failed(checkCoverage(holed, 120, [])), [2]);
+
+  // Once the audio is known to have been quiet there, it is not a fault. This
+  // is the owner watering a plant, or standing looking at one.
+  eq('a long gap passes when the audio was measured as quiet',
+    checkCoverage(holed, 120, [], [{ from: 10, to: 100 }]).passed, true);
+
+  // Partly quiet: 30 seconds of it had sound and produced no words. Over the
+  // allowance, so still a fault - and the wording says which.
+  const partly = checkCoverage(holed, 120, [], [{ from: 10, to: 70 }]);
+  eq('sound inside a quiet stretch is still a fault', failed(partly), [2]);
+  eq('and the report says it was sound, not silence',
+    partly.failures[0].detail, '30s of audio between segments has sound but no transcript.');
+
+  eq('a gap that is mostly quiet passes',
+    checkCoverage(holed, 120, [], [{ from: 10, to: 85 }]).passed, true);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

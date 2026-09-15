@@ -446,8 +446,24 @@ The transcript arrives with per-segment timestamps. The app asserts:
    The asymmetry is the point. Stopping short is quiet, which is normal.
    Running *past* the audio is not quiet — it is a transcript that does not
    belong to this recording — so that direction keeps the narrow allowance.
-2. No gap between segments exceeds 20 seconds **where the audio there was not
-   silent**, or where a seam explains it.
+2. No gap between segments exceeds 20 seconds **of audio that had sound in
+   it**, or where a seam explains it.
+
+   **Amended 2026-09-14.** The rule was written as "without a silence
+   marker", and nothing ever wrote one — so in practice every silence counted
+   against a transcript. That is backwards: **silence is a fact about a walk,
+   not a fault in a transcript.** Watering a plant properly is a minute of
+   quiet; standing looking at one is longer.
+
+   The measurement is made **on the laptop**, by `transcribe_walk.py`, which
+   has the decoder open anyway — the phone never analyses audio for this. The
+   script writes a `quiet:` line of ranges into the transcript and the app
+   discounts them from any gap. It is measured from the **audio**, never from
+   the gaps between segments, because deriving it from the transcript would be
+   circular and would make the assertion unfailable.
+
+   Where no measurement is present — a pasted transcript, an older script —
+   gaps are judged as before rather than wrongly forgiven.
 3. Every marker `offset_s` falls inside a transcribed segment.
 4. Segment timestamps are monotonic and none exceeds `duration_s`.
 
