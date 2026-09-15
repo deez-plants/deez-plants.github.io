@@ -1253,6 +1253,59 @@ which is why the obvious path failed.
 **Starting it at login was offered and not built.** Five-minute job if they
 ask; not something to impose on someone who did not.
 
+#### The GPT round-trip, briefed properly (2026-09-14, night)
+
+**The owner is taking the review package to their own GPT project, not to a
+session here.** That is their choice and the guides reflect it — `Option A`
+(a session in this repo reading the folder directly) stays documented, but do
+not push it.
+
+**`gpt-prompt.txt` never mentioned the transcript.** It was written on 7
+September, before one existed, and told the AI about `manifest.json` and
+`events.json` and stopped. A plant bot following it would have ignored the
+most valuable thing in the package and reasoned from the watering schedule
+instead — which is exactly the kind of answer this design exists to avoid. It
+now says to read `transcript.txt` **first**, to quote from it, and carries the
+two limits that matter: **the attribution is evidence of what was on screen,
+not proof of what was discussed**, and silence is not absence of a problem.
+
+**`GPT-PROJECT-BRIEF.txt` is new** — the one-time standing instructions, as
+distinct from the per-package prompt. Keeping those two separate is
+deliberate: a briefing that ends in *"return JSON and nothing else"* can never
+produce the assessment the owner actually asked for.
+
+It opens with a Part 0 written **for the owner** — what to give the project
+and where every file lives on laptop, phone and cloud — because they asked
+for that and it is the part they will re-read.
+
+Two things in it worth defending if a later session is tempted to trim them:
+
+- **"The built app overrides every earlier decision, including ones you argued
+  for."** The GPT last saw this as paper. Without that line it will re-propose
+  things that were tried and dropped.
+- **Part 6, on what can honestly be concluded.** Twenty-two plants and a
+  handful of ratings a year cannot support inference, and **a confident wrong
+  answer is worse than none** — the owner would end up learning its arithmetic
+  instead of his plants. That is rule 1 restated for a reasoner rather than
+  for the app.
+
+#### Backups stop carrying audio that has already become words
+
+The owner's decision and their reasoning. Photos are ~40MB a year; audio is
+~470MB. `free up space` already used exactly this condition — audio may go
+**only where a transcript exists** — so the backup now uses it too.
+
+**The exception was not negotiable and is the one place their instruction was
+not followed literally.** A walk with no transcript has nothing but its audio;
+dropping it would lose the walk on a restore, silently. Untranscribed walks
+keep their audio and the screen says how much that came to.
+
+**Both screens now say what the app always knew and never mentioned:** how
+many walks are transcribed, and what it costs. On the package screen the count
+was already on the file list — what was missing was the consequence, that a
+walk without a transcript is a walk the AI cannot hear and one of them makes
+the whole package unverified.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
