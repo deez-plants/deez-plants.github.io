@@ -207,7 +207,15 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-**The queue is empty, and the recording bug is fixed** (`4d15a59`). Two real
+**The recording is solved: it was never lost audio, it was a container** —
+three self-contained recordings glued into one file no player reads past the
+first join. See "The recording, solved" below. **One backgrounded walk from
+the owner confirms it and then it is finished.**
+
+**Everything else on the queue is built.** The only thing left that is purely
+mine is the desk console.
+
+(Superseded, kept for the trail: "the recording bug is fixed" `4d15a59`.) Two real
 defects were found and both are closed; see "The recording bug" below for
 what they were and how they were proved. **One possibility remains untested
 and only the phone can settle it:** whether iOS also loses chunk writes when
@@ -966,6 +974,106 @@ the two numbers alone.**
 **Still the owner's call, still not taken:** if the trail shows iOS simply
 refusing to reopen the microphone, the fallback is to stop pretending to
 resume — an interruption ends the walk and a fresh one starts on return.
+
+#### The recording, solved — and what it actually was (2026-09-14, late)
+
+**Nothing was ever lost. It was a container problem all along.**
+
+The owner's export settled it: a 124-second walk, `clock 124s · captured 124s`
+in its own trail, 2.96 MB of audio — and a file that played 60 seconds. Three
+`ftyp`/`moov` header pairs at bytes 0, 1,420,805 and 2,026,003, matching the
+three stretches in the trail exactly, and decoding to 60.1s + 25.5s + 39.3s =
+**124.9 seconds against the 124 recorded**.
+
+Every `MediaRecorder` writes a self-contained file. A walk interrupted twice
+has three recorders, so it is three recordings. Gluing them made bytes that
+are not a valid MP4: a player reads the first header, believes the file is one
+stretch long, and stops at the join with the rest sitting unread behind it.
+
+**Two earlier fixes were real and still needed** — the delete-before-write
+window, and the untracked resume writes. Neither was this. **Three diagnoses,
+three different faults, all in the same path.**
+
+`readSessionSegments` is the shape now: one assembled file per recorder, keyed
+`session_id#segNNNN`, chunks deleted only once every segment is safely
+written. Export writes `-part1`, `-part2`; backup carries every segment; the
+player offers them as numbered buttons. Older walks still read — a single blob
+under the bare id comes back as-is, because splitting someone else's container
+after the fact is guessing.
+
+**The harness asserts the thing that matters and could not be asserted
+before: each stored recording contains exactly ONE `ftyp` box.** A glued file
+has three. That is the whole difference between playable and not.
+
+#### A correction worth keeping
+
+**I told the owner Whisper would only read the first minute of a glued file.
+That was wrong.** Decoding it properly showed ffmpeg reads straight past the
+joins and gets all 123 seconds; only the *header* lies. Players trust the
+header, ffmpeg does not. The lesson is the obvious one — **measure rather than
+reason about a format** — and it cost nothing only because it was checked
+before being acted on.
+
+#### The coverage gate stopped crying wolf
+
+The owner's first real transcript was **perfect and marked FAIL**: 19
+segments, every plant correctly attributed, no gaps — failed because they
+stopped talking six seconds before pressing stop, against a five-second
+allowance.
+
+Two amendments to `FIELD_DEFINITIONS.md` section 6, both made in the spec as
+well as the code:
+
+1. **Assertion 1 is asymmetric now: 20s short, 5s over.** Quiet before you
+   press stop is normal. A transcript running *past* the audio is not quiet —
+   it belongs to a different recording.
+2. **Assertion 2 discounts measured silence.** The rule said "without a
+   silence marker" and nothing ever wrote one, so every silence counted
+   against a transcript. **Silence is a fact about a walk, not a fault in a
+   transcript.**
+
+The measurement is made **on the laptop**, by `transcribe_walk.py`, from the
+**audio** — never from the gaps between segments, which would be circular and
+would make the assertion unfailable. It writes a `quiet:` line the app reads.
+No measurement present means gaps are judged the old way rather than wrongly
+forgiven.
+
+**Three things that only showed up by running it on real audio:** a per-sample
+Python loop over six million samples never finishes; without a half-second
+moving average nothing is ever quiet, because the pauses between words
+fragment every silence (the owner's walk measured 41s below the floor and
+produced not one run of three); and a failed measurement returning `[]`
+silently would make the app forgive every gap for the wrong reason.
+
+**The script's report and `src/capture/coverage.ts` must stay in step.** The
+owner reads one on the laptop and the other on the phone. If they disagree,
+one is lying and there is no way to tell which.
+
+#### The transcription script handles an interrupted walk
+
+Give it `-part1` and it finds the rest, transcribing in order and shifting
+each part's timestamps into walk time. Without that shift, part 2 claims to
+start at 0:00 and **every marker attributes to the wrong plant**. On the
+owner's walk this took it from 14 segments ending 1:58 to 19 ending 2:00.
+
+#### Housekeeping that mattered
+
+**The repo is the public website.** The folder the owner moves walks into was
+untracked and one `git add -A` from publishing their own voice, in their flat,
+irreversibly. Audio, exported walks, transcripts and Python bytecode are
+ignored now. Checked: nothing had ever been committed.
+
+#### Where it stands
+
+**Mine: the desk console, and nothing else.**
+
+**Theirs:** one backgrounded walk to confirm the recording is finished, the AI
+round-trip (the only half never tested), a second whole-plant photo, their two
+new plants, and what Reminders should do.
+
+**If a walk still comes back short:** ask for `what-happened.txt` from the
+export, not for a theory. Three faults here were found from numbers read off a
+screen and a round of guessing each; the walk now carries its own account.
 
 ## Traps, and facts that cost something to learn
 
