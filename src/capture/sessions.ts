@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import type { DeezDB, ScreenLogEntry, SessionRecord } from '../db/schema';
 import { extensionFor, readSessionSegments, sessionAudioBytes } from './recording';
-import { checkCoverage, parseQuiet, parseTranscript } from './coverage';
+import { checkCoverage, parseDuration, parseQuiet, parseTranscript } from './coverage';
 import { screenLogForSession } from './screenLog';
 import { routeMarkerCount } from './liveSession';
 import type { SessionId } from '../types/ids';
@@ -186,15 +186,40 @@ export async function attachTranscript(
   if (!text) throw new Error('That transcript is empty.');
 
   const verified = segments.length > 0;
+
+  /**
+   * An interrupted walk's clock is known to understate, so the audio wins.
+   *
+   * The clock freezes while the app is backgrounded and iOS carries on
+   * recording. The owner's walk of 14 Sep held 13:05 of audio against a
+   * record of 5:57 — and judging its complete transcript against 5:57
+   * rejected it for running past the end of a recording that was actually
+   * twice as long.
+   *
+   * Narrow on purpose. Only for a walk that was interrupted, only upwards,
+   * and only from a measurement the transcriber made by decoding the files.
+   * A walk that ran start to finish has a clock worth trusting, and a
+   * transcript claiming a walk is SHORTER than recorded is never believed.
+   */
+  const interrupted = (session.segment_starts?.length ?? 1) > 1;
+  const measured = parseDuration(raw);
+  const duration_s = interrupted && measured && measured > session.duration_s
+    ? Math.round(measured)
+    : session.duration_s;
+
   // The script measures where the audio was quiet and writes it into the
   // transcript; without it, gaps are judged the old way rather than wrongly
   // forgiven.
   const coverage = verified
-    ? checkCoverage(segments, session.duration_s, session.markers, parseQuiet(raw))
+    ? checkCoverage(segments, duration_s, session.markers, parseQuiet(raw))
     : null;
 
   await db.put('sessions', {
     ...session,
+    // Corrected duration is persisted, not just used for the check: every
+    // later reader — Recordings, the export, the review package the AI sees —
+    // should see the walk's real length rather than the clock's guess.
+    duration_s,
     transcript: text,
     transcript_tier: verified ? 'verified' : 'unverified',
     coverage,

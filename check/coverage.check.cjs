@@ -11,7 +11,7 @@
  * Run with `npm run check:coverage`.
  */
 
-const { checkCoverage, parseQuiet, parseTranscript } = require('./build/capture/coverage.js');
+const { checkCoverage, parseDuration, parseQuiet, parseTranscript } = require('./build/capture/coverage.js');
 
 let pass = 0, fail = 0;
 const eq = (name, got, want) => {
@@ -214,6 +214,29 @@ eq('malformed JSON falls back to prose rather than throwing',
 
   eq('a gap that is mostly quiet passes',
     checkCoverage(holed, 120, [], [{ from: 10, to: 85 }]).passed, true);
+}
+
+
+/* ------------------------------------- the audio is the ground truth ------ */
+
+{
+  eq('no duration line means nothing to correct with',
+    parseDuration('session: x\nsegments: 3'), null);
+  eq('the measured duration is read',
+    parseDuration('session: x\nduration_s: 785\nsegments: 99'), 785);
+  eq('a nonsense duration is ignored',
+    parseDuration('duration_s: banana'), null);
+  eq('a zero duration is ignored', parseDuration('duration_s: 0'), null);
+
+  // The owner's walk of 14 Sep: four recordings holding 13:05, a record
+  // saying 5:57, and a complete transcript running to 13:06. Judged against
+  // the clock it fails for running past the end of the audio; judged against
+  // the audio it passes, which is the truth.
+  const full = [{ start: 0, end: 786, text: 'the whole walk' }];
+  eq('a complete transcript fails against a clock that fell behind',
+    failed(checkCoverage(full, 357, [])).includes(1), true);
+  eq('and passes against the audio it was really measured from',
+    checkCoverage(full, 786, []).passed, true);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -154,6 +154,8 @@ let saved: SavedSession | null = null;
 let accumulatedMs = 0;
 let runningSince = 0;
 let chunkIndex = 0;
+/** The walk's own clock when the last chunk landed — see `capturedMs`. */
+let elapsedAtLastChunk = 0;
 let ticker: ReturnType<typeof setInterval> | null = null;
 let lastTickSecond = -1;
 
@@ -179,9 +181,20 @@ function elapsedSeconds(): number {
 function capturedMs(): number {
   const total = elapsedMs();
   if (!lastChunkAt) return total;
-  const quiet = Date.now() - lastChunkAt;
-  if (quiet <= CHUNK_MS * 1.5) return total;
-  return Math.max(0, total - (quiet - CHUNK_MS * 1.5));
+
+  // Measured on the WALK'S CLOCK, not the wall clock. That distinction is the
+  // whole fix: the clock freezes while the app is backgrounded, so wall time
+  // races ahead of it. Subtracting wall time drove a real walk's duration to
+  // ZERO — the owner's own trail recorded "385s since the last audio" and
+  // then "interrupted · 0s captured" on a walk that held six minutes of
+  // audio at that point.
+  //
+  // It can also never take away more than it counted since that chunk: what
+  // was captured stays captured. A silence cannot retrospectively un-record
+  // the audio in front of it.
+  const sinceChunk = total - elapsedAtLastChunk;
+  if (sinceChunk <= CHUNK_MS * 1.5) return total;
+  return Math.max(elapsedAtLastChunk, total - (sinceChunk - CHUNK_MS * 1.5));
 }
 
 function capturedSeconds(): number {
@@ -763,6 +776,7 @@ export async function startSession(as_of: ISODate): Promise<void> {
     recorder.start(CHUNK_MS);
     resumedAwaitingFirstChunk = false;
     segmentStarts = [0];
+    elapsedAtLastChunk = 0;
     trail = [];
     note(`started · ${mime ?? 'unknown format'}`);
     pushMarker({ type: 'session_start' });
@@ -1114,6 +1128,7 @@ export async function restoreInterrupted(as_of?: ISODate): Promise<boolean> {
   accumulatedMs = held.duration_s * 1000;
   chunkIndex = held.chunk_count ?? held.markers.length;
   segmentStarts = held.segment_starts?.length ? [...held.segment_starts] : [0];
+  elapsedAtLastChunk = accumulatedMs;
   mime = held.mime ?? null;
   runningSince = 0;
   // Not restored: `interruptedAt`. A walk picked up tomorrow would otherwise
@@ -1154,6 +1169,7 @@ export async function discardSession(): Promise<void> {
   markers = [];
   accumulatedMs = 0;
   chunkIndex = 0;
+  elapsedAtLastChunk = 0;
   segmentStarts = [];
   saved = null;
   error = null;

@@ -69,12 +69,32 @@ export function parseQuiet(raw: string): QuietRange[] {
   if (!line) return [];
 
   const out: QuietRange[] = [];
-  const pairs = line.slice(line.indexOf(':') + 1).split(',');
-  for (const pair of pairs) {
+  for (const pair of line.slice(line.indexOf(':') + 1).split(',')) {
     const [a, b] = pair.split('-').map((n) => Number(n.trim()));
     if (Number.isFinite(a) && Number.isFinite(b) && b > a) out.push({ from: a, to: b });
   }
   return out;
+}
+
+/**
+ * The duration the transcript was measured against, if it says.
+ *
+ * `transcribe_walk.py` decodes every recording in a walk, so it knows how long
+ * the audio really is — and **the audio is ground truth while the clock is an
+ * estimate**. The owner's walk of 14 Sep proved the gap can be enormous: four
+ * recordings decoding to 13:05 against a record saying 5:57, because the clock
+ * freezes when the app is backgrounded and iOS keeps recording anyway.
+ *
+ * Only ever used to correct a walk's duration UPWARDS, and only for a walk
+ * that was interrupted — see `attachTranscript`.
+ */
+export function parseDuration(raw: string): number | null {
+  const line = raw
+    .split('\n')
+    .find((l) => l.trim().toLowerCase().startsWith('duration_s:'));
+  if (!line) return null;
+  const n = Number(line.slice(line.indexOf(':') + 1).trim());
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export function checkCoverage(

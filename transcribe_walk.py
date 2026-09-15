@@ -212,6 +212,39 @@ def quiet_stretches(paths, floor_db=-45.0, min_len=3.0):
     return quiet
 
 
+def audio_duration(paths):
+    """How long the recordings actually are, in seconds.
+
+    THE AUDIO IS THE GROUND TRUTH AND THE CLOCK IS AN ESTIMATE, and the
+    owner's walk of 14 Sep proved it: four recordings decoding to 13:05
+    against a record that said 5:57. The clock freezes while the app is
+    backgrounded and iOS keeps recording anyway, so a walk's counted time can
+    fall a long way behind what it captured.
+
+    Judging a transcript against the smaller number rejects a complete
+    transcript for "running past the end of the audio", which is the app
+    being wrong about its own recording.
+    """
+    try:
+        import av
+    except ImportError:
+        return None
+    total = 0.0
+    for path in paths:
+        try:
+            with av.open(path) as container:
+                if container.duration:
+                    total += float(container.duration) / av.time_base
+                    continue
+                stream = container.streams.audio[0]
+                rate = stream.codec_context.sample_rate or 48000
+                samples = sum(f.samples for f in container.decode(stream))
+                total += samples / float(rate)
+        except Exception:
+            return None
+    return total if total > 0 else None
+
+
 def mmss(seconds):
     seconds = int(round(seconds))
     return "%d:%02d" % (seconds // 60, seconds % 60)
@@ -330,6 +363,17 @@ def main():
             print("\r  %s" % mmss(offset + s.end), end="", flush=True)
         offset += getattr(part_info, "duration", None) or last_end
     print()
+
+    measured = audio_duration(parts)
+    if measured:
+        # The bigger of the two, never the smaller. A clock that fell behind is
+        # ordinary; a clock running AHEAD of the audio would mean something
+        # else entirely and is not quietly papered over here.
+        if duration_s is None or measured > duration_s + 2:
+            if duration_s is not None:
+                print("  the walk's record says %s but the audio is %s - using the audio"
+                      % (mmss(duration_s), mmss(measured)))
+            duration_s = measured
 
     print("Measuring where the audio was quiet...")
     quiet = quiet_stretches(parts)
