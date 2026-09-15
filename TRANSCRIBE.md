@@ -35,36 +35,36 @@ you find yourself correcting a lot; it is about three times slower.
 
 ### One-time, about ten minutes
 
-1. **Install iCloud for Windows** from the Microsoft Store, sign in with your
-   Apple ID, and tick **iCloud Drive**.
-2. Make a folder called **Deez Plants** in iCloud Drive. On the laptop it lives
-   at roughly `C:\Users\604dr\iCloudDrive\Deez Plants`; on the phone it is in
-   the Files app under iCloud Drive.
-3. In PowerShell, from the project folder, start the watcher once with that
-   path — it remembers it afterwards:
+**OneDrive, not iCloud.** OneDrive is already installed, signed in and running
+on this laptop, so there is nothing to set up on that side. iCloud for Windows
+would mean installing and configuring something new for no gain.
 
-```
-python watch_walks.py "C:\Users\604dr\iCloudDrive\Deez Plants"
-```
+1. **The folders already exist** at `C:\Users\604dr\OneDrive\Deez Plants\` —
+   `walks\` for recordings and transcripts, `ai\` for the round-trip.
+2. **On the phone:** install the OneDrive app, sign in with the same Microsoft
+   account the laptop uses, then Files → Browse → ⋯ → Edit → turn on
+   **OneDrive**. That switch is what lets the app's Share sheet save into it.
+3. **On the laptop:** double-click **`start-watching.bat`** in the project
+   folder. It prints `Waiting...` and sits there. Leave that window open.
 
-It prints `Waiting...` and sits there. Leave that window open.
+No command to remember and no path to type — the batch file carries both.
 
 ### Then, per walk
 
 1. **On the phone:** Recordings → the walk → **Export for Whisper** →
-   **Save to Files** → iCloud Drive → **Deez Plants**.
+   **Save to Files** → OneDrive → **Deez Plants → walks**.
 2. **Wait.** The watcher notices the file, unzips it into its own folder,
    transcribes it — every part, in order, if the walk was interrupted — and
-   writes the transcript back into the same iCloud folder. The zip moves into
+   writes the transcript back into the same folder. The zip moves into
    `transcribed\` so it is never done twice.
-3. **On the phone:** open the transcript in Files, select all, copy, and paste
-   it into that walk under **Add transcript**.
+3. **On the phone:** Files → OneDrive → Deez Plants → walks, open the
+   transcript, select all, copy, and paste it into that walk under
+   **Add transcript**.
 
 **That is it.** No PowerShell per walk, no unzipping, no filenames, no
 remembering which folder.
 
-**Start the watcher again whenever you reboot** — same command, and it needs
-no path the second time.
+**Start the watcher again whenever you reboot** — the same double-click.
 
 ### Why the last step is still yours
 
