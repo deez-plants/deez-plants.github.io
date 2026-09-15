@@ -1174,6 +1174,85 @@ runs on theirs — so *"drop it in the folder and say one sentence"* is true for
 one and not the other. The AI round-trip is therefore easiest done from a
 session in this repo, reading `OneDrive\Deez Plants\ai` directly.
 
+#### The clock was an estimate all along (2026-09-14, late)
+
+**The owner's fourth walk settled a question the design had assumed the
+answer to.** Four recordings decoding to **13:05**, a record saying **5:57**,
+and a complete 105-segment transcript rejected for "running past the end of
+the audio". The transcript was right; the app was wrong about its own
+recording.
+
+Two faults:
+
+1. **`capturedMs` measured the silent tail in WALL time and subtracted it from
+   a clock that had been FROZEN.** The clock stops while the app is
+   backgrounded, so wall time races ahead of it — subtracting one from the
+   other drove a real walk to zero. The trail added that morning caught it in
+   the owner's own data: `385s since the last audio` followed by
+   `interrupted · 0s captured` on a walk holding six minutes at that point.
+
+   It measures on the walk's own clock now, and **can never take away more than
+   it counted since that chunk**. What was captured stays captured.
+
+2. **iOS keeps recording after the app is backgrounded.** The design said
+   otherwise — written down 2026-09-11 as *"nothing is recorded from that
+   instant whatever iOS does next"* — and this walk disproves it.
+
+**So the audio wins.** `transcribe_walk.py` decodes every part and uses the
+larger of measured-audio and recorded-clock; the app does the same when a
+transcript is attached, and **persists the correction** so Recordings, the
+export and the review package all see the walk's real length.
+
+Narrow on purpose: **only for a walk that was interrupted, only upwards, and
+only from a measurement made by decoding the files.** A walk that ran start to
+finish has a clock worth trusting, and a transcript claiming a walk is
+*shorter* than recorded is never believed.
+
+**The general lesson, and it applies beyond this file: the audio is ground
+truth and the clock is an estimate.** Anywhere the two disagree, prefer the
+thing that was actually recorded.
+
+#### The copy-paste was never necessary
+
+**Add transcript, Apply AI update and Restore have all accepted a file for
+weeks.** The guide told the owner to open the transcript, select all, copy and
+paste — and nothing on screen suggested otherwise, because the file input was
+a bare unstyled control beneath a paragraph of explanation.
+
+It is the primary action now, with a line saying which file and where. **Both
+guides were wrong and both are corrected.** Worth remembering as a pattern:
+building the good path and then documenting the bad one is a failure mode that
+no test catches.
+
+#### Names
+
+Everything written out now carries a real timestamp, not just a date — several
+walks a day is normal:
+
+```
+2026-09-14 1833 walk 4.zip
+2026-09-14 1833 walk 4 - audio 1 of 4.m4a
+2026-09-14 1833 walk 4 - TRANSCRIPT.txt
+2026-09-14 2130 review package.zip
+2026-09-14 2130 backup - record.json
+```
+
+`TRANSCRIPT` is capitalised because in a folder of eight files the one you
+import must be unmistakable. **`markers.json` keeps its plain name alongside
+the readable one** — the script has always looked for exactly that, and an
+export made today should still work with a script from last week.
+
+#### The watcher, in the owner's terms
+
+**It does not need to run all the time.** A walk dropped in while it is off
+simply waits; start it later and it is picked up within ten seconds. It does
+not run in the background after its window is closed and does not start at
+boot. A Desktop shortcut exists — **their Desktop is redirected into OneDrive**,
+which is why the obvious path failed.
+
+**Starting it at login was offered and not built.** Five-minute job if they
+ask; not something to impose on someone who did not.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
