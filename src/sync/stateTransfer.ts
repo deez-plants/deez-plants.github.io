@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { openDeezPlants, REGISTRY_KEY, META_KEY, type DeezDB, type MediaRecord, type SessionRecord } from '../db/schema';
-import { readSessionAudio, extensionFor } from '../capture/recording';
+import { readSessionSegments, extensionFor } from '../capture/recording';
 import type { PlantBaseline, Registry } from '../types/plant';
 import type { StoredEvent } from '../types/event';
 import type { ISODate } from '../types/ids';
@@ -114,8 +114,17 @@ export async function exportEverything(db: DeezDB, as_of: ISODate): Promise<Expo
     zip.file(`media/thumbs/${m.media_id}`, m.thumb);
   }
   for (const s of sessions) {
-    const audio = await readSessionAudio(db, s.session_id);
-    if (audio) zip.file(`sessions/${s.session_id}${extensionFor(s.mime ?? audio.type)}`, audio);
+    // A walk interrupted twice is three recordings. Every one travels, named
+    // in order, because gluing them is what made a file no player would read
+    // past the first seam.
+    const segments = await readSessionSegments(db, s.session_id);
+    segments.forEach((audio, i) => {
+      const ext = extensionFor(s.mime ?? audio.type);
+      const name = segments.length === 1
+        ? `${s.session_id}${ext}`
+        : `${s.session_id}-part${i + 1}${ext}`;
+      zip.file(`sessions/${name}`, audio);
+    });
   }
 
   const blob = await zip.generateAsync({ type: 'blob' });

@@ -76,7 +76,10 @@ const db = await openDeezPlants();
 const made = [];
 const audioKeys = async (id) =>
   (await db.getAllKeys('audio')).filter((k) => typeof k === 'string' && k.startsWith(id));
-const chunkKeys = async (id) => (await audioKeys(id)).filter((k) => k.includes('#'));
+const chunkKeys = async (id) => (await audioKeys(id)).filter((k) => k.includes('#') && !k.includes('#seg'));
+// Every stretch of the walk, joined only for measuring - never for playing.
+const totalBytes = async (id) =>
+  (await R.readSessionSegments(db, id)).reduce((n, b) => n + b.size, 0);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* -- A: the contract of the tidy-up itself ------------------------------- */
@@ -108,12 +111,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const id = await R.endSession();
   check('a walk ends with an id', typeof id === 'string' && id.length > 0, true);
 
-  const whole = await db.get('audio', id);
-  check('the walk is stored as one assembled blob', !!whole && whole.size > 0, true);
-  check('and its chunks have been tidied away', await chunkKeys(id), []);
-
-  const read = await R.readSessionAudio(db, id);
-  check('the walk reads back', !!read && read.size > 0, true);
+  const segs = await R.readSessionSegments(db, id);
+  check('an uninterrupted walk is ONE recording', segs.length, 1);
+  check('and it holds audio', segs[0].size > 0, true);
+  check('its chunks have been tidied away', await chunkKeys(id), []);
 }
 
 /* -- C: the owner's scenario -------------------------------------------- */
@@ -147,8 +148,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   // Whatever was captured up to that instant is the walk, and it must be on
   // disk — not sitting in a write that never landed. This is the assertion
   // the fix exists for.
-  const parked = await R.readSessionAudio(db, id);
-  check('audio survives being backgrounded', !!parked && parked.size > 0, true);
+  check('audio survives being backgrounded', (await totalBytes(id)) > 0, true);
 
   setVisibility('visible');
   await wait(300);
@@ -162,12 +162,24 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await wait(900);
   await R.endSession();
 
-  const after = await R.readSessionAudio(db, id);
-  check('and survives coming back and finishing', !!after && after.size > 0, true);
-
+  const parts = await R.readSessionSegments(db, id);
+  check('and survives coming back and finishing', parts.length > 0, true);
+  check('an interrupted walk is kept as SEPARATE recordings', parts.length, 2);
+  check('every one of them holds audio', parts.every((b) => b.size > 0), true);
   check('the finished walk is assembled, not left in pieces', await chunkKeys(id), []);
-  // The real failure the owner saw: Recordings reporting no audio at all.
-  check('Recordings would not call this walk silent', after === null, false);
+
+  // The bug this shape exists to prevent: three self-contained MP4s glued end
+  // to end, which a player reads the first header of and stops at the seam.
+  // One `ftyp` per file is what "playable" means here.
+  const heads = await Promise.all(parts.map(async (b) => {
+    const t = new Uint8Array(await b.arrayBuffer());
+    let n = 0;
+    for (let i = 0; i + 3 < t.length; i += 1) {
+      if (t[i] === 102 && t[i + 1] === 116 && t[i + 2] === 121 && t[i + 3] === 112) n += 1;
+    }
+    return n;
+  }));
+  check('each recording is a whole, single file — not a glued one', heads, parts.map(() => 1));
 }
 
 /* -- D: the kill itself -------------------------------------------------- */
@@ -193,7 +205,11 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const realPut = db.put.bind(db);
   db.put = async (store, value, key) => {
-    if (store === 'audio' && key === id) throw new Error('simulated kill mid-save');
+    // The assembled-segment write is the one that matters: it is what happens
+    // AFTER the chunks would have been deleted under the old ordering.
+    if (store === 'audio' && String(key).includes('#seg')) {
+      throw new Error('simulated kill mid-save');
+    }
     return realPut(store, value, key);
   };
   try {
@@ -202,8 +218,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     db.put = realPut;
   }
 
-  const survived = await R.readSessionAudio(db, id);
-  check('a walk killed mid-save is still on disk', !!survived && survived.size > 0, true);
+  check('a walk killed mid-save is still on disk', (await totalBytes(id)) > 0, true);
   check('because its chunks were never dropped first', (await chunkKeys(id)).length > 0, true);
 }
 
@@ -231,8 +246,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   for (const t of lastStream.getAudioTracks()) t.dispatchEvent(new Event('mute'));
   for (let i = 0; i < 80 && R.getSnapshot().phase !== 'interrupted'; i++) await wait(100);
 
-  const firstOnly = await R.readSessionAudio(db, id);
-  const firstSize = firstOnly ? firstOnly.size : 0;
+  const firstSize = await totalBytes(id);
   check('the first segment is on disk', firstSize > 0, true);
 
   setVisibility('visible');
@@ -253,10 +267,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     db.put = realPut;
   }
 
-  const both = await R.readSessionAudio(db, id);
-  check('the finished walk still exists', !!both && both.size > 0, true);
-  // The whole point: it has to be LARGER than the first segment alone.
-  check('the resumed segment is in the saved walk', (both?.size ?? 0) > firstSize, true);
+  const bothBytes = await totalBytes(id);
+  check('the finished walk still exists', bothBytes > 0, true);
+  // The whole point: MORE audio than the first stretch alone.
+  check('the resumed segment is in the saved walk', bothBytes > firstSize, true);
 }
 
 /* -- F: a resumed microphone that never actually works ------------------- */

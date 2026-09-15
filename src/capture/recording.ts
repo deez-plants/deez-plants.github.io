@@ -347,6 +347,11 @@ function writeChunksTo(rec: MediaRecorder, session_id: SessionId): void {
   };
 }
 
+/** One assembled recording within a walk. Sorts after every raw chunk key. */
+function segmentKey(session_id: SessionId, index: number): string {
+  return `${session_id}#seg${String(index).padStart(4, '0')}`;
+}
+
 function chunkKey(session_id: SessionId, index: number): string {
   return `${session_id}#${String(index).padStart(4, '0')}`;
 }
@@ -374,6 +379,7 @@ async function persistProgress(closed = false): Promise<void> {
     interrupted: heldInterrupted,
     chunk_count: chunkIndex,
     captured_s: capturedSeconds(),
+    segment_starts: [...segmentStarts],
     trail: [...trail],
     started: startedIso,
     duration_s: elapsedSeconds(),
@@ -396,22 +402,48 @@ async function persistProgress(closed = false): Promise<void> {
  * The audio for one session, whether it ended cleanly (one blob under the
  * session id) or was cut short (the chunks it managed to write).
  */
-export async function readSessionAudio(db: DeezDB, session_id: SessionId): Promise<Blob | null> {
-  const whole = await db.get('audio', session_id);
-  if (whole) return whole;
-
+export async function readSessionSegments(db: DeezDB, session_id: SessionId): Promise<Blob[]> {
   const keys = (await db.getAllKeys('audio'))
     .filter((k): k is string => typeof k === 'string' && k.startsWith(`${session_id}#`))
     .sort();
-  if (!keys.length) return null;
 
+  // Assembled per segment, which is how every walk recorded from 2026-09-14
+  // onwards is stored.
+  const segKeys = keys.filter((k) => k.includes('#seg'));
+  if (segKeys.length) {
+    const out: Blob[] = [];
+    for (const key of segKeys) {
+      const part = await db.get('audio', key);
+      if (part) out.push(part);
+    }
+    return out;
+  }
+
+  // Older walks. One blob under the bare session id is a walk that ended
+  // cleanly before segments existed — and if it was ever interrupted, that
+  // blob is the glued file this change exists to stop making. It is returned
+  // as-is: the bytes are all there, and splitting a container here would be
+  // guessing at someone else's format.
+  const whole = await db.get('audio', session_id);
+  if (whole) return [whole];
+
+  // Older still, or a walk that never finished: raw chunks. These come from a
+  // single recorder if the walk was never resumed, so joining them is right.
   const parts: Blob[] = [];
   for (const key of keys) {
     const part = await db.get('audio', key);
     if (part) parts.push(part);
   }
-  if (!parts.length) return null;
-  return new Blob(parts, { type: parts[0].type });
+  if (!parts.length) return [];
+  return [new Blob(parts, { type: parts[0].type })];
+}
+
+/**
+ * Total bytes of audio held for a walk, across every segment.
+ */
+export async function sessionAudioBytes(db: DeezDB, session_id: SessionId): Promise<number> {
+  const segs = await readSessionSegments(db, session_id);
+  return segs.reduce((sum, b) => sum + b.size, 0);
 }
 
 /**
@@ -581,6 +613,26 @@ let watchdog: ReturnType<typeof setInterval> | null = null;
 let resumedAwaitingFirstChunk = false;
 
 /**
+ * Where each recorder's output begins, as a chunk index.
+ *
+ * **A walk interrupted twice is three recordings, and pretending otherwise is
+ * what broke playback.** Every `MediaRecorder` writes a self-contained file —
+ * its own `ftyp`/`moov` header, its own timeline starting at zero. Gluing
+ * three of those end to end produces bytes that are not a valid MP4: a player
+ * reads the first header, believes the file is 60 seconds long, and stops at
+ * the join with the rest of the audio sitting unread behind it.
+ *
+ * That is exactly what the owner hit — 124 seconds recorded, 124 captured,
+ * and a file that played 60. Three `ftyp` boxes at bytes 0, 1420805 and
+ * 2026003 of one export made it unarguable.
+ *
+ * So the chunks are assembled per segment, and a walk holds as many audio
+ * files as it had recorders. Each one plays. Nothing is concatenated across
+ * a seam, ever.
+ */
+let segmentStarts: number[] = [];
+
+/**
  * What happened to this walk, in order.
  *
  * Every fault found in this path so far was found by the owner reading two
@@ -710,6 +762,7 @@ export async function startSession(as_of: ISODate): Promise<void> {
 
     recorder.start(CHUNK_MS);
     resumedAwaitingFirstChunk = false;
+    segmentStarts = [0];
     trail = [];
     note(`started · ${mime ?? 'unknown format'}`);
     pushMarker({ type: 'session_start' });
@@ -831,20 +884,49 @@ export async function endSession(): Promise<SessionId | null> {
     // back, finish, and Recordings says there is no audio.
     //
     // Write-then-delete cannot lose anything. The worst case is that both
-    // forms exist for a moment, and `readSessionAudio` already prefers the
-    // whole blob over the chunks, so there is never any ambiguity about which
-    // one is the walk. A crash between the two leaves both, which is a
+    // forms exist for a moment, and `readSessionSegments` prefers the
+    // assembled segments over the raw chunks, so there is never any ambiguity
+    // about which is the walk. A crash between the two leaves both, which is a
     // harmless duplicate rather than a lost recording.
-    const whole = await readSessionAudio(db, session_id);
-    if (whole) {
-      await db.put('audio', whole, session_id);
-      await deleteSessionAudio(db, session_id, { keepWhole: true });
+    //
+    // ONE BLOB PER SEGMENT, never one across all of them. Each recorder wrote
+    // a self-contained file; joining them makes bytes no player reads past the
+    // first seam.
+    const chunkKeys = (await db.getAllKeys('audio'))
+      .filter((k): k is string => typeof k === 'string'
+        && k.startsWith(`${session_id}#`) && !k.includes('#seg'))
+      .sort();
+
+    if (chunkKeys.length) {
+      const bounds = segmentStarts.length ? segmentStarts : [0];
+      for (let i = 0; i < bounds.length; i += 1) {
+        const from = bounds[i];
+        const to = i + 1 < bounds.length ? bounds[i + 1] : Number.MAX_SAFE_INTEGER;
+        const mine = chunkKeys.filter((k) => {
+          const n = Number(k.slice(k.lastIndexOf('#') + 1));
+          return Number.isFinite(n) && n >= from && n < to;
+        });
+        if (!mine.length) continue;
+        const parts: Blob[] = [];
+        for (const key of mine) {
+          const part = await db.get('audio', key);
+          if (part) parts.push(part);
+        }
+        if (!parts.length) continue;
+        await db.put(
+          'audio',
+          new Blob(parts, { type: parts[0].type }),
+          segmentKey(session_id, i),
+        );
+      }
+      // Only now that every segment is safely written.
+      for (const key of chunkKeys) await db.delete('audio', key);
     }
     await persistProgress(true);
   } catch {
     // Mark the session closed even if assembling its audio failed, so it stops
     // reading as live. A second attempt is pointless: the chunks are the
-    // record, and `readSessionAudio` already falls back to them.
+    // record, and `readSessionSegments` already falls back to them.
     try { await persistProgress(true); } catch { /* the chunks still stand */ }
   } finally {
     saved = { session_id, duration_s: elapsedSeconds(), marker_count: routeMarkerCount(markers) };
@@ -960,6 +1042,8 @@ export async function resumeInterrupted(): Promise<void> {
     // not: iOS returns a track that looks live and produces nothing. Until a
     // chunk actually arrives, treat this stretch as unproven.
     resumedAwaitingFirstChunk = true;
+    // A new recorder means a new self-contained file from here on.
+    segmentStarts = [...segmentStarts, chunkIndex];
     note('resumed — waiting for the microphone to prove itself');
     recorder.start(CHUNK_MS);
     attachLifecycle();
@@ -1011,6 +1095,7 @@ export async function restoreInterrupted(): Promise<boolean> {
   markers = [...held.markers];
   accumulatedMs = held.duration_s * 1000;
   chunkIndex = held.chunk_count ?? held.markers.length;
+  segmentStarts = held.segment_starts?.length ? [...held.segment_starts] : [0];
   mime = held.mime ?? null;
   runningSince = 0;
   // Not restored: `interruptedAt`. A walk picked up tomorrow would otherwise
@@ -1051,6 +1136,7 @@ export async function discardSession(): Promise<void> {
   markers = [];
   accumulatedMs = 0;
   chunkIndex = 0;
+  segmentStarts = [];
   saved = null;
   error = null;
   backgrounded = false;

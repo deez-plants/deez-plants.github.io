@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import type { DeezDB, ScreenLogEntry, SessionRecord } from '../db/schema';
-import { extensionFor, readSessionAudio } from './recording';
+import { extensionFor, readSessionSegments, sessionAudioBytes } from './recording';
 import { checkCoverage, parseTranscript } from './coverage';
 import { screenLogForSession } from './screenLog';
 import { routeMarkerCount } from './liveSession';
@@ -28,10 +28,9 @@ export async function listSessions(db: DeezDB): Promise<SessionSummary[]> {
   const summaries: SessionSummary[] = [];
 
   for (const record of records) {
-    const audio = await readSessionAudio(db, record.session_id);
     summaries.push({
       ...record,
-      audio_bytes: audio?.size ?? 0,
+      audio_bytes: await sessionAudioBytes(db, record.session_id),
       marker_count: routeMarkerCount(record.markers),
       plant_count: new Set(
         record.markers.filter((m) => m.type === 'plant_open').map((m) => m.plant_id),
@@ -109,12 +108,18 @@ export async function exportSession(db: DeezDB, session_id: SessionId): Promise<
   const session = await db.get('sessions', session_id);
   if (!session) throw new Error(`No session ${session_id} on this device.`);
 
-  const audio = await readSessionAudio(db, session_id);
-  const audio_name = `${session_id}${extensionFor(session.mime ?? audio?.type)}`;
+  const segments = await readSessionSegments(db, session_id);
+  const ext = extensionFor(session.mime ?? segments[0]?.type);
+  // A walk that was interrupted holds one file per stretch. They are named in
+  // order and Whisper reads them in order; joining them would produce bytes
+  // no player reads past the first seam, which is the bug this replaced.
+  const names = segments.map((_, i) =>
+    (segments.length === 1 ? `${session_id}${ext}` : `${session_id}-part${i + 1}${ext}`));
+  const audio_name = names[0] ?? `${session_id}${ext}`;
   const entries = await screenLogForSession(session_id);
 
   const zip = new JSZip();
-  if (audio) zip.file(audio_name, audio);
+  segments.forEach((audio, i) => zip.file(names[i], audio));
   zip.file('markers.json', JSON.stringify(sidecarFor(session), null, 2));
   // What happened to the walk, when something did. It travels with the export
   // so a walk that came back short can be explained by whoever looks at it

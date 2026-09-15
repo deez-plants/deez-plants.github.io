@@ -9,7 +9,7 @@ import {
   totalAudioBytes,
   type SessionSummary,
 } from '../capture/sessions';
-import { clearFinished, deleteSession, deleteSessionAudio, formatDuration, getPhase, getSnapshot, readSessionAudio, subscribe } from '../capture/recording';
+import { clearFinished, deleteSession, deleteSessionAudio, formatDuration, getPhase, getSnapshot, readSessionSegments, subscribe } from '../capture/recording';
 import { saveBlob } from '../package/export';
 import type { SessionId } from '../types/ids';
 import './Recordings.css';
@@ -87,13 +87,26 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
 
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
 
-  const openPlayer = async (session_id: SessionId): Promise<boolean> => {
-    if (playing === session_id && audioUrl) return true;
+  /**
+   * Which stretch of an interrupted walk is in the player.
+   *
+   * A walk interrupted twice holds three recordings, and they cannot be
+   * joined — see `readSessionSegments`. So the player takes one at a time and
+   * the screen offers the others.
+   */
+  const [segmentIndex, setSegmentIndex] = useState(0);
+  const [segmentCount, setSegmentCount] = useState(1);
+
+  const openPlayer = async (session_id: SessionId, index = 0): Promise<boolean> => {
+    if (playing === session_id && audioUrl && index === segmentIndex) return true;
     setError(null);
     try {
       const db = await openDeezPlants();
-      const blob = await readSessionAudio(db, session_id);
-      if (!blob) { setError('No audio stored for this walk.'); return false; }
+      const segments = await readSessionSegments(db, session_id);
+      if (!segments.length) { setError('No audio stored for this walk.'); return false; }
+      const blob = segments[Math.min(index, segments.length - 1)];
+      setSegmentCount(segments.length);
+      setSegmentIndex(Math.min(index, segments.length - 1));
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(URL.createObjectURL(blob));
       setPlaying(session_id);
@@ -444,6 +457,27 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
 
               {playing === s.session_id && audioUrl && (
                 <div className="recs-player">
+                  {/* An interrupted walk is several recordings, and they
+                      cannot be joined into one playable file — that is the
+                      bug this replaced. So each stretch is offered on its own,
+                      in order. */}
+                  {segmentCount > 1 && (
+                    <div className="recs-segs">
+                      <span className="recs-segs-label">
+                        Interrupted · {segmentCount} parts
+                      </span>
+                      {Array.from({ length: segmentCount }, (_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className={i === segmentIndex ? 'recs-seg on' : 'recs-seg'}
+                          onClick={() => void openPlayer(s.session_id, i)}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                   <audio
                     ref={audioRef}

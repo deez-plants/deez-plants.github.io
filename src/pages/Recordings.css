@@ -409,3 +409,37 @@
   font-size: 18px;
   color: var(--ink-40);
 }
+
+/* An interrupted walk is several recordings. They cannot be joined into one
+   playable file, so each is offered on its own, in order. */
+.recs-segs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.recs-segs-label {
+  font: 600 18px/1 var(--mono);
+  letter-spacing: 0.05em;
+  color: var(--ink-50);
+  margin-right: 2px;
+}
+
+.recs-seg {
+  min-width: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-70);
+  font: 600 20px/1 var(--sans);
+  cursor: pointer;
+}
+
+.recs-seg.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}

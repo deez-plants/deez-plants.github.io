@@ -76,6 +76,16 @@ export interface SessionRecord {
    * a shape would invite code to depend on them.
    */
   trail?: string[];
+  /**
+   * Chunk index at which each recorder's output begins.
+   *
+   * A walk interrupted twice holds three recordings, and each is a separate,
+   * self-contained file. Gluing them produces bytes no player will read past
+   * the first join — see `segmentStarts` in `capture/recording.ts`.
+   *
+   * Absent on walks recorded before 2026-09-14, which are read as one segment.
+   */
+  segment_starts?: number[];
   /** Markers are written by the app as it goes — page opens, care, photos. */
   markers: SessionMarker[];
   transcript: string | null;
