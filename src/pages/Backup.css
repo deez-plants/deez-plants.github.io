@@ -125,3 +125,22 @@
   color: var(--ink-45);
   text-wrap: pretty;
 }
+
+/* What a backup would actually carry, said before you tap rather than
+   inferred from a file size afterwards. Amber only when audio is riding
+   along, because that is the case worth acting on - transcribe first and it
+   goes away. */
+.backup-walks {
+  margin: 0 0 14px;
+  font: 400 19px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.backup-walks.warn {
+  padding: 11px 13px;
+  border-left: 3px solid var(--amber);
+  background: rgba(233, 161, 92, 0.08);
+  border-radius: 0 10px 10px 0;
+  color: var(--ink-70);
+}

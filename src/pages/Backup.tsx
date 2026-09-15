@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { openDeezPlants } from '../db/schema';
+import { sessionAudioBytes } from '../capture/recording';
 import {
   exportEverything,
   exportRecord,
@@ -41,6 +42,33 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [restored, setRestored] = useState<RestoreResult | null>(null);
+
+  /**
+   * What a backup would carry, before you commit to making one.
+   *
+   * The app already knew which walks have transcripts and never said. A walk
+   * with words needs no audio in the backup; a walk without has nothing else,
+   * and both facts are worth seeing BEFORE you tap rather than inferring from
+   * a file size afterwards.
+   */
+  const [walks, setWalks] = useState<{ total: number; transcribed: number; bytes: number } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const db = await openDeezPlants();
+        const sessions = await db.getAll('sessions');
+        let bytes = 0;
+        let transcribed = 0;
+        for (const s of sessions) {
+          if (s.transcript) { transcribed += 1; continue; }
+          bytes += await sessionAudioBytes(db, s.session_id);
+        }
+        if (live) setWalks({ total: sessions.length, transcribed, bytes });
+      } catch { /* the cards still work without the summary */ }
+    })();
+    return () => { live = false; };
+  }, [restored]);
 
   const run = async (kind: Exclude<Busy, null>, work: () => Promise<void>) => {
     setBusy(kind);
@@ -117,9 +145,20 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
           <span className="backup-label">SAVE EVERYTHING</span>
         </div>
         <p className="backup-body">
-          The record plus every photo and every walk's audio. Much larger, so
-          this one is worth doing now and then rather than often.
+          The record, every photo, and the audio of any walk that has no
+          transcript yet. Much larger, so this one is worth doing now and then
+          rather than often.
         </p>
+        {walks && walks.total > 0 && (
+          <p className={walks.bytes > 0 ? 'backup-walks warn' : 'backup-walks'}>
+            {walks.transcribed === walks.total
+              ? `All ${walks.total} walk${walks.total === 1 ? '' : 's'} transcribed — no audio needed.`
+              : `${walks.total - walks.transcribed} of ${walks.total} walk${walks.total === 1 ? '' : 's'} `
+                + `still ${walks.total - walks.transcribed === 1 ? 'has' : 'have'} no transcript, `
+                + `so ${walks.total - walks.transcribed === 1 ? 'its' : 'their'} audio travels — ${formatBytes(walks.bytes)}. `
+                + `Transcribe ${walks.total - walks.transcribed === 1 ? 'it' : 'them'} first and this backup gets much smaller.`}
+          </p>
+        )}
         <button
           type="button"
           className="backup-action"

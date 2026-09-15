@@ -82,6 +82,12 @@ export interface ExportResult {
   plant_count: number;
   event_count: number;
   bytes: number;
+  /** Audio carried, in bytes — only from walks that have no transcript. */
+  audio_bytes?: number;
+  /** How many walks contributed audio, because they have nothing else. */
+  walks_with_audio?: number;
+  /** How many walks needed none, because their words are already saved. */
+  walks_transcribed?: number;
 }
 
 /** The record alone. Small, instant, and the thing worth doing often. */
@@ -97,7 +103,22 @@ export async function exportRecord(db: DeezDB, as_of: ISODate): Promise<ExportRe
   };
 }
 
-/** Everything: the record, every photo, and every walk's audio and sidecar. */
+/**
+ * Everything: the record, every photo, and the audio of any walk that would
+ * otherwise have nothing left of it.
+ *
+ * **A transcribed walk's audio is deliberately left out** (2026-09-14, the
+ * owner's decision and their reasoning). Photos run about 40MB a year; audio
+ * runs about 470MB. Once a walk has a transcript, the words are what the AI
+ * reads and what the coverage gate checks — the recording has done its job,
+ * and the app already agrees elsewhere: "free up space" offers to drop audio
+ * *only* where a transcript exists.
+ *
+ * **The exception is not optional.** A walk with no transcript has nothing
+ * but its audio; dropping that would lose the walk on a restore, silently,
+ * with no error and nothing to notice. So untranscribed walks keep their
+ * audio and the screen says how much that came to.
+ */
 export async function exportEverything(db: DeezDB, as_of: ISODate): Promise<ExportResult> {
   const state = await readState(db, as_of);
   const media = await db.getAll('media');
@@ -114,16 +135,25 @@ export async function exportEverything(db: DeezDB, as_of: ISODate): Promise<Expo
     zip.file(`media/${m.media_id}`, m.blob);
     zip.file(`media/thumbs/${m.media_id}`, m.thumb);
   }
+  let audio_bytes = 0;
+  let walks_with_audio = 0;
   for (const s of sessions) {
+    // Transcribed: the words are the record now, and the audio is the biggest
+    // thing in this file by an order of magnitude.
+    if (s.transcript) continue;
+
     // A walk interrupted twice is three recordings. Every one travels, named
     // in order, because gluing them is what made a file no player would read
     // past the first seam.
     const segments = await readSessionSegments(db, s.session_id);
+    if (!segments.length) continue;
+    walks_with_audio += 1;
     segments.forEach((audio, i) => {
       const ext = extensionFor(s.mime ?? audio.type);
       const name = segments.length === 1
         ? `${s.session_id}${ext}`
         : `${s.session_id}-part${i + 1}${ext}`;
+      audio_bytes += audio.size;
       zip.file(`sessions/${name}`, audio);
     });
   }
@@ -132,6 +162,9 @@ export async function exportEverything(db: DeezDB, as_of: ISODate): Promise<Expo
   return {
     blob,
     filename: `${stamp()} backup — everything.zip`,
+    audio_bytes,
+    walks_with_audio,
+    walks_transcribed: sessions.filter((s) => !!s.transcript).length,
     plant_count: state.plants.length,
     event_count: state.events.length,
     bytes: blob.size,

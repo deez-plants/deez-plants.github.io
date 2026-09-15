@@ -108,3 +108,23 @@
   color: var(--ink-40);
   cursor: default;
 }
+
+/* A walk with no transcript is a walk the AI cannot hear. The count was
+   already on the file list; this says what it costs. */
+.prep-warn {
+  margin: 0 0 16px;
+  padding: 13px 15px;
+  border-left: 3px solid var(--amber);
+  background: rgba(233, 161, 92, 0.08);
+  border-radius: 0 11px 11px 0;
+  font: 400 20px/1.4 var(--sans);
+  color: var(--ink-70);
+  text-wrap: pretty;
+}
+
+.prep-ok {
+  margin: 0 0 16px;
+  font: 400 20px/1.4 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}

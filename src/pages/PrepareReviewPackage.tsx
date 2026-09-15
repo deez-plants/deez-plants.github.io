@@ -109,6 +109,30 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
         </ul>
       )}
 
+      {/* The count of transcribed walks was already on the list above; what
+          was missing is what it MEANS. A walk with no transcript is a walk
+          the AI cannot hear, and the package's tier is the weakest transcript
+          in it — one untranscribed walk makes the whole thing unverified. */}
+      {status.kind === 'ready' && status.session_count > 0
+        && status.transcribed_count < status.session_count && (
+        <p className="prep-warn">
+          {status.session_count - status.transcribed_count} of {status.session_count}{' '}
+          walk{status.session_count === 1 ? '' : 's'} {status.session_count - status.transcribed_count === 1 ? 'has' : 'have'}{' '}
+          no transcript. The AI gets the markers but not a word you said on{' '}
+          {status.session_count - status.transcribed_count === 1 ? 'it' : 'them'} — and one
+          untranscribed walk makes the whole package <strong>unverified</strong>.
+          Transcribe first if you want it read properly.
+        </p>
+      )}
+
+      {status.kind === 'ready' && status.session_count > 0
+        && status.transcribed_count === status.session_count && (
+        <p className="prep-ok">
+          All {status.session_count} walk{status.session_count === 1 ? '' : 's'} transcribed.
+          The AI reads your own words, attributed to the plant whose page was open.
+        </p>
+      )}
+
       {status.kind === 'done' && (
         <div className="prep-done">
           <p>
