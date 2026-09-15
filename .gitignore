@@ -29,3 +29,16 @@ check/build
 # Review packages and session exports the app produces while testing.
 # These are outputs, not source; gpt-prompt.txt is the owner's and stays.
 *.zip
+
+# Walks moved to the laptop for transcription.
+#
+# This repo is PUBLIC - it is the GitHub Pages site. A walk recording is the
+# owner's own voice, in their home, talking about their flat. Committing one
+# would publish it, and `git rm` afterwards would not un-publish it.
+#
+# Audio and exported walks stay out of git entirely.
+My_content_to_share/
+my_content_to_share/
+*.m4a
+*.webm
+*.transcript.txt
