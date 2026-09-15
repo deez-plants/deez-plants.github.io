@@ -52,6 +52,8 @@ export interface RecordSessionProps {
   onBack: () => void;
   onPreparePackage: () => void;
   onRecordings: () => void;
+  /** Open a plant's own page from here. */
+  onOpenPlant: (plant_id: PlantId) => void;
 }
 
 const STATE_WORD = {
@@ -65,9 +67,21 @@ const STATE_WORD = {
 } as const;
 
 export default function RecordSession({
-  state, as_of, backLabel, onBack, onPreparePackage, onRecordings,
+  state, as_of, backLabel, onBack, onPreparePackage, onRecordings, onOpenPlant,
 }: RecordSessionProps) {
   const rec = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  // The last plant opened during this walk, from the markers the walk is
+  // already writing. Nothing new is stored for this.
+  const lastPlant = (() => {
+    for (let i = rec.markers.length - 1; i >= 0; i -= 1) {
+      const m = rec.markers[i];
+      if (m.type !== 'plant_open' || !m.plant_id) continue;
+      const plant = state.plants[m.plant_id];
+      if (plant) return { plant_id: m.plant_id, name: plant.name };
+    }
+    return null;
+  })();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [retagging, setRetagging] = useState<number | null>(null);
 
@@ -103,7 +117,20 @@ export default function RecordSession({
 
   return (
     <main className="rec">
-      {backLabel && <button type="button" className="screen-back rec-back" onClick={onBack}>‹ {backLabel}</button>}
+      {backLabel
+        ? <button type="button" className="screen-back rec-back" onClick={onBack}>‹ {backLabel}</button>
+        : lastPlant && (
+          /* Rec is a tab, so it clears the stack and there is nothing behind
+             it to go back to — which strands you mid-walk with no way to the
+             plant you were looking at, and nothing to remind you which it
+             was. The walk already knows: it drops a `plant_open` marker every
+             time you open one. The owner's words were "this would suck if I
+             couldn't remember", and naming the plant is why this beats a
+             plain back button. */
+          <button type="button" className="screen-back rec-back" onClick={() => onOpenPlant(lastPlant.plant_id)}>
+            ‹ Back to {lastPlant.name}
+          </button>
+        )}
 
       <h1 className="rec-title">Inspection session</h1>
 

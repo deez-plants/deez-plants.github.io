@@ -30,6 +30,8 @@ export interface InfoSettingsProps {
   onBack: () => void;
   allPlants: readonly { plant_id: PlantId; name: string }[];
   onNavigate: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenPlant?: (plant_id: PlantId) => void;
   onChanged: () => Promise<void> | void;
 }
 
@@ -101,7 +103,7 @@ function TextField({ label, value, onChange, placeholder }: {
 }
 
 export default function InfoSettings({
-  plant, registry, as_of, backLabel, onBack, allPlants, onNavigate, onChanged,
+  plant, registry, as_of, backLabel, onBack, allPlants, onNavigate, onOpenPlant, onChanged,
 }: InfoSettingsProps) {
   const [form, setForm] = useState<FormState>(() => toForm(plant));
   // The typed "from" for the next diff — starts as `plant`'s own values, but
@@ -225,6 +227,7 @@ export default function InfoSettings({
         onBack={onBack}
         allPlants={allPlants}
         onNavigate={onNavigate}
+        onOpenPlant={onOpenPlant}
       />
 
       <h1 className="info-title">Info</h1>

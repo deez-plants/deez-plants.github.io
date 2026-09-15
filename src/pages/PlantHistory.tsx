@@ -22,12 +22,14 @@ export interface PlantHistoryProps {
   onBack: () => void;
   allPlants: readonly { plant_id: PlantId; name: string }[];
   onNavigate: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenPlant?: (plant_id: PlantId) => void;
   onViewAll: () => void;
   onCareCalendar: () => void;
 }
 
 export default function PlantHistory({
-  plant, events, as_of, backLabel, onBack, allPlants, onNavigate, onViewAll, onCareCalendar,
+  plant, events, as_of, backLabel, onBack, allPlants, onNavigate, onOpenPlant, onViewAll, onCareCalendar,
 }: PlantHistoryProps) {
   const plantEvents = useMemo(
     () => events.filter((e) => e.plant_id === plant.plant_id).sort((a, b) => compareEvents(b, a)),
@@ -43,6 +45,7 @@ export default function PlantHistory({
         onBack={onBack}
         allPlants={allPlants}
         onNavigate={onNavigate}
+        onOpenPlant={onOpenPlant}
       />
 
       <h1 className="history-title">History</h1>

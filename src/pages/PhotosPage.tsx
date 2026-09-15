@@ -47,6 +47,8 @@ export interface PhotosPageProps {
   allPlants: readonly { plant_id: PlantId; name: string }[];
   /** Swap plant without leaving Photos. */
   onNavigate: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenPlant?: (plant_id: PlantId) => void;
 }
 
 const LABEL_TEXT: Record<MediaLabel, string> = {
@@ -60,7 +62,7 @@ interface Entry {
 }
 
 export default function PhotosPage({
-  plant, events, thumbs, as_of, backLabel, onBack, onChanged, allPlants, onNavigate,
+  plant, events, thumbs, as_of, backLabel, onBack, onChanged, allPlants, onNavigate, onOpenPlant,
 }: PhotosPageProps) {
   const [busyHero, setBusyHero] = useState<MediaId | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -187,6 +189,7 @@ export default function PhotosPage({
         onBack={onBack}
         allPlants={allPlants}
         onNavigate={onNavigate}
+        onOpenPlant={onOpenPlant}
       />
 
       <h1 className="photos-title">{plant.name}</h1>

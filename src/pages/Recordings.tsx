@@ -480,6 +480,13 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                   )}
                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                   <audio
+                    /* Keyed on the file, so switching parts builds a NEW
+                       player rather than swapping the source under the old
+                       one. Without this the control kept the state it had
+                       before — the owner saw a pause symbol that stayed a
+                       pause symbol on a part that was not playing. It worked,
+                       and looked broken, which is worse than either. */
+                    key={audioUrl}
                     ref={audioRef}
                     className="recs-audio"
                     src={audioUrl}

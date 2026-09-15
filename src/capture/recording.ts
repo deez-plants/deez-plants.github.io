@@ -1078,15 +1078,33 @@ export async function endInterrupted(): Promise<SessionId | null> {
  * Find a walk that was interrupted and never picked up, and make it resumable
  * again. Called once at boot.
  *
- * This is what makes an interrupted walk survive the app being closed: the
- * flag, the markers and the elapsed total are all on disk, so a force-quit
- * mid-walk costs the last few seconds of audio and nothing else.
+ * This is what makes an unfinished walk survive the app being closed: the
+ * markers and the elapsed total are all on disk, so a force-quit mid-walk
+ * costs the last few seconds of audio and nothing else.
+ *
+ * **Any unclosed walk, not only an `interrupted` one** (2026-09-14). It used
+ * to require the `interrupted` flag, which iOS sets when it takes the
+ * microphone — and a PAUSED walk never gets that flag. So when the owner
+ * paused for five minutes to fill a watering can and iOS reclaimed the page,
+ * the app came back with a clean slate and a zero timer, and what should have
+ * been one walk became several. The audio was never lost; the app had simply
+ * forgotten it was mid-walk.
+ *
+ * Five minutes paused is exactly when iOS reclaims a page, and pausing to
+ * fill a can is exactly when you pause. `interrupted` and `paused` both mean
+ * "this walk never ended", and both deserve to be offered back.
+ *
+ * **Today only.** A walk from last night is not something to be nagged about
+ * on opening the app, and the owner already has several. Older unfinished
+ * walks stay in Recordings, where they can be listened to and exported like
+ * anything else.
  */
-export async function restoreInterrupted(): Promise<boolean> {
+export async function restoreInterrupted(as_of?: ISODate): Promise<boolean> {
   if (phase !== 'ready') return false;
   const db = await openDeezPlants();
+  const today = as_of ?? nowLocalStamp().slice(0, 10);
   const held = (await db.getAll('sessions'))
-    .filter((r) => r.interrupted && !r.closed)
+    .filter((r) => !r.closed && r.started.slice(0, 10) === today)
     .sort((a, b) => (a.started < b.started ? 1 : -1))[0];
   if (!held) return false;
 

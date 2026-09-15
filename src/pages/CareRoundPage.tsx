@@ -52,6 +52,8 @@ export interface CareRoundPageProps {
   /** Prev/Next: step sideways to another plant's Log care. Replaces rather
       than pushes — browsing 22 plants should not take 22 taps to back out. */
   onNavigate?: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenThisPlant?: (plant_id: PlantId) => void;
   /** The Which-plant list: going to a plant is going somewhere NEW, so it
       pushes and the all-plants page stays behind you. Using `onNavigate` here
       was a real bug — it swapped this page out, which is exactly why there
@@ -72,7 +74,7 @@ type DetailFlash =
 
 export default function CareRoundPage({
   state, events, registry, thumbs, as_of, onChanged, backLabel, onBack, detailPlantId,
-  allPlants, onNavigate, onOpenPlant, onAllPlants,
+  allPlants, onNavigate, onOpenThisPlant, onOpenPlant, onAllPlants,
 }: CareRoundPageProps) {
   const [draft, setDraft] = useState<RoundDraft>(EMPTY_DRAFT);
   const [flash, setFlash] = useState<Flash | null>(null);
@@ -253,6 +255,7 @@ export default function CareRoundPage({
           onBack={onBack ?? (() => {})}
           allPlants={allPlants}
           onNavigate={onNavigate}
+          onOpenPlant={onOpenThisPlant}
         />
       ) : onBack && (
         <button type="button" className="screen-back care-back" onClick={onBack}>‹ {backLabel ?? 'Back'}</button>

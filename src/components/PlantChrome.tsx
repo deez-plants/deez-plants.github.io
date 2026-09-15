@@ -21,9 +21,14 @@ export interface PlantChromeProps {
   /** Swaps which plant is showing without pushing a new back-stack entry —
       browsing 22 plants with Prev/Next should not take 22 taps to back out of. */
   onNavigate: (plant_id: PlantId) => void;
+  /** Open the plant this strip names. Optional: on Plant Detail itself there
+      is nowhere to go, so it is left off there. */
+  onOpenPlant?: (plant_id: PlantId) => void;
 }
 
-export function PlantChrome({ plant, backLabel, onBack, allPlants, onNavigate }: PlantChromeProps) {
+export function PlantChrome({
+  plant, backLabel, onBack, allPlants, onNavigate, onOpenPlant,
+}: PlantChromeProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const index = allPlants.findIndex((p) => p.plant_id === plant.plant_id);
@@ -67,7 +72,25 @@ export function PlantChrome({ plant, backLabel, onBack, allPlants, onNavigate }:
         >
           ‹ Prev
         </button>
-        <span className="chrome-nav-id">{plant.plant_id}</span>
+        {/* The ID is the way to this plant's own page.
+            Stepping sideways with Prev/Next deliberately does NOT move the
+            back button — back means "where I came from", and having it drift
+            would give one control two meanings. But that left no route from,
+            say, Log care for 004 to 004's own page except going the long way
+            round. The strip already names the plant; making it tappable is
+            the short way, and it works the same on History, Photos and the
+            calendar. */}
+        {onOpenPlant ? (
+          <button
+            type="button"
+            className="chrome-nav-id as-link"
+            onClick={() => onOpenPlant(plant.plant_id)}
+          >
+            {plant.plant_id}
+          </button>
+        ) : (
+          <span className="chrome-nav-id">{plant.plant_id}</span>
+        )}
         <button
           type="button"
           className="chrome-nav-btn"

@@ -18,10 +18,12 @@ export interface PlantEntriesProps {
   onBack: () => void;
   allPlants: readonly { plant_id: PlantId; name: string }[];
   onNavigate: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenPlant?: (plant_id: PlantId) => void;
 }
 
 export default function PlantEntries({
-  plant, events, as_of, backLabel, onBack, allPlants, onNavigate,
+  plant, events, as_of, backLabel, onBack, allPlants, onNavigate, onOpenPlant,
 }: PlantEntriesProps) {
   const plantEvents = useMemo(
     () => events.filter((e) => e.plant_id === plant.plant_id).sort((a, b) => compareEvents(b, a)),
@@ -37,6 +39,7 @@ export default function PlantEntries({
         onBack={onBack}
         allPlants={allPlants}
         onNavigate={onNavigate}
+        onOpenPlant={onOpenPlant}
       />
 
       <h1 className="history-title">All entries</h1>

@@ -27,12 +27,14 @@ export interface PlantCalendarProps {
   onBack: () => void;
   allPlants: readonly { plant_id: PlantId; name: string }[];
   onNavigate: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenPlant?: (plant_id: PlantId) => void;
   /** Present only on the three-month view. */
   onViewAll?: () => void;
 }
 
 export default function PlantCalendar({
-  plant, events, as_of, all, backLabel, onBack, allPlants, onNavigate, onViewAll,
+  plant, events, as_of, all, backLabel, onBack, allPlants, onNavigate, onOpenPlant, onViewAll,
 }: PlantCalendarProps) {
   const monthCount = all ? 12 : 3;
 
@@ -44,6 +46,7 @@ export default function PlantCalendar({
         onBack={onBack}
         allPlants={allPlants}
         onNavigate={onNavigate}
+        onOpenPlant={onOpenPlant}
       />
 
       <h1 className="cal-title">Care calendar</h1>

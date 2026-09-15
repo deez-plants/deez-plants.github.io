@@ -44,6 +44,8 @@ export interface MoreAboutPlantProps {
   onBack: () => void;
   allPlants: readonly { plant_id: PlantId; name: string }[];
   onNavigate: (plant_id: PlantId) => void;
+  /** Open this plant's own page from the ID in the strip. */
+  onOpenPlant?: (plant_id: PlantId) => void;
   onChanged: () => Promise<void> | void;
 }
 
@@ -58,7 +60,7 @@ const REFERENCE_FIELDS = [
 ] as const;
 
 export default function MoreAboutPlant({
-  plant, as_of, backLabel, onBack, allPlants, onNavigate, onChanged,
+  plant, as_of, backLabel, onBack, allPlants, onNavigate, onOpenPlant, onChanged,
 }: MoreAboutPlantProps) {
   const [notes, setNotes] = useState(plant.notes_user);
   const [notesBaseline, setNotesBaseline] = useState(plant.notes_user);
@@ -146,6 +148,7 @@ export default function MoreAboutPlant({
         onBack={onBack}
         allPlants={allPlants}
         onNavigate={onNavigate}
+        onOpenPlant={onOpenPlant}
       />
 
       <h1 className="more-title">More about this plant</h1>

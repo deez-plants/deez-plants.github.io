@@ -105,6 +105,7 @@ export default function WhatWorks({
           onBack={onBack}
           allPlants={allPlants}
           onNavigate={onNavigate}
+          onOpenPlant={onOpenPlant}
         />
       ) : (
         <button type="button" className="screen-back works-back" onClick={onBack}>‹ {backLabel}</button>

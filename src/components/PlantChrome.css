@@ -109,3 +109,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* The ID doubles as the way to this plant's own page. Prev/Next deliberately
+   does not move the back button - back means "where I came from" - so this is
+   the short route to whichever plant you have stepped to. */
+button.chrome-nav-id.as-link {
+  background: none;
+  border: 0;
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(155, 227, 155, 0.4);
+}

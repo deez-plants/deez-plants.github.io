@@ -225,6 +225,7 @@ export default function App() {
         onBack={nav.back}
         onPreparePackage={() => nav.push({ kind: 'prepare-package' }, 'Record')}
         onRecordings={() => nav.push({ kind: 'recordings' }, 'Record')}
+        onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Record')}
       />
     );
   } else if (screen.kind === 'recordings') {
@@ -260,6 +261,7 @@ export default function App() {
         detailPlantId={screen.plant_id}
         allPlants={activePlants}
         onNavigate={(plant_id) => nav.replace({ kind: 'care', plant_id })}
+        onOpenThisPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
         onOpenPlant={(plant_id) => nav.push({ kind: 'care', plant_id }, 'Log care')}
         onAllPlants={() => nav.push({ kind: 'care' }, screenTitle(screen))}
       />
@@ -313,6 +315,7 @@ export default function App() {
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'history', plant_id })}
+          onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onViewAll={() => nav.push({ kind: 'entries', plant_id: plant.plant_id }, 'History')}
           onCareCalendar={() => nav.push({ kind: 'calendar', plant_id: plant.plant_id }, 'History')}
         />
@@ -333,6 +336,7 @@ export default function App() {
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'entries', plant_id })}
+          onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
         />
       );
     }
@@ -352,6 +356,7 @@ export default function App() {
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'calendar', plant_id, all: screen.all })}
+          onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onViewAll={screen.all ? undefined : () => nav.push({ kind: 'calendar', plant_id: plant.plant_id, all: true }, 'Care calendar')}
         />
       );
@@ -371,6 +376,7 @@ export default function App() {
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'more', plant_id })}
+          onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onChanged={reload}
         />
       );
@@ -391,6 +397,7 @@ export default function App() {
           onBack={nav.back}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'info', plant_id })}
+          onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onChanged={reload}
         />
       );
@@ -450,6 +457,7 @@ export default function App() {
           onChanged={reload}
           allPlants={activePlants}
           onNavigate={(plant_id) => nav.replace({ kind: 'photos', plant_id })}
+          onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
         />
       );
     }
