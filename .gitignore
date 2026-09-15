@@ -46,3 +46,6 @@ my_content_to_share/
 # Python bytecode, from running transcribe_walk.py
 __pycache__/
 *.pyc
+
+# The watcher remembers which folder it is watching.
+.watch_walks.json

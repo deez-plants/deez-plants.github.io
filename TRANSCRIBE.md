@@ -29,7 +29,60 @@ you find yourself correcting a lot; it is about three times slower.
 
 ---
 
-## Per walk
+## The shortcut: drop it in a folder and forget it
+
+**This removes every step below except the last one.** Set it up once.
+
+### One-time, about ten minutes
+
+1. **Install iCloud for Windows** from the Microsoft Store, sign in with your
+   Apple ID, and tick **iCloud Drive**.
+2. Make a folder called **Deez Plants** in iCloud Drive. On the laptop it lives
+   at roughly `C:\Users\604dr\iCloudDrive\Deez Plants`; on the phone it is in
+   the Files app under iCloud Drive.
+3. In PowerShell, from the project folder, start the watcher once with that
+   path — it remembers it afterwards:
+
+```
+python watch_walks.py "C:\Users\604dr\iCloudDrive\Deez Plants"
+```
+
+It prints `Waiting...` and sits there. Leave that window open.
+
+### Then, per walk
+
+1. **On the phone:** Recordings → the walk → **Export for Whisper** →
+   **Save to Files** → iCloud Drive → **Deez Plants**.
+2. **Wait.** The watcher notices the file, unzips it into its own folder,
+   transcribes it — every part, in order, if the walk was interrupted — and
+   writes the transcript back into the same iCloud folder. The zip moves into
+   `transcribed\` so it is never done twice.
+3. **On the phone:** open the transcript in Files, select all, copy, and paste
+   it into that walk under **Add transcript**.
+
+**That is it.** No PowerShell per walk, no unzipping, no filenames, no
+remembering which folder.
+
+**Start the watcher again whenever you reboot** — same command, and it needs
+no path the second time.
+
+### Why the last step is still yours
+
+The transcript has to go into the app, the app lives on your phone, and iOS
+will not let a web page read a folder. So a copy and paste stays. Everything
+before it is gone.
+
+### And it removes a trap you would otherwise hit
+
+Every export contains a file called `markers.json`. Unzip two walks into one
+folder and the second overwrites the first — the script then attributes one
+walk's audio to the other walk's plants, and **nothing anywhere looks wrong**.
+The watcher gives every walk its own folder, every time.
+
+---
+
+## Per walk, by hand
+
 
 1. **On the phone**, in Recordings, open the walk and tap **Export for Whisper**.
    You get a single zip.
