@@ -47,12 +47,32 @@ eq('no failures are reported on a pass',
 eq('empty segments fail rather than vacuously passing',
   checkCoverage([], 100, MARKERS).passed, false);
 
-// 1. The last segment ends within 5 seconds of duration_s.
-eq('assertion 1: a transcript stopping 20s early fails',
-  failed(checkCoverage([{ start: 0, end: 80, text: 'x' }], 100, [])), [1]);
+// 1. The last segment ends within the end tolerance of duration_s.
+//
+// The allowance is deliberately asymmetric, and the reason is the owner's
+// first real walk: they stopped talking, lowered the phone and found the stop
+// button - six seconds of quiet - and the old five-second rule failed them
+// for it. Quiet at the end of a walk is normal. A transcript running PAST the
+// audio is not quiet; it is a transcript that does not belong to this
+// recording, so that direction keeps a narrow allowance.
+eq('assertion 1: a transcript stopping 40s early fails',
+  failed(checkCoverage([{ start: 0, end: 60, text: 'x' }], 100, [])), [1]);
 
 eq('assertion 1: 4 seconds short is inside tolerance',
   checkCoverage([{ start: 0, end: 96, text: 'x' }], 100, []).passed, true);
+
+// The case that actually happened, and must never fail again.
+eq('assertion 1: stopping talking 6s before the end is fine',
+  checkCoverage([{ start: 0, end: 118, text: 'x' }], 124, []).passed, true);
+
+eq('assertion 1: even a long quiet tail passes',
+  checkCoverage([{ start: 0, end: 82, text: 'x' }], 100, []).passed, true);
+
+// Rounded before it is compared as well as before it is printed, so the
+// report can never contradict itself the way it did once.
+eq('assertion 1: the reported shortfall matches the numbers quoted',
+  checkCoverage([{ start: 0, end: 59.6, text: 'x' }], 100, []).failures[0].detail,
+  'The transcript stops 40s before the end of the audio.');
 
 eq('assertion 1: running past the audio fails too',
   failed(checkCoverage([{ start: 0, end: 120, text: 'x' }], 100, [])), [1, 4]);

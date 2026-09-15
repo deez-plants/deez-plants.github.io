@@ -432,8 +432,22 @@ app measures against a duration it recorded itself.
 
 The transcript arrives with per-segment timestamps. The app asserts:
 
-1. The last segment ends within 5 seconds of `duration_s`.
-2. No gap between segments exceeds 20 seconds without a silence marker.
+1. The last segment ends within **20 seconds** of `duration_s` when it stops
+   short, and within 5 when it runs past.
+
+   **Amended 2026-09-14, after the first real walk failed on it.** The
+   allowance was 5 seconds each way. The owner stopped talking, lowered the
+   phone and found the stop button — six seconds — and the gate called an
+   otherwise perfect transcript a failure. Nobody presses stop mid-syllable,
+   so five seconds fails nearly every real walk, and **a gate that cries wolf
+   is worse than no gate**: the one time it matters, it has already been
+   learned as noise.
+
+   The asymmetry is the point. Stopping short is quiet, which is normal.
+   Running *past* the audio is not quiet — it is a transcript that does not
+   belong to this recording — so that direction keeps the narrow allowance.
+2. No gap between segments exceeds 20 seconds **where the audio there was not
+   silent**, or where a seam explains it.
 3. Every marker `offset_s` falls inside a transcribed segment.
 4. Segment timestamps are monotonic and none exceeds `duration_s`.
 

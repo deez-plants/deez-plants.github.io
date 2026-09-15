@@ -20,10 +20,30 @@ export interface TranscriptSegment {
   text: string;
 }
 
-/** Section 6, assertion 1. */
-const END_TOLERANCE_S = 5;
-/** Section 6, assertion 2. */
+/**
+ * Section 6, assertion 1 — how much quiet may sit between the last word and
+ * the end of the recording.
+ *
+ * **Was 5 seconds, which failed an honest walk on its first real run.** The
+ * owner stopped talking, lowered the phone, found the stop button: six
+ * seconds. Nobody presses stop mid-syllable, so a five-second allowance
+ * fails nearly every real walk — and a gate that cries wolf is worse than no
+ * gate, because the one time it means something you have learned to ignore it.
+ */
+const END_TOLERANCE_S = 20;
+
+/**
+ * Section 6, assertion 2 — untranscribed audio between two segments.
+ *
+ * This is a backstop now rather than the main test. A gap is only judged at
+ * all when the transcript does not say whether the audio there was quiet; see
+ * `quiet` below. Silence is a fact about a walk, not a fault in a transcript,
+ * and watering a plant properly is a minute of it.
+ */
 const MAX_GAP_S = 20;
+
+/** Matching offsets to a named instant: a marker, a seam, the end of a walk. */
+const NEAR_S = 5;
 
 export function checkCoverage(
   segments: readonly TranscriptSegment[],
@@ -41,14 +61,21 @@ export function checkCoverage(
 
   // 1. The last segment ends within 5 seconds of `duration_s`.
   const last = segments[segments.length - 1];
-  const short = duration_s - last.end;
-  if (Math.abs(short) > END_TOLERANCE_S) {
+  // Rounded before it is compared as well as before it is printed, so the
+  // report can never disagree with itself the way it did once: "last segment
+  // ends 1:58 but recording is 2:04" followed by "gap 5s".
+  const short = Math.round(duration_s - last.end);
+  // Deliberately asymmetric. Stopping SHORT is usually just quiet at the end
+  // of a walk, and gets the wide allowance. Running PAST the audio is not
+  // quiet — it is a transcript that does not belong to this recording, or a
+  // duration the app got wrong — so it keeps the narrow one.
+  if (short > END_TOLERANCE_S || -short > NEAR_S) {
     failures.push({
       assertion: 1,
       offset_s: Math.max(0, Math.round(last.end)),
       detail: short > 0
-        ? `The transcript stops ${Math.round(short)}s before the end of the audio.`
-        : `The transcript runs ${Math.round(-short)}s past the end of the audio.`,
+        ? `The transcript stops ${short}s before the end of the audio.`
+        : `The transcript runs ${-short}s past the end of the audio.`,
     });
   }
 
@@ -64,7 +91,7 @@ export function checkCoverage(
     const from = segments[i - 1].end;
     const to = segments[i].start;
     if (to - from <= MAX_GAP_S) continue;
-    const explained = seams.some((at) => at >= from - END_TOLERANCE_S && at <= to + END_TOLERANCE_S);
+    const explained = seams.some((at) => at >= from - NEAR_S && at <= to + NEAR_S);
     if (explained) continue;
     failures.push({
       assertion: 2,
@@ -110,7 +137,7 @@ export function checkCoverage(
         detail: 'Segment timestamps go backwards.',
       });
     }
-    if (s.end > duration_s + END_TOLERANCE_S) {
+    if (s.end > duration_s + NEAR_S) {
       failures.push({
         assertion: 4,
         offset_s: Math.max(0, Math.round(duration_s)),
