@@ -1075,6 +1075,78 @@ new plants, and what Reminders should do.
 export, not for a theory. Three faults here were found from numbers read off a
 screen and a round of guessing each; the walk now carries its own account.
 
+#### The pause that lost a walk, and three things around it (2026-09-14, later)
+
+**A paused walk was not crash-safe, and an interrupted one was.** The owner
+paused five minutes to fill a watering can; iOS reclaimed the page; the app
+came back with a zero timer, and what should have been one walk became
+several. `restoreInterrupted` required the `interrupted` flag, which iOS sets
+when it takes the microphone — **a pause never sets it**.
+
+**Nothing was lost.** Audio is written every three seconds, so all twelve
+minutes were on disk and playable; the app had merely forgotten it was
+mid-walk. Any unclosed walk is offered back now, not only an interrupted one:
+both mean "this walk never ended".
+
+**Today only, deliberately.** A walk from last night is not something to be
+nagged about on opening the app, and the owner already has several sitting
+there. Older ones stay in Recordings like anything else.
+
+**The Record screen has a way back now.** Rec is a tab, so it clears the stack
+and there is nothing behind it — which strands you mid-walk with no route to
+the plant you were looking at. The walk already knows which that was: it drops
+a `plant_open` marker every time you open one. It reads **"Back to Bedroom
+Snake Plant"**, and naming the plant is the whole point — the owner's words
+were *"this would suck if I couldn't remember"*.
+
+**The plant ID in the pinned strip opens that plant's page.** Prev/Next
+deliberately does **not** move the back button: back means "where I came
+from", and letting it drift would give one control two meanings. But that left
+no route from Log care for 004 to 004's own page except the long way round.
+
+**The player rebuilds when you switch parts**, instead of keeping the control
+state from the one before. It worked and looked broken, which is worse than
+either.
+
+#### `watch_walks.py` — transcription stops being the owner's job
+
+Doing it by hand is seven steps, six of them bookkeeping. The watcher does all
+six: notices an exported walk arriving in a folder, unzips it into its own
+folder, transcribes every part in order, writes the transcript back beside it,
+and moves the zip into `transcribed\` so it is never done twice.
+
+**Two things it handles that are easy to get wrong by hand:**
+
+- **Every export contains `markers.json`.** Unzip two walks into one folder
+  and the second overwrites the first — the script then attributes one walk's
+  audio to the other walk's plants, and **nothing anywhere looks wrong.** Own
+  folder, every time.
+- **iCloud drops a file in while it is still downloading**, and a half-arrived
+  zip is indistinguishable from a complete one until you open it. It waits for
+  the size to settle.
+
+**What it deliberately does not do is put the transcript back into the app.**
+That attaches to a walk, the walk lives on the phone, and iOS will not let a
+web page read a folder. One copy and paste stays. `TRANSCRIBE.md` leads with
+the watcher and keeps the by-hand steps beneath it.
+
+**The thing underneath all of this, worth saying to the owner plainly if it
+comes up again:** the file-shuffling exists because there is no server. That
+was chosen deliberately — no accounts, nothing of theirs anywhere but their
+own devices. A server is the only thing that would remove the last step, and
+it would change the character of the project. **Their call to make knowingly,
+not one to drift into.**
+
+#### Facts about iOS worth not rediscovering
+
+- **An incoming call takes the microphone whether or not it is answered.** The
+  owner confirmed it. No web app holds through that and no setting changes it.
+  Interruptions are therefore routine, not an edge case — which is why a walk
+  surviving as several playable recordings is the design working rather than a
+  compromise.
+- **Five minutes paused is about when iOS reclaims a page**, and pausing to
+  fill a watering can is exactly when a walk gets paused.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
