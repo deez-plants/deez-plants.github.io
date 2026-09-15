@@ -42,3 +42,7 @@ my_content_to_share/
 *.m4a
 *.webm
 *.transcript.txt
+
+# Python bytecode, from running transcribe_walk.py
+__pycache__/
+*.pyc
