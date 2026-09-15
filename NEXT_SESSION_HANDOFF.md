@@ -1147,6 +1147,33 @@ not one to drift into.**
 - **Five minutes paused is about when iOS reclaims a page**, and pausing to
   fill a watering can is exactly when a walk gets paused.
 
+#### The shared folder is OneDrive, and the owner's path is a double-click
+
+**OneDrive, not iCloud**, and the reason is worth keeping: OneDrive was
+already installed, signed in and running on the laptop with 4.3GB in it.
+iCloud for Windows would have meant a new install and a new sign-in for no
+gain. **Look before recommending an install.**
+
+```
+OneDrive\Deez Plants\walks    exports in, transcripts back
+OneDrive\Deez Plants\ai       the review round-trip
+```
+
+`start-watching.bat` carries the command and the path, so starting the watcher
+is a double-click rather than something to remember. Tested against the real
+folder with a real export, end to end.
+
+`My_content_to_share/HOW-TO-TRANSCRIBE.txt` is the owner's own guide, written
+for someone who has never used a terminal: six parts, every step saying what
+they will see and how long it takes. **Keep it that way** — it is the only
+document in this project written for them rather than for the next session.
+
+**A question they asked that will come up again: can ChatGPT read the shared
+folder?** No. It runs on someone else's computer. Claude Code can, because it
+runs on theirs — so *"drop it in the folder and say one sentence"* is true for
+one and not the other. The AI round-trip is therefore easiest done from a
+session in this repo, reading `OneDrive\Deez Plants\ai` directly.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
