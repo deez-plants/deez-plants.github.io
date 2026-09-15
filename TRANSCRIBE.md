@@ -58,8 +58,12 @@ No command to remember and no path to type — the batch file carries both.
    writes the transcript back into the same folder. The zip moves into
    `transcribed\` so it is never done twice.
 3. **On the phone:** in that walk, tap **Add transcript** → **Choose the
-   transcript file** → pick it from OneDrive → Deez Plants → walks.
-   **No copying.** The app reads the file.
+   transcript file** → **Browse** (bottom right) → OneDrive → Deez Plants →
+   walks → the file ending `- TRANSCRIPT.txt`. **No copying.**
+
+   The picker always opens on *Recents* the first time — iOS decides that and
+   a web page cannot change it. It remembers where you went afterwards, and
+   favouriting the `walks` folder in Files puts it one tap from the top.
 
 **That is it.** No PowerShell per walk, no unzipping, no filenames, no
 remembering which folder.
