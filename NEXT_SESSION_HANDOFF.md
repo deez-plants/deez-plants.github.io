@@ -1306,6 +1306,71 @@ was already on the file list — what was missing was the consequence, that a
 walk without a transcript is a walk the AI cannot hear and one of them makes
 the whole package unverified.
 
+#### The golden rule, and the shape of the shared folder (2026-09-14, late)
+
+**The owner's rule, in their words: a walk's audio has done its job once the
+words are in the app.** Audio runs about 1MB a minute — one interrupted walk
+came to **37MB** across its folder and its zip, synced to every device, for two
+minutes of speech.
+
+So once a transcript is attached **and its coverage passes**, the recording is
+deleted: on the phone, on the laptop, and it was already excluded from backups.
+
+**The coverage guard is not a hedge and it earned itself the same day.** Walk
+4's first transcript failed coverage because the app had the walk's duration
+wrong, and it had to be regenerated *from the audio* twice. Under an
+unconditional rule that audio would already have been gone and **seven minutes
+of the owner's walk would have been permanently missing, silently.** A
+transcript that fails coverage is exactly when the recording is still needed.
+
+Coverage passing is the app's own statement that the words account for the
+whole recording, which is why it is the right condition rather than a proxy
+for one. **The watcher reads that verdict out of the transcript header rather
+than re-deriving it** — two places computing the same thing is how they come to
+disagree — and anything unreadable counts as FAIL. Tested: pass drops, FAIL
+keeps, no coverage line keeps, garbage keeps, missing file keeps.
+
+**This knowingly reverses "do not let it become automatic"**, recorded earlier
+in this file. The owner asked for it having seen how fast audio accumulates,
+and the coverage guard satisfies the caution behind that note rather than
+ignoring it. **Do not quietly re-tighten it back; do not loosen it either.**
+
+#### The shared folder
+
+```
+OneDrive\Deez Plants\
+  1 walks in      exports land here
+  2 transcripts   the ONLY thing ever imported. Nothing else lives here.
+  3 ai            packages out, update files back
+  4 backups       Save my record / Save everything
+  archive         markers, screen log, the walk's own account. Never audio.
+```
+
+**Numbered because alphabetical order is actively wrong here** — sorted by
+name you get ai, archive, backups, transcripts, walks, which is the reverse of
+how they are used. The watcher creates and maintains all five, so the shape
+costs the owner one tap when saving and removes the hunting when importing.
+
+#### The migration, and what it proved
+
+OneDrive had made a conflict copy: `walks` and `walks 1`, created 58 minutes
+apart when the phone's OneDrive met the folder already on the laptop. **Every
+file in both was hash-compared before anything moved — all eleven identical**,
+including the 18.6MB zip. The apparent size difference was Files On-Demand;
+`walks 1` was cloud-only, not empty.
+
+106MB became **30KB**. Every non-audio file was verified by hash against a
+safety copy afterwards: **nothing missing, nothing altered.**
+
+`C:\Users\604dr\deez-plants-safety-copy-2026-09-14` holds everything as it
+stood, audio included. **The owner's to delete once satisfied** — do not remove
+it for them.
+
+**A lesson for any future folder work:** OneDrive holds locks on directories it
+is syncing, so `rmdir` fails with Access Denied even when every file has moved.
+Move the files, let it settle, remove the empty shells afterwards. Never move
+files mid-sync — that is how the conflict copy appeared in the first place.
+
 ## Traps, and facts that cost something to learn
 
 **Storage is per-origin.** `localhost:5173`, a LAN address, and the hosted URL
