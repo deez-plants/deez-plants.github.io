@@ -586,15 +586,30 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
                     recorded itself. Typed or dictated text is accepted whole as
                     <strong> unverified</strong>, with no gate.
                   </p>
-                  <input
-                    className="recs-file"
-                    type="file"
-                    accept=".json,.srt,.vtt,.txt,text/plain,application/json"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) void readFile(file);
-                    }}
-                  />
+                  {/* The file picker is the normal path and now looks like
+                      it. It was a bare <input type="file"> under a paragraph
+                      of explanation, which reads as an afterthought — the
+                      owner was copying and pasting text instead, because the
+                      guide told them to and nothing here said otherwise. On
+                      iOS this opens the Files picker, which reopens wherever
+                      it was last, so after the first time it lands straight
+                      in the folder the transcripts arrive in. */}
+                  <label className="recs-pick">
+                    <span>Choose the transcript file</span>
+                    <input
+                      className="recs-file"
+                      type="file"
+                      accept=".json,.srt,.vtt,.txt,text/plain,application/json"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void readFile(file);
+                      }}
+                    />
+                  </label>
+                  <p className="recs-pick-note">
+                    In <strong>OneDrive › Deez Plants › walks</strong>, the file
+                    ending <code>TRANSCRIPT.txt</code>.
+                  </p>
                   <textarea
                     className="recs-textarea"
                     rows={6}

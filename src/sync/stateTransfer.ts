@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { openDeezPlants, REGISTRY_KEY, META_KEY, type DeezDB, type MediaRecord, type SessionRecord } from '../db/schema';
 import { readSessionSegments, extensionFor } from '../capture/recording';
+import { stamp } from '../package/export';
 import type { PlantBaseline, Registry } from '../types/plant';
 import type { StoredEvent } from '../types/event';
 import type { ISODate } from '../types/ids';
@@ -89,7 +90,7 @@ export async function exportRecord(db: DeezDB, as_of: ISODate): Promise<ExportRe
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   return {
     blob,
-    filename: `deez-plants-record-${as_of}.json`,
+    filename: `${stamp()} backup — record.json`,
     plant_count: state.plants.length,
     event_count: state.events.length,
     bytes: blob.size,
@@ -130,7 +131,7 @@ export async function exportEverything(db: DeezDB, as_of: ISODate): Promise<Expo
   const blob = await zip.generateAsync({ type: 'blob' });
   return {
     blob,
-    filename: `deez-plants-everything-${as_of}.zip`,
+    filename: `${stamp()} backup — everything.zip`,
     plant_count: state.plants.length,
     event_count: state.events.length,
     bytes: blob.size,

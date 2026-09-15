@@ -104,6 +104,24 @@ export interface SessionExport {
  * laptop rather than three to keep together — section 6's "audio moves by
  * hand", made as few hands as possible.
  */
+/**
+ * A human name for a walk: `2026-09-14 1907 walk 4`.
+ *
+ * Date then 24-hour time then which walk that day, so a folder of them sorts
+ * into the order they happened — which is the only sort a phone gives you for
+ * free. The owner asked for a real timestamp rather than just a date, and
+ * they were right: several walks a day is normal.
+ *
+ * The session id stays inside every file, on the first line, so nothing loses
+ * its link back to the record.
+ */
+export function walkLabel(session: SessionRecord): string {
+  const [date, time] = session.started.split('T');
+  const hhmm = (time ?? '').replace(/:/g, '').slice(0, 4);
+  const n = session.session_id.split('-').pop();
+  return `${date}${hhmm ? ' ' + hhmm : ''} walk ${n ?? ''}`.trim();
+}
+
 export async function exportSession(db: DeezDB, session_id: SessionId): Promise<SessionExport> {
   const session = await db.get('sessions', session_id);
   if (!session) throw new Error(`No session ${session_id} on this device.`);
@@ -113,14 +131,20 @@ export async function exportSession(db: DeezDB, session_id: SessionId): Promise<
   // A walk that was interrupted holds one file per stretch. They are named in
   // order and Whisper reads them in order; joining them would produce bytes
   // no player reads past the first seam, which is the bug this replaced.
-  const names = segments.map((_, i) =>
-    (segments.length === 1 ? `${session_id}${ext}` : `${session_id}-part${i + 1}${ext}`));
+  const label = walkLabel(session);
+  const names = segments.map((_, i) => (segments.length === 1
+    ? `${label} — audio${ext}`
+    : `${label} — audio ${i + 1} of ${segments.length}${ext}`));
   const audio_name = names[0] ?? `${session_id}${ext}`;
   const entries = await screenLogForSession(session_id);
 
   const zip = new JSZip();
   segments.forEach((audio, i) => zip.file(names[i], audio));
+  // `markers.json` keeps its plain name as well as the readable one: the
+  // transcription script has always looked for exactly that, and an export
+  // made today should still work with a script from last week.
   zip.file('markers.json', JSON.stringify(sidecarFor(session), null, 2));
+  zip.file(`${label} — markers.json`, JSON.stringify(sidecarFor(session), null, 2));
   // What happened to the walk, when something did. It travels with the export
   // so a walk that came back short can be explained by whoever looks at it
   // next, rather than being re-guessed from two numbers.
@@ -134,7 +158,7 @@ export async function exportSession(db: DeezDB, session_id: SessionId): Promise<
     ];
     zip.file('what-happened.txt', lines.join('\n'));
   }
-  zip.file('screen_log.json', JSON.stringify(screenLogFileFor(session, entries), null, 2));
+  zip.file(`${label} — screen log.json`, JSON.stringify(screenLogFileFor(session, entries), null, 2));
   if (session.transcript) {
     zip.file('transcript.txt', session.transcript);
   } else {
@@ -151,7 +175,7 @@ export async function exportSession(db: DeezDB, session_id: SessionId): Promise<
 
   return {
     blob: await zip.generateAsync({ type: 'blob' }),
-    filename: `deez-plants-${session_id}.zip`,
+    filename: `${label}.zip`,
     audio_name,
   };
 }

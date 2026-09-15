@@ -88,6 +88,36 @@ def audio_in(folder):
     return os.path.join(folder, first[0] if first else audio[0])
 
 
+def walk_label(folder, fallback):
+    """A human name for the walk, from its own sidecar.
+
+    `2026-09-14 1907 walk 4` - date, 24-hour time, which walk that day. Sorts
+    into the order things happened, which is the only sort a phone gives you
+    for free. Falls back to the zip's own name if the sidecar is unreadable.
+    """
+    for candidate in ("markers.json",):
+        path = os.path.join(folder, candidate)
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            started = data.get("started", "")
+            date, _, time = started.partition("T")
+            hhmm = time.replace(":", "")[:4]
+            number = str(data.get("session_id", "")).split("-")[-1]
+            label = date
+            if hhmm:
+                label += " " + hhmm
+            if number:
+                label += " walk " + number
+            if date:
+                return label
+        except (OSError, ValueError):
+            pass
+    return fallback
+
+
 def handle(zip_path, root):
     name = os.path.splitext(os.path.basename(zip_path))[0]
     work = os.path.join(root, name)
@@ -107,7 +137,15 @@ def handle(zip_path, root):
     except zipfile.BadZipFile:
         print("  not a readable zip - leaving it alone", flush=True)
         return False
-    print("  unzipped into %s\\" % name, flush=True)
+    # Rename the folder to something readable now that the sidecar is
+    # available to read it from.
+    label = walk_label(work, name)
+    if label != name:
+        target = os.path.join(root, label)
+        if not os.path.exists(target):
+            os.rename(work, target)
+            work = target
+    print("  unzipped into %s\\" % os.path.basename(work), flush=True)
 
     audio = audio_in(work)
     if not audio:
@@ -128,10 +166,17 @@ def handle(zip_path, root):
         return False
 
     # The transcript goes back beside the zip, where the phone will see it.
+    # One obviously-named copy at the top level. TRANSCRIPT in capitals
+    # because in a folder of eight files, the one you import should be
+    # unmistakable - and the owner was opening the wrong things.
+    #
+    # The "-part1" the script produces is dropped: it transcribes the WHOLE
+    # walk, so calling the result part 1 is actively misleading.
     produced = [n for n in os.listdir(work) if n.endswith(".transcript.txt")]
     for n in produced:
-        shutil.copy2(os.path.join(work, n), os.path.join(root, n))
-        print("  wrote %s" % n, flush=True)
+        nice = "%s - TRANSCRIPT.txt" % os.path.basename(work)
+        shutil.copy2(os.path.join(work, n), os.path.join(root, nice))
+        print("  wrote %s" % nice, flush=True)
 
     # Move the zip out of the way so it is not picked up again, without
     # deleting anything the owner might still want.

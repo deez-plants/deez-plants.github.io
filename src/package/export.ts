@@ -209,13 +209,20 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
     event_count: newEvents.length,
     plant_count: active.length,
     blob,
-    filename: `deez-plants-review-${as_of}.zip`,
+    filename: `${stamp()} review package.zip`,
   };
 }
 
 /** Triggers the browser's own save flow. The one place this app downloads a
     file rather than reading one — package prepare has no on-device home for
     the result, unlike everything else here. */
+/** `2026-09-14 2130` — when this file was made, for sorting in Files. */
+export function stamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
 export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -57,9 +57,9 @@ No command to remember and no path to type — the batch file carries both.
    transcribes it — every part, in order, if the walk was interrupted — and
    writes the transcript back into the same folder. The zip moves into
    `transcribed\` so it is never done twice.
-3. **On the phone:** Files → OneDrive → Deez Plants → walks, open the
-   transcript, select all, copy, and paste it into that walk under
-   **Add transcript**.
+3. **On the phone:** in that walk, tap **Add transcript** → **Choose the
+   transcript file** → pick it from OneDrive → Deez Plants → walks.
+   **No copying.** The app reads the file.
 
 **That is it.** No PowerShell per walk, no unzipping, no filenames, no
 remembering which folder.
@@ -68,9 +68,9 @@ remembering which folder.
 
 ### Why the last step is still yours
 
-The transcript has to go into the app, the app lives on your phone, and iOS
-will not let a web page read a folder. So a copy and paste stays. Everything
-before it is gone.
+The transcript has to go into the app and the app lives on your phone. iOS
+will not let a web page reach into a folder unasked, so you have to hand it
+the file — two taps in the system picker. Everything before that is gone.
 
 ### And it removes a trap you would otherwise hit
 
