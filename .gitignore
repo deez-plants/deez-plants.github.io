@@ -49,3 +49,8 @@ __pycache__/
 
 # The watcher remembers which folder it is watching.
 .watch_walks.json
+
+# ...but the owner's own guide is not audio, and losing it would mean writing
+# it again from scratch. It lives where they look for it AND in git.
+!My_content_to_share/HOW-TO-TRANSCRIBE.txt
+!my_content_to_share/HOW-TO-TRANSCRIBE.txt
