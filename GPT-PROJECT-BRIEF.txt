@@ -38,10 +38,10 @@ EACH TIME YOU WANT A REVIEW:
 
   4. The review package, made in the app:
         More > Prepare review package
-        Save to Files > OneDrive > Deez Plants > ai
+        Save to Files > OneDrive > Deez Plants > 3 ai
 
-     On the phone:   Files > OneDrive > Deez Plants > ai
-     On the laptop:  C:\Users\604dr\OneDrive\Deez Plants\ai\
+     On the phone:   Files > OneDrive > Deez Plants > 3 ai
+     On the laptop:  C:\Users\604dr\OneDrive\Deez Plants\3 ai\
      Named like:     2026-09-14 2130 review package.zip
 
      Inside it: manifest.json, events.json, transcript.txt,
@@ -61,12 +61,15 @@ WHERE THINGS LIVE, ALL OF IT:
   The app itself       deez-plants.github.io  (on your phone)
   Your record          only on the phone. Nowhere else. No server.
   The code + docs      C:\Users\604dr\deez-plants
-  Walks + transcripts  C:\Users\604dr\OneDrive\Deez Plants\walks
-                       phone: Files > OneDrive > Deez Plants > walks
-  AI packages          C:\Users\604dr\OneDrive\Deez Plants\ai
+  Walks you drop in    OneDrive\Deez Plants\1 walks in
+  Transcripts back     OneDrive\Deez Plants\2 transcripts
+  AI packages          OneDrive\Deez Plants\3 ai
+  Backups              OneDrive\Deez Plants\4 backups
+  Markers, notes       OneDrive\Deez Plants\archive
+                       (never audio - see PART 4)
   Public copy of all   github.com/deez-plants/deez-plants.github.io
 
-WHAT COMES BACK: one JSON file. Save it into the ai folder, then
+WHAT COMES BACK: one JSON file. Save it into "3 ai", then
 in the app: More > Apply AI update > Choose file. You approve
 every row separately. There is no accept-all.
 
@@ -177,6 +180,12 @@ markers.json     Which plant's page was open at each moment of a
                  walk. This is what attributes his words.
 
 screen_log.json  The same in more detail.
+
+THE AUDIO IS NOT IN THE PACKAGE AND NO LONGER EXISTS. Once a
+walk is transcribed and the coverage check passes, the
+recording is deleted everywhere - phone, laptop and backups.
+The words ARE the record. Do not ask for the audio; ask for a
+better transcript, or for the owner to say more next walk.
 
 THE ONE LIMIT THAT MATTERS: the attribution is EVIDENCE OF WHAT
 WAS ON SCREEN, NOT PROOF OF WHAT WAS DISCUSSED. He might be

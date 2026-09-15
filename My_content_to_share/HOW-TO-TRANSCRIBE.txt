@@ -23,11 +23,18 @@ We are using ONEDRIVE, not iCloud. Reason: OneDrive is already
 installed, signed in and running on your laptop. iCloud would
 mean installing and configuring something new for no gain.
 
-I HAVE ALREADY MADE THE FOLDERS ON THE LAPTOP. They are at:
+THE FOLDERS ALREADY EXIST. On the laptop:
 
     C:\Users\604dr\OneDrive\Deez Plants\
-        walks\      <- walks go here, transcripts come back here
-        ai\         <- the AI round-trip lives here
+        1 walks in      you drop exported walks here
+        2 transcripts   the ONLY thing you ever import
+        3 ai            packages out, AI updates back
+        4 backups       Save my record / Save everything
+        archive         markers and notes. Never audio.
+
+They are numbered because sorted by name you would get ai,
+archive, backups, transcripts, walks - the reverse of how you
+use them. Numbers keep them in order on the phone too.
 
 You only need to make your PHONE able to see them.
 
@@ -45,15 +52,13 @@ uses. If you are not sure which that is, on the laptop click the
 blue cloud in the bottom-right taskbar - it shows the email.
 
 
-STEP 1.3 - Check you can see the folder
+STEP 1.3 - Check you can see the folders
 -------------------------------------------
-On the phone, open the OneDrive app. You should see a folder
-called "Deez Plants" with "walks" and "ai" inside it.
+On the phone, open the OneDrive app. You should see "Deez
+Plants" with the five folders inside.
 
-If you do: setup is done, forever.
-
-If you do NOT see it: the phone is on a different Microsoft
-account than the laptop. Fix that before going further.
+If you do NOT: the phone is on a different Microsoft account
+than the laptop. Fix that before going further.
 
 
 STEP 1.4 - Make it appear in the Files app
@@ -67,29 +72,38 @@ This is what lets you SAVE into it from the app.
   Turn ON the switch next to OneDrive
   Tap Done
 
-Now "OneDrive" shows in Files alongside iCloud Drive.
+
+STEP 1.5 - Worth 10 seconds: favourite two folders
+-------------------------------------------
+  In Files: Browse > OneDrive > Deez Plants
+  Press and hold "1 walks in"    > Favourite
+  Press and hold "2 transcripts" > Favourite
+
+They then sit at the top of Browse forever, one tap from the
+file picker. This is the difference between two taps and hunting
+through folders every time.
 
 
 ===============================================================
- PART 2 - START THE WATCHER (once per reboot)
+ PART 2 - START THE WATCHER (once per session at the laptop)
 ===============================================================
 
 The watcher is a small program that sits waiting. When a walk
-arrives in the folder it unzips it, transcribes it, and puts the
-transcript back - with no commands from you.
+arrives it unzips it, transcribes it, files everything, and
+throws away the audio once the words are proven.
 
 
 STEP 2.1 - Start it
 -------------------------------------------
-On the laptop, open the deez-plants folder and DOUBLE-CLICK:
+DOUBLE-CLICK the shortcut on your Desktop:
 
-    start-watching.bat
+    Deez Plants - watch for walks
+
+(Or start-watching.bat in the deez-plants folder - same thing.)
 
 A black window opens and says:
 
-    Deez Plants - watching for walks
-    --------------------------------
-    Watching C:\Users\604dr\OneDrive\Deez Plants\walks
+    Watching C:\Users\604dr\OneDrive\Deez Plants\1 walks in
     Waiting...
 
 That is it working. LEAVE THAT WINDOW OPEN.
@@ -103,33 +117,18 @@ If you drop a walk in while it is NOT running, nothing is lost -
 the zip just sits there. Start the watcher later and it picks it
 up within ten seconds.
 
-So: start it when you get back from a walk, or leave it running
-all day if you prefer. Either works.
-
 
 STEP 2.3 - Stopping it
 -------------------------------------------
-Close the window with the X. That is all - Ctrl+C works too but
-you do not need to remember it.
+Close the window with the X. That is all.
 
-It does NOT keep running in the background after the window is
-closed, and it does not start itself when the laptop boots. If
-you would rather it did start automatically, say so and I will
-set that up - it is a five-minute job and then you would never
-think about it again.
-
-
-STEP 2.4 - A shortcut so you do not go hunting
--------------------------------------------
-I have put a shortcut on your Desktop called
-
-    Deez Plants - watch for walks
-
-Double-click that instead of going into the project folder.
+It does NOT keep running in the background afterwards, and it
+does not start itself when the laptop boots. If you ever want it
+to, say so - it is a five-minute job.
 
 
 ===============================================================
- PART 3 - TRANSCRIBE A WALK (every time, four taps)
+ PART 3 - TRANSCRIBE A WALK (every time)
 ===============================================================
 
 STEP 3.1 - On the phone, export the walk
@@ -140,7 +139,7 @@ STEP 3.1 - On the phone, export the walk
   Tap "Export for Whisper"
   The Share sheet opens
   Tap "Save to Files"
-  Choose OneDrive > Deez Plants > walks
+  Choose OneDrive > Deez Plants > 1 walks in
   Tap Save
 
 That is your part done.
@@ -148,27 +147,17 @@ That is your part done.
 
 STEP 3.2 - Wait
 -------------------------------------------
-Watch the black window on the laptop. Within a minute or two it
-says:
+Watch the black window. Within a minute or two:
 
-    Found deez-plants-SES-....zip
-      unzipped into deez-plants-SES-...\
+    Found 2026-09-14 1833 walk 4.zip
+      unzipped into 2026-09-14 1833 walk 4\
       transcribing...
+      wrote 2 transcripts / 2026-09-14 1833 walk 4 - TRANSCRIPT.txt
+      released 17.7 MB of audio - the words are the record now
+      done.
 
-THE FIRST TIME EVER, it will sit silent for up to five minutes
-downloading the model - about 500 MB. It is not stuck. Leave it.
-Every run after that is quick: two minutes of walk takes well
-under a minute.
-
-When it finishes:
-
-      wrote 2026-09-14 1833 walk 4 - TRANSCRIPT.txt
-      done. Open the transcript on your phone and paste it in.
-
-The file you want is always the one with TRANSCRIPT in capitals,
-sitting loose in the walks folder - not the copy inside the
-walk's own subfolder. They are identical; the loose one is there
-so you never have to go digging.
+THE MODEL IS ALREADY DOWNLOADED on your laptop, so there is no
+long silent wait. Two minutes of walk takes well under a minute.
 
 
 STEP 3.3 - Put it into the app (no copying needed)
@@ -178,41 +167,46 @@ STEP 3.3 - Put it into the app (no copying needed)
   Find THE SAME walk
   Tap "Add transcript"
   Tap the green "Choose the transcript file" button
-  The iPhone file picker opens ON RECENTS - that is normal
+  The picker opens on Recents - that is normal
   Tap "Browse" at the BOTTOM RIGHT
-  Tap OneDrive > Deez Plants > walks
+  Tap "2 transcripts" (favourited in step 1.5, so it is at the top)
   Tap the file ending "- TRANSCRIPT.txt"
-
-DO THIS ONCE AND IT GETS EASIER. iOS remembers where you were
-last, so from the second walk on the picker opens straight into
-the walks folder.
-
-WORTH 10 SECONDS NOW - make it a favourite:
-  Open the Files app
-  Browse > OneDrive > Deez Plants
-  Press and hold the "walks" folder
-  Tap Favourite
-
-It then sits at the top of Browse forever, one tap away, in the
-picker as well as in Files.
   Tap Save
 
-That is it. You do NOT need to open the file, select all, or
-copy anything. Pick the file and the app reads it.
+You do NOT need to open the file, select all, or copy anything.
 
-The picker reopens wherever you were last, so from the second
-walk onwards it lands in the right folder already.
+The app then tells you what it did with the audio:
 
-(The paste box underneath still works if you ever want to type
-or dictate something yourself. That gets marked "unverified",
-because there are no timestamps to check it against.)
+    "17.7 MB of audio released - the words are the record now"
+
+or, if the coverage check did not pass:
+
+    "The audio is kept, because coverage did not pass"
 
 
-WHY THIS LAST STEP IS YOURS: the transcript attaches to the
-walk, and the walk only exists on the phone that recorded it.
-iOS will not let a web page reach into a folder on its own, so
-you have to hand it the file. Two taps, and that is the whole of
-your involvement.
+===============================================================
+ THE GOLDEN RULE - WHY YOUR AUDIO DISAPPEARS
+===============================================================
+
+Your rule, 14 Sep: a walk's audio has done its job once the
+words are in the app. Audio is about 1 MB a minute - one walk
+came to 37 MB across its folder and its zip. The transcript is
+what the AI reads, what the coverage check measures, and what
+survives a backup.
+
+So once a transcript is attached AND ITS COVERAGE PASSES, the
+audio is deleted - on the phone, on the laptop, and it never
+enters a backup.
+
+THE COVERAGE CONDITION IS NOT FUSSINESS. On 14 Sep your walk 4
+transcript failed coverage the first time, because the app had
+the walk's length wrong. It had to be rebuilt FROM THE AUDIO,
+twice. If the audio had been deleted the moment that first
+transcript landed, seven minutes of that walk would have been
+gone for good and nothing would have told you.
+
+A transcript that fails coverage is exactly when the recording
+is still needed. Those walks keep everything.
 
 
 ===============================================================
@@ -225,7 +219,7 @@ how the AI sees your record and proposes changes you approve.
 STEP 4.0 - BACK UP FIRST
 -------------------------------------------
   In the app: More > Back up > Save my record
-  Save it anywhere - Files, OneDrive, wherever.
+  Save to Files > OneDrive > Deez Plants > 4 backups
 
 You have never applied an update before. If anything goes odd,
 this is the undo.
@@ -234,7 +228,7 @@ this is the undo.
 STEP 4.1 - Make the package
 -------------------------------------------
   More > Prepare review package
-  Save to Files > OneDrive > Deez Plants > ai
+  Save to Files > OneDrive > Deez Plants > 3 ai
 
 
 STEP 4.2 - Hand it to your GPT plant bot
@@ -260,7 +254,7 @@ to look at something specific, give it the GitHub link:
 github.com/deez-plants/deez-plants.github.io
 
 THEN, EACH TIME: upload the review package zip from
-OneDrive > Deez Plants > ai, and ask for an update file.
+OneDrive > Deez Plants > 3 ai, and ask for an update file.
 
 Attach photos to the chat by hand if you want an opinion on how
 something LOOKS - photos are not in the package.
@@ -274,7 +268,7 @@ STEP 4.3 - Bring it back
 -------------------------------------------
   In the app: More > Apply AI update
   Tap "Choose file"
-  Pick the update file from OneDrive > Deez Plants > ai
+  Pick the update file from OneDrive > Deez Plants > 3 ai
 
 Same as the transcript - pick the file, no copying. There is a
 paste box as well if you prefer it.
@@ -322,28 +316,32 @@ ANYTHING ELSE
  PART 6 - WHAT EACH FOLDER IS FOR
 ===============================================================
 
-OneDrive\Deez Plants\walks\
-    You drop exported walks here.
-    Transcripts appear here.
-    Each walk also gets its own subfolder with the audio in it -
-    open those to LISTEN to a walk. If a walk was interrupted it
-    holds several files, -part1, -part2 and so on. They all
-    play. That is deliberate: gluing them makes a file that
-    stops at the first join.
-    Finished zips are moved into "transcribed" so they are never
-    done twice.
+OneDrive\Deez Plants
+  1 walks in      You drop exported walks here. The watcher
+                  empties it as it works.
 
-OneDrive\Deez Plants\ai\
-    Review packages out, update files back.
+  2 transcripts   The file you import into the app. NOTHING
+                  ELSE lives here, so you can never pick the
+                  wrong thing.
 
-deez-plants\My_content_to_share\
-    The old manual folder. Nothing new needs to go here - it is
-    where tonight's walk was split by hand. Keep or delete.
+  3 ai            Review packages out, AI update files back.
+
+  4 backups       Save my record / Save everything.
+
+  archive         Each walk's markers, screen log and its own
+                  account of what happened. NEVER audio - see
+                  the golden rule above. Small, and you will
+                  rarely open it.
+
+deez-plants\My_content_to_share    This guide. Nothing else needs to go here.
+
+deez-plants-safety-copy-2026-09-14    A copy of everything as it stood before the folders were
+    reorganised on 14 Sep, audio included. Delete it once you
+    are happy nothing is missing.
 
 ONE WARNING, and the watcher protects you from it:
 Every export contains a file called markers.json. If you ever
 unzip two walks into the SAME folder by hand, the second
 overwrites the first - and the transcript then credits one
 walk's words to the other walk's plants, with nothing anywhere
-looking wrong. The watcher gives every walk its own folder. Let
-it do the unzipping.
+looking wrong. Let the watcher do the unzipping.

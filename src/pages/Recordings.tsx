@@ -47,6 +47,7 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
   const [confirmFree, setConfirmFree] = useState<SessionId | null>(null);
   const [transcribing, setTranscribing] = useState<SessionId | null>(null);
   const [draft, setDraft] = useState('');
+  const [freed, setFreed] = useState<string | null>(null);
 
   /**
    * Listening back, and the replay button FIELD_DEFINITIONS.md section 6 asks
@@ -201,9 +202,17 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
     setError(null);
     try {
       const db = await openDeezPlants();
-      await attachTranscript(db, session_id, draft);
+      const result = await attachTranscript(db, session_id, draft);
       setTranscribing(null);
       setDraft('');
+      // Say what happened to the audio rather than letting megabytes vanish
+      // quietly. It only goes when coverage passed, which is the app's own
+      // statement that the words account for the whole recording.
+      setFreed(result.freed_bytes > 0
+        ? `Transcript saved. ${formatBytes(result.freed_bytes)} of audio released — the words are the record now.`
+        : result.coverage && !result.coverage.passed
+          ? 'Transcript saved. The audio is kept, because coverage did not pass — the words do not account for all of it yet.'
+          : null);
       reload();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -277,6 +286,9 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
       </p>
 
       {error && <p className="recs-error">{error}</p>}
+      {freed && (
+        <p className="recs-freed" onClick={() => setFreed(null)}>{freed}</p>
+      )}
 
       {clearable.length > 0 && (
         <p className="recs-clearable">

@@ -19,7 +19,7 @@ echo   Leave this window open.
 echo   Close it when you are done.
 echo.
 
-python watch_walks.py "%USERPROFILE%\OneDrive\Deez Plants\walks"
+python watch_walks.py "%USERPROFILE%\OneDrive\Deez Plants"
 
 REM If it stops for any reason, hold the window open so whatever
 REM it printed can actually be read rather than vanishing.

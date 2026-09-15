@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import type { DeezDB, ScreenLogEntry, SessionRecord } from '../db/schema';
-import { extensionFor, readSessionSegments, sessionAudioBytes } from './recording';
+import { deleteSessionAudio, extensionFor, readSessionSegments, sessionAudioBytes } from './recording';
 import { checkCoverage, parseDuration, parseQuiet, parseTranscript } from './coverage';
 import { screenLogForSession } from './screenLog';
 import { routeMarkerCount } from './liveSession';
@@ -188,6 +188,8 @@ export interface AttachResult {
   tier: 'verified' | 'unverified';
   coverage: SessionRecord['coverage'];
   segment_count: number;
+  /** Audio released because the words now account for all of it, in bytes. */
+  freed_bytes: number;
 }
 
 /**
@@ -249,7 +251,39 @@ export async function attachTranscript(
     coverage,
   });
 
-  return { tier: verified ? 'verified' : 'unverified', coverage, segment_count: segments.length };
+  /**
+   * The owner's rule, 2026-09-14: **a walk's audio has done its job once the
+   * words are in the app.** Audio runs about 1MB a minute and a single
+   * interrupted walk came to 18.6MB; the transcript is what the AI reads,
+   * what the coverage gate checks, and what survives a backup.
+   *
+   * **The guard is not a hedge, and it earned itself the same day.** The
+   * audio goes only when coverage PASSES — which is precisely the app's own
+   * statement that the words account for the whole recording. Walk 4's first
+   * transcript failed coverage because the app had the duration wrong, and
+   * it had to be regenerated from the audio twice. Under an unconditional
+   * rule that audio would already have been deleted and seven minutes of the
+   * owner's walk would have been permanently missing, silently.
+   *
+   * A failing transcript is exactly when the recording is still needed.
+   *
+   * This reverses an earlier decision recorded in the handoff — "do not let
+   * it become automatic" — knowingly and at the owner's request, having seen
+   * how fast audio accumulates. The coverage guard is what satisfies the
+   * caution behind that earlier note rather than ignoring it.
+   */
+  let freed_bytes = 0;
+  if (verified && coverage?.passed) {
+    freed_bytes = await sessionAudioBytes(db, session_id);
+    if (freed_bytes > 0) await deleteSessionAudio(db, session_id);
+  }
+
+  return {
+    tier: verified ? 'verified' : 'unverified',
+    coverage,
+    segment_count: segments.length,
+    freed_bytes,
+  };
 }
 
 export async function removeTranscript(db: DeezDB, session_id: SessionId): Promise<void> {
