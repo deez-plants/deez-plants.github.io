@@ -1,0 +1,609 @@
+===============================================================
+ DEEZ PLANTS - reply to the first AI review (PKG-2026-09-15-1)
+ Written 15 Sep 2026. NOTHING HAS BEEN BUILT.
+===============================================================
+
+This answers the ten questions at section 18 of the review. Every
+claim below was checked against the code and against the actual
+package, not inferred.
+
+THE HEADLINE, before the detail:
+
+  Two of the review's biggest findings have the SAME single
+  cause, and it is one small parser gap - not an architecture
+  problem.
+
+  The watcher writes timestamps as "0:07  words".
+  The app can read Whisper JSON and SRT. It cannot read that.
+
+  So the app saw no timestamps, marked the transcript
+  "unverified", skipped the coverage check entirely, AND -
+  because audio deletion is gated on coverage passing - KEPT THE
+  AUDIO ON THE PHONE. The golden rule is currently inert. Walk
+  4's audio is still on your phone right now.
+
+  One shape of timestamp, taught to one function, fixes the
+  contradiction in section 4, turns the package verified, and
+  makes the golden rule actually fire.
+
+
+===============================================================
+ 1. WHICH DEFECTS ARE REAL
+===============================================================
+
+REAL, CONFIRMED IN CODE:
+
+  Sec 4  Transcript verification contradiction.  REAL.
+         Cause above. capture/coverage.ts parseTranscript()
+         accepts JSON (starts with "{") or SRT/VTT cues (with
+         "-->"). transcribe_walk.py emits neither. verified =
+         segments.length > 0, so verified = false, tier =
+         unverified, coverage = null. Export then prints
+         "coverage: not checked" above Whisper's own
+         "coverage: pass". Both lines are honest; they describe
+         different layers, exactly as you guessed.
+
+  Sec 5  Photo identity.  REAL. No media of any kind goes into
+         the review package. There is no flag-for-review concept
+         in the code yet either.
+
+  Sec 6  Duplicate routine care.  REAL. There is no same-day
+         guard anywhere. Confirmed in your own data: 001-MON,
+         002-SNK, 003-SNK and 004-MNY each have two Water events
+         dated 2026-09-14. Exactly the four you logged
+         individually before the bulk round. See 3d for why the
+         app gave you no warning.
+
+  Sec 7A spot missing from manifest.  REAL. spot exists
+         everywhere - baseline, derive, edit events, the
+         migration - and package/export.ts toManifestPlant()
+         simply does not copy it out.
+
+  Sec 7B six reference fields missing from manifest.  REAL, the
+         same one-line-each omission.
+
+  Sec 7D derived fields missing.  REAL. avg_days_late,
+         health_source, health_changed, next_due, days_past and
+         interval_days all exist in derived state and none reach
+         the manifest.
+
+  Sec 7I collection counts.  REAL, in the sense that the package
+         states neither 22 nor 21 anywhere.
+
+  Sec 9  Navigation.  REAL, and precisely diagnosed - see 3e.
+
+NOT A DEFECT - THE DOCUMENT IS WRONG, THE CODE IS RIGHT:
+
+  Sec 2  screen_log in markers.json. Deliberate, and commented as
+         such in export.ts: FIELD_DEFINITIONS section 7 names
+         four files, and a fifth the spec does not name would
+         itself be drift. GPT-PROJECT-BRIEF.txt is the stale
+         thing. Agreed: fix the brief, keep one copy, never two.
+
+  Sec 7E ISO dates. The code is right and your own recommendation
+         is right. FIELD_DEFINITIONS' "MMM DD" is describing what
+         the SCREEN shows, and it should say so.
+
+  Sec 7H gpt-prompt allowed-field list. The code already allows
+         all six reference fields - src/types/plant.ts
+         AI_EDITABLE_FIELDS contains environment, repotting,
+         pruning, pests, season, propagation. validate.ts reads
+         that list rather than re-listing it, so an update file
+         naming them is accepted TODAY. Only gpt-prompt.txt is
+         stale. Nothing is blocking the AI from doing that job
+         except the prompt telling it not to, and the manifest
+         not showing it the current values.
+
+PARTLY WRONG - AND THIS ONE MATTERS:
+
+  Sec 3  Marker offsets resetting. The reset is a BUG THAT IS
+         ALREADY FIXED, not a design limitation. Your walk's own
+         trail file records it happening:
+
+             06:14 microphone stopped - 385s since the last audio
+             00:00 interrupted - 0s captured
+
+         The old capturedMs() subtracted WALL time from a clock
+         that freezes while the app is backgrounded, so it drove
+         the walk clock to zero - and the clock is what stamps
+         marker offsets. That is your 0 / 30 / 57. It was fixed
+         on 14 Sep: capturedMs() now measures on the walk's own
+         clock and can never take back more than it counted. The
+         package you had reviewed was recorded on the build that
+         still had the bug in it.
+
+         BUT a second, REAL and UNFIXED problem is hiding
+         underneath it, and you were right to smell something:
+
+             the walk clock says  357s
+             the audio says       785s
+
+         iOS keeps recording while the app is backgrounded. The
+         clock does not. So 428 seconds of that walk are audio
+         with no clock time behind them, and every marker after a
+         backgrounding is systematically EARLY against the
+         stitched transcript - not reset, just progressively
+         behind. "Never interpret raw offsets across parts as one
+         timeline" is the right rule, and it is right for this
+         reason rather than the reset one.
+
+         Being straight with you: this is why I want to fix the
+         attribution rather than declare it good once the reset
+         is gone.
+
+
+===============================================================
+ 2. ALREADY SOLVED - WHY THE EXPORT STILL LOOKED WRONG
+===============================================================
+
+  Marker resets              fixed 14 Sep; the package predates
+                             the fix.
+  Walk clock understating    fixed; attachTranscript() corrects
+                             duration upward from the audio,
+                             which is why the package says 785s
+                             and not 357s.
+  Interrupted walks lost     fixed; any unclosed walk from today
+                             is offered back, not only ones iOS
+                             flagged.
+  Review table showing all   ALREADY BUILT - see section 5.
+  changes at once
+
+  Nothing was lost in that walk. All four recordings, every care
+  event, every photo and every marker are in the package. "Lost
+  everything I did earlier" was the screen telling you 0s
+  captured, plus the nav stack being cleared. The record was
+  intact the whole time.
+
+
+===============================================================
+ 3. SMALLEST FIXES PROPOSED
+===============================================================
+
+3a. TRANSCRIPT VERIFICATION  (do this first - it is one function)
+
+  DO NOT have the app parse the human-readable report, and do
+  not have it trust Whisper's "coverage: pass" header either.
+  Teach parseCues() one more cue shape: a line beginning M:SS or
+  H:MM:SS followed by text, each cue ending where the next
+  begins. That is a genuine timestamp track, so the app's OWN
+  coverage gate runs on it, as it was always meant to.
+
+  Then there is exactly one verification state per walk,
+  computed in one place, and the header in the transcript
+  becomes what it should be - a note for a human, not a claim
+  the app depends on.
+
+  Touches:  src/capture/coverage.ts (parseCues, ~15 lines)
+  Risk:     none to recording. Pure text parsing, fully testable
+            offline against your existing transcript file.
+  Effect:   walk 4 becomes verified, coverage runs, the package
+            stops contradicting itself, and the golden rule
+            fires and releases about 18MB on your phone.
+
+  I do NOT recommend a separate transcript.json. It would mean
+  two files in "2 transcripts" and you picking the right one -
+  precisely the friction we removed yesterday.
+
+3b. RECORDING-PART ATTRIBUTION  (second, and only this much)
+
+  The capture chain is NOT touched. Nothing about MediaRecorder,
+  chunking, interruption, resume, assembly or export changes.
+
+  What already exists: segment_starts on every session record -
+  the chunk index where each recording begins. Chunks are 3s. So
+  the app already knows, to within 3 seconds, where each part
+  starts in the stitched audio.
+
+  What is missing is one number per part: the walk-clock offset
+  at which that part began. Record it at the same moment
+  segment_starts is appended - one line, in code that already
+  runs there.
+
+  Then export can emit, purely as a translation layer after
+  capture:
+
+      parts: [ { part, clock_from_s, clock_to_s,
+                 stitched_from_s, stitched_to_s } ]
+
+  and add stitched_offset_s alongside each marker's existing
+  offset_s. Your option B. offset_s keeps its current meaning
+  and nothing that reads it today changes.
+
+  transcribe_walk.py already decodes each part with PyAV and
+  knows its true duration; having it write those durations into
+  the transcript header makes stitched_from_s exact rather than
+  chunk-count arithmetic.
+
+  Touches:  recording.ts (one array write), schema.ts (one
+            optional field), sessions.ts sidecarFor, export.ts,
+            transcribe_walk.py (one header line).
+  Risk:     LOW but not zero - it touches a file in the capture
+            chain. Everything added is optional and additive;
+            walks recorded before it read exactly as they do now.
+  Fallback: if you would rather not touch recording.ts at all,
+            say so. Part boundaries can be derived from
+            segment_starts alone, accurate to about +/-3s, with
+            zero change to any recording file. That is honestly
+            good enough for attributing speech to a plant.
+
+3c. FLAGGED-PHOTO EXPORT
+
+  Agreed, and I would go further than the review: identity is
+  solved by the FILENAME, so include the flagged photos in the
+  zip under media/ using the semantic name, downscaled (longest
+  edge ~1280, JPEG q70 - roughly 150KB each). Twenty photos is
+  3MB, which a chat upload takes without complaint.
+
+  Needs a flag-for-review toggle on Photos, which does not exist
+  yet. That is the larger half of this job, not the export.
+
+  Touches:  photos.ts, PhotosPage.tsx, export.ts, plant fields.
+  Risk:     low. Additive.
+
+3d. DUPLICATE ROUTINE CARE
+
+  First, WHY it happened, because it changes the fix. Care
+  events land PENDING and move no number until Update folds them
+  in. So after you watered 001-MON individually, the bulk round
+  still showed it as "6 days past the 7-day interval" - the row
+  had no idea. The app did not fail to warn you; it had nothing
+  to warn with.
+
+  Smallest honest fix, and I think it is better than silent
+  de-duplication:
+
+    1. rowStatus() reads PENDING events too, so a plant already
+       watered today says "Watered today" in a quiet tone.
+    2. Those plants are DESELECTED by default when a round opens
+       and are skipped by All and by a planter chip. You can
+       still tap one on purpose.
+    3. A second tap on an already-logged row asks once: "Water
+       again today?" - your explicit override, visible.
+
+  Why not write-time de-duplication: the log is append-only, and
+  an event that is silently not written is a rule-5 problem
+  wearing a UX hat. Refusing to CREATE the duplicate at the
+  selection step gets the same result and leaves the log honest.
+  If you want it enforced at write time as well, I will add it -
+  but the skip should be visible, never silent.
+
+  Scope: Water and Feed only, exactly as you say. Photo, Inspect
+  and everything else untouched.
+
+  Touches:  careRound.ts (rowStatus, preselectFor, addAll),
+            CareRoundPage.tsx.
+  Risk:     low, contained to one screen.
+
+  ON CORRECTING 008-ALO: there is currently NO correction
+  capability for care events at all. Nothing deletes an event,
+  nothing supersedes one, and the Edit event type only targets
+  plant fields. So that Aloe watering cannot be taken back
+  today. You asked me to report what exists before building
+  anything - that is the honest answer. I would leave it: it is
+  one wrong Water on one plant, it is dated, and it is the kind
+  of thing the append-only design is supposed to be able to live
+  with. Tell the AI about it in chat and move on.
+
+3e. RECORDING / BACK NAVIGATION
+
+  Diagnosed, and it is one line of design, not a rewrite.
+
+  Record is a ROOT TAB. src/nav/useNav.ts goRoot() REPLACES THE
+  WHOLE STACK. So tapping Record in the tab bar - which is what
+  you did every time you needed to pause - threw away the plant
+  you were standing in front of. Back then had nothing behind it
+  and the edge-swipe was correctly inert, because as far as the
+  app was concerned you were at a root.
+
+  Note that the plant page's own "Record a note" already PUSHES
+  correctly, carrying the plant's name as the back label. So the
+  right behaviour already exists; the tab bar just does not use
+  it.
+
+  Smallest fix: while a walk is running, the Record tab pushes
+  instead of clearing, and returning pops back to the plant.
+  Plus transport controls - pause / resume / elapsed - in the
+  top bar during a walk, so you rarely need to leave the plant
+  at all.
+
+  Touches:  useNav.ts, TabBar.tsx, App.tsx, the top bar.
+  Risk:     low. Navigation only. No capture code involved.
+
+  Your points 4 and 5 are covered by fixes already shipped:
+  interruption no longer loses the walk, and the 0s-captured
+  display that made it look like loss is gone.
+
+
+===============================================================
+ 4. DOES do_next SUPPORT "AI CARE FOCUS"?
+===============================================================
+
+  YES, cleanly, and I would not add a field.
+
+  do_next already is: editable_by both, AI-writable, validated,
+  carried in the manifest, and rendered on Plant Detail as a DO
+  NEXT card above Care Adherence. It is exactly the data role
+  you describe.
+
+  Three changes, all cosmetic or near it:
+
+    1. Relabel the card AI CARE FOCUS.
+    2. Make it editable by you in place - it is currently
+       read-only, which is the only real gap.
+    3. Always show it. Today the card is hidden when do_next is
+       null, so a plant with no focus set is a plant with no box
+       to type in. "Monitor only" needs somewhere to live.
+
+  One point to settle: FIELD_DEFINITIONS says do_next holds
+  exactly ONE action, max 160 chars. You want one or two
+  sentences. Those are compatible if the rule means "one
+  priority", which I think it does. Say the word and I will
+  record that reading in the spec rather than leaving two
+  documents disagreeing.
+
+
+===============================================================
+ 5. BATCH APPLY - MOSTLY ALREADY BUILT
+===============================================================
+
+  Apply AI update ALREADY shows every proposed change in one
+  table, with plant, field, current value, proposed value, the
+  reason, and a conflict warning where you have edited that
+  field since the package was made. Every row toggles
+  independently and NOTHING is applied until you tap Apply,
+  once, at the bottom.
+
+  Your stage 3 exists. What is missing is two buttons: Select
+  all and Clear. That is the whole change.
+
+  Rows still default to unselected - I would keep that. Select
+  all is one tap away, and defaulting to ON means a mis-tap on
+  Apply accepts twenty-two changes you have not read.
+
+  This DOES contradict rule 4 in CLAUDE.md and FIELD_DEFINITIONS
+  section 11 ("no apply-all button, ever"). Your call overrides
+  it, and I will record it as a knowing reversal with the reason
+  - the substantive review now happens in chat before the file
+  exists - rather than letting it look like the rule was
+  forgotten. Note that section 17 of your own handoff still asks
+  for row-by-row approval, so 11 and 17 contradict each other;
+  11 is the later thought. Confirm and I will make 17 match.
+
+  Touches:  ApplyAIUpdate.tsx only. ~20 lines.
+  Risk:     none to the validator, which is where the safety
+            actually lives.
+
+
+===============================================================
+ 6. CONTRACT-DRIFT MATRIX
+===============================================================
+
+ITEM | CURRENT CODE/EXPORT | FIELD_DEFINITIONS | GPT BRIEF/PROMPT
+     | RECOMMENDED SINGLE TRUTH | MIGRATION RISK
+
+spot
+  | exists everywhere; NOT in manifest | room + spot | silent
+  | CODE. Add to manifest. | none, additive
+
+environment / repotting / pruning / pests / season / propagation
+  | AI-editable and accepted by the validator TODAY; NOT in
+    manifest | editable_by both | prompt forbids them
+  | CODE + SPEC. Add to manifest, fix the prompt.
+  | none, additive
+
+adherence field name
+  | manifest says adherence_state; the validator's derived list
+    says adherence | adherence | silent
+  | SPEC's name. Rename in the manifest.
+  | LOW - only the AI reads it, and it may never propose it
+    either way
+
+avg_days_late, health_source, health_changed, next_due,
+days_past, interval_days
+  | all computed; none exported | described | silent
+  | CODE. Add to manifest. | none, additive
+
+date format
+  | ISO everywhere in data | "MMM DD" | silent
+  | CODE. Spec should say "ISO in data, MMM DD on screen."
+  | none
+
+care-event enum
+  | 18 types incl. Dead leaves / Trim back / Hard prune; Prune
+    retired but readable | old enum | brief is current
+  | CODE. Update FIELD_DEFINITIONS section 5.
+  | none - the one real Prune event of 10 Sep stays valid and
+    readable forever
+
+screen log packaging
+  | inside markers.json, deliberately | four files named
+  | brief says a separate screen_log.json
+  | CODE. Fix the brief. | none
+
+transcript verification
+  | tier derived from timestamps; the report header is ignored
+  | section 6 | n/a
+  | CODE, once parseCues learns the format | see 3a
+
+collection counts
+  | 21 active plants, no counts stated | 22 permanent records
+  | silent
+  | ADD counts to the manifest: permanent / active / archived,
+    plus archived ids and reasons
+  | none. Archived plants stay ineligible for AI update.
+
+apply-all
+  | per-row toggles, one Apply button, no select-all
+  | "no apply-all button, ever" | brief repeats it
+  | OWNER'S NEW RULING. Record as a reversal in both documents.
+  | none technically; it is a judgement call about safety
+
+
+===============================================================
+ 7. SHARED WATER - WHAT IT ACTUALLY DOES TODAY
+===============================================================
+
+  Less than you think, and nothing contradictory.
+
+  shared_water is a property of the PLANTER, in the registry. It
+  affects exactly two things:
+
+    1. Log care shows a planter chip that selects both plants at
+       once, styled as shared, with the tooltip "Shared soil -
+       one soak serves all of them".
+    2. Plant Detail shows a "shared soil" tag instead of
+       "separate pots".
+
+  It affects NOTHING ELSE. Due dates, adherence, next_due,
+  history and the calendars are all strictly per plant, on each
+  plant's own interval. One soak writes two Water events, one
+  per member, only because you selected both.
+
+  So today: 015-PTH is judged on 10 days and 016-SYN on 7 days,
+  from the same soak. Water on PTH's rhythm and SYN reads late;
+  on SYN's rhythm and PTH reads early. Neither is wrong about
+  the soil - the two numbers simply disagree about the same body
+  of water.
+
+  Nothing in the code is inconsistent. The DATA is: two
+  different intervals describing one pot.
+
+  THREE OPTIONS, smallest first:
+
+    A. Change nothing in code. Set both members to the same
+       interval, because it is one pot. Cost: you lose the
+       record that these two species want different things.
+       Effort: zero, and it is honest.
+
+    B. Planter-level interval. shared_water planters get one
+       interval and members inherit it. Each plant keeps its own
+       reference intervals as SPECIES knowledge - what it would
+       want alone - and the planter's is what adherence is
+       judged against. Cost: a registry field, and derive.ts
+       choosing which interval to use. This is the one I would
+       pick.
+
+    C. Judge the planter, not the plants. Adherence moves to the
+       planter for shared members. Cost: real. Adherence is
+       per-plant in the types, the screens and the history.
+
+  I would not do C. The difference between B and C only shows up
+  if you ever water one member and not the other, which you
+  cannot do - they share soil.
+
+  RECOMMENDATION: B, but it can wait. A is free today and costs
+  you only a note. Nothing here is a defect.
+
+
+===============================================================
+ 8. FILES THAT WOULD CHANGE
+===============================================================
+
+  3a transcript    src/capture/coverage.ts
+  3b attribution   src/capture/recording.ts, src/db/schema.ts,
+                   src/capture/sessions.ts,
+                   src/package/export.ts, transcribe_walk.py
+  3c photos        src/capture/photos.ts,
+                   src/pages/PhotosPage.tsx,
+                   src/package/export.ts, src/types/plant.ts
+  3d duplicates    src/care/careRound.ts,
+                   src/pages/CareRoundPage.tsx
+  3e navigation    src/nav/useNav.ts, src/nav/TabBar.tsx,
+                   src/App.tsx
+  4  care focus    src/pages/PlantDetail.tsx (+ an edit control)
+  5  select all    src/pages/ApplyAIUpdate.tsx
+  6  manifest      src/package/export.ts, src/types/package.ts
+  docs             FIELD_DEFINITIONS.md, gpt-prompt.txt,
+                   GPT-PROJECT-BRIEF.txt, CLAUDE.md,
+                   NEXT_SESSION_HANDOFF.md
+
+  NOT TOUCHED BY ANY OF THIS: the event log, derive.ts, the
+  validator's rules, the score block, the golden rule.
+
+
+===============================================================
+ 9. TEST PLAN AND SAVE POINT
+===============================================================
+
+  SAVE POINT FIRST, before a line changes:
+    - your backup of 15 Sep 16:12 in "4 backups" is the record
+      itself. Keep it.
+    - a git tag at the current commit, so any step can be undone
+      exactly.
+    - the review package in "3 ai" is a frozen copy of what the
+      export produced today - the before picture for every
+      export change.
+
+  KNOW THIS ABOUT RESTORE, because it matters here: Restore
+  MERGES and never removes. It cannot roll back a bad AI update.
+  It is a restore point for LOSS, not an undo. The undo for a
+  bad apply is that you approved the rows.
+
+  TESTS:
+    3a  Feed your existing walk-4 transcript to parseTranscript
+        offline. Expect 105 segments, verified, coverage pass.
+        Then on the phone: re-add it and watch the audio
+        release.
+    3b  Your four-part acceptance test, exactly as written.
+        Plus: an old walk recorded before the change still
+        reads.
+    3d  Water one plant individually, then open a round: it
+        shows "Watered today" and is not selected by All.
+    3e  Plant A -> Record -> back returns to A. During a walk:
+        A -> Record -> pause -> back -> still A.
+    5   Select all, deselect two, Apply: 20 applied, 2 left
+        proposed.
+    6   Rebuild the package and diff against today's copy: only
+        additions, no field lost.
+
+  ROLLBACK: each of the seven items is a separate commit. Any
+  one can be reverted without the others.
+
+
+===============================================================
+ 10. WHERE I DISAGREE
+===============================================================
+
+  a) "Have transcribe_walk.py produce structured metadata and
+     let the app read verification state from it." I disagree.
+     That makes the app TRUST the transcriber's verdict. The app
+     has its own coverage gate and its own duration; letting it
+     check the timestamps itself is both less code and more
+     honest. Teach it the format, do not import the conclusion.
+     (Same reasoning that had the WATCHER read the coverage line
+     rather than recompute it - there, the transcriber is the
+     authority; here, the app is.)
+
+  b) Silent de-duplication of same-day Water. I disagree with
+     the "silently skip" half. Refuse the selection, visibly,
+     rather than dropping an event the log was asked to hold.
+     Same outcome, no invisible behaviour. See 3d.
+
+  c) "Export only screen-log entries relevant to review
+     sessions." Already true - export.ts filters to entries
+     belonging to the walks in the package. Nothing to do.
+
+  d) Defaulting the review table to all-selected. Not proposed
+     by you, but it is the obvious next step and I would resist
+     it. One tap to select all; zero taps should not.
+
+  e) Section 3's framing that the offset reset is inherent to
+     the design. It was a bug and it is fixed. I would rather
+     you knew that than accepted a limitation that no longer
+     exists - but see the 357-vs-785 problem, which is real and
+     is the actual reason to build the part map.
+
+
+===============================================================
+ WHAT I NEED FROM YOU
+===============================================================
+
+  1. Which of 3a-3e, 4, 5, 6 to build, and in what order.
+     My order: 3a, 3e, 3d, 5, 6, 4, 3b, 3c.
+  2. Confirm the apply-all reversal so I can record it in both
+     documents.
+  3. Shared water: A now, or B?
+  4. do_next as one or two sentences - confirm, so the spec can
+     say it.
+
+  Nothing has been built. Nothing will be until you say which.
