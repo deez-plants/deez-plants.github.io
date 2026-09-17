@@ -6,6 +6,7 @@ import type { Health } from '../types/plant';
 import { formatDayMonth } from '../lib/dates';
 import { rowStatus } from '../care/careRound';
 import { ratePlant } from '../care/rate';
+import { editPlantFields } from '../care/editField';
 import { openDeezPlants } from '../db/schema';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { confirmationLine, healthBand, plantScore } from '../score/score';
@@ -15,6 +16,34 @@ import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
 import { CareMonths } from '../components/CareMonths';
 import { Icon } from '../components/Icon';
 import './PlantDetail.css';
+
+/** FIELD_DEFINITIONS.md section 4: one current care priority, <= 160 chars,
+    up to two concise sentences. */
+const FOCUS_MAX = 160;
+
+/**
+ * The focus as the owner last wrote it, including an edit that has not been
+ * folded in yet.
+ *
+ * An `Edit` event lands pending like any other entry, and derived state
+ * deliberately ignores pending events until Update commits them. Without this,
+ * writing a focus and tapping Save left the card still reading "Nothing set
+ * yet" — which looks exactly like a save that failed. So the card shows what
+ * was written and badges it, the same bargain every other pending number on
+ * this app makes.
+ */
+function pendingFocus(
+  events: readonly StoredEvent[],
+  plant_id: PlantId,
+): { value: string | null } | null {
+  let latest: (StoredEvent & { to: string | null }) | null = null;
+  for (const e of events) {
+    if (e.type !== 'Edit' || e.plant_id !== plant_id || e.field !== 'do_next') continue;
+    if (e.pending !== 1) continue;
+    if (!latest || e.event_id > latest.event_id) latest = e;
+  }
+  return latest ? { value: latest.to } : null;
+}
 
 /**
  * Plant detail — DESIGN_REFERENCE.md screen 04, rebuilt 2026-09-08 after the
@@ -118,6 +147,9 @@ export default function PlantDetail({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Null while not editing; the draft text while editing. */
+  const [focus, setFocus] = useState<string | null>(null);
+  const [savingFocus, setSavingFocus] = useState(false);
 
   const hero = plant.hero ?? plant.photos[0];
   const heroUrl = hero ? thumbs.get(hero) : undefined;
@@ -127,6 +159,38 @@ export default function PlantDetail({
   const interval = rowStatus('Water', plant, events, as_of);
   const confirmation = confirmationLine(plant.health);
   const ratings = ratingHistory(plant.plant_id, events);
+  const unfoldedFocus = pendingFocus(events, plant.plant_id);
+  const unfolded = unfoldedFocus !== null;
+  const shownFocus = unfolded ? unfoldedFocus.value : plant.do_next;
+
+  /**
+   * The owner's own edit of AI CARE FOCUS.
+   *
+   * `do_next` is `editable_by: both` and always was — the AI could write it
+   * and the owner could not, which is the wrong way round for a box that
+   * answers "what am I doing about this plant". An ordinary `Edit` event,
+   * pending like any other, so the Update footer folds it in with everything
+   * else (rule 5: a correction is a new event, never a patch).
+   */
+  const saveFocus = async () => {
+    if (focus === null || savingFocus) return;
+    setSavingFocus(true);
+    setError(null);
+    try {
+      const db = await openDeezPlants();
+      await editPlantFields(db, plant.plant_id, [{
+        field: 'do_next',
+        from: shownFocus,
+        to: focus.trim() || null,
+      }], as_of);
+      await onChanged();
+      setFocus(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSavingFocus(false);
+    }
+  };
 
   const openSheet = () => { setError(null); setSheetOpen(true); };
   const closeSheet = () => { if (!busy) setSheetOpen(false); };
@@ -195,17 +259,72 @@ export default function PlantDetail({
           : <> · No events logged yet</>}
       </p>
 
-      {(plant.do_next || plant.status_label) && (
-        <section className="detail-donext">
-          <div className="detail-card-head">
-            <span className="detail-card-label">DO NEXT</span>
-            {plant.status_label && <span className="detail-status">{plant.status_label}</span>}
-          </div>
-          {plant.do_next
-            ? <p className="detail-donext-body">{plant.do_next}</p>
-            : <p className="detail-card-sub">Nothing set.</p>}
-        </section>
-      )}
+      {/* AI CARE FOCUS — renamed from DO NEXT on 2026-09-16, same field. The
+          owner wanted one small, loud, editable answer to "what should I focus
+          on with this plant right now?", and `do_next` already was exactly
+          that in the data: AI-writable, validated, exported, one priority.
+          Adding a second field beside it would have been two places to look.
+
+          Always shown, empty or not. It was hidden when null, so a plant with
+          no focus set was a plant with nowhere to type one — and "monitor
+          only" is a real answer that needs somewhere to live. */}
+      <section className="detail-donext">
+        <div className="detail-card-head">
+          <span className="detail-card-label">AI CARE FOCUS</span>
+          {plant.status_label && <span className="detail-status">{plant.status_label}</span>}
+        </div>
+        {focus === null
+          ? (
+            <>
+              {shownFocus
+                ? <p className="detail-donext-body">{shownFocus}</p>
+                : <p className="detail-card-sub">Nothing set yet.</p>}
+              {unfolded && (
+                <p className="detail-focus-pending">
+                  Waiting for Update, like any other entry.
+                </p>
+              )}
+              <button
+                type="button"
+                className="detail-focus-edit"
+                onClick={() => setFocus(shownFocus ?? '')}
+              >
+                {shownFocus ? 'Edit' : 'Write one'}
+              </button>
+            </>
+          )
+          : (
+            <>
+              <textarea
+                className="detail-focus-input"
+                value={focus}
+                maxLength={FOCUS_MAX}
+                rows={3}
+                autoFocus
+                placeholder="One priority, right now. &quot;Monitor only&quot; counts."
+                onChange={(e) => setFocus(e.target.value)}
+              />
+              <div className="detail-focus-actions">
+                <span className="detail-focus-count">{FOCUS_MAX - focus.length}</span>
+                <button
+                  type="button"
+                  className="detail-focus-cancel"
+                  onClick={() => setFocus(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="detail-focus-save"
+                  disabled={savingFocus || focus.trim() === (shownFocus ?? '')}
+                  onClick={() => void saveFocus()}
+                >
+                  Save
+                </button>
+              </div>
+            </>
+          )}
+      </section>
 
       <section className="detail-card">
         <div className="detail-card-head">
