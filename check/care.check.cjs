@@ -119,6 +119,63 @@ eq('groups: shared planters only, singletons dropped',
     { name: 'Star Wars planter', ids: ['001-MON', '002-SNK'], shared_water: true },
   ]);
 
+/* ------------------------------- already logged today (the 14 Sep duplicates) */
+
+/**
+ * The owner opened four plants one at a time, watered each, then reached for
+ * the fast multi-select round and did not deselect those four. The round said
+ * "6 days past the 7-day interval" for every one of them, because a care event
+ * moves no derived number until Update folds it in. Four duplicate Water
+ * events dated 2026-09-14.
+ *
+ * So the guard reads the RAW log, pending included — the only place the last
+ * ten minutes exist yet.
+ */
+{
+  const PENDING_TODAY = [
+    { event_id: 'P1', plant_id: '001-MON', type: 'Water', date: TODAY, time: '09:10', source: 'user', device_id: 'D', pending: 1 },
+    { event_id: 'P2', plant_id: '002-SNK', type: 'Photo', date: TODAY, time: '09:11', source: 'user', device_id: 'D', pending: 1 },
+  ];
+
+  eq('a pending Water today counts as done',
+    [...R.loggedTodayIds('Water', plants, PENDING_TODAY, TODAY)], ['001-MON']);
+
+  eq('Photo is never guarded — five in a morning all mean something',
+    [...R.loggedTodayIds('Photo', plants, PENDING_TODAY, TODAY)], []);
+
+  eq('and neither is Inspect',
+    [...R.loggedTodayIds('Inspect', plants, PENDING_TODAY, TODAY)], []);
+
+  eq('only Water and Feed are guarded', R.GUARD_DUPLICATES, ['Water', 'Feed']);
+
+  // The four duplicates, prevented: 001-MON is past its interval and would
+  // have been preselected.
+  eq('preselect drops what was already watered today',
+    R.preselectFor('Water', plants, R.loggedTodayIds('Water', plants, PENDING_TODAY, TODAY)),
+    ['002-SNK']);
+
+  eq('and without the guard it would still be there',
+    R.preselectFor('Water', plants), ['001-MON', '002-SNK']);
+
+  // A bulk gesture must not sweep it back in.
+  eq('a planter chip skips what is already done',
+    R.addAll([], ['001-MON', '002-SNK'], new Set(['001-MON'])), ['002-SNK']);
+
+  eq('the row says so instead of quoting the interval',
+    R.rowStatus('Water', past, PENDING_TODAY, TODAY),
+    { text: 'watered today', tone: 'done' });
+
+  eq('fed reads as fed, not watered',
+    R.rowStatus('Feed', past, [
+      { event_id: 'P3', plant_id: '001-MON', type: 'Feed', date: TODAY, time: '09:10', source: 'user', device_id: 'D', pending: 1 },
+    ], TODAY),
+    { text: 'fed today', tone: 'done' });
+
+  // Nothing is ever silently dropped — a second one is a question, not a ban.
+  eq('the prompt names the action', R.againPrompt('Water'), 'Water again today? Tap to confirm');
+  eq('and reads right for feed', R.againPrompt('Feed'), 'Feed again today? Tap to confirm');
+}
+
 /* ---------------------------------------------------------- the row line -- */
 
 // Rule 9: every one of these states the calendar. None of them instructs.

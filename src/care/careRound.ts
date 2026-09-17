@@ -141,9 +141,57 @@ export function isPastInterval(p: DerivedPlant): boolean {
  * routine types: nothing anywhere says how often a plant should be rotated,
  * and inventing one would be rule 9 by the back door.
  */
-export function preselectFor(action: RoundAction, plants: DerivedPlant[]): PlantId[] {
+export function preselectFor(
+  action: RoundAction,
+  plants: DerivedPlant[],
+  done?: ReadonlySet<PlantId>,
+): PlantId[] {
   if (action !== 'Water') return [];
-  return plants.filter(isPastInterval).map((p) => p.plant_id);
+  return plants
+    .filter((p) => isPastInterval(p) && !done?.has(p.plant_id))
+    .map((p) => p.plant_id);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Logged already today                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The care types where logging the same plant twice in a day is an accident
+ * rather than a fact.
+ *
+ * Deliberately short. `Photo` can happen five times in a morning and each one
+ * means something; `Inspect` twice in a day is two looks; `Dead leaves` this
+ * morning and again tonight is two tidies. Only the two that describe a
+ * single physical act are guarded, which is what the owner asked for.
+ */
+export const GUARD_DUPLICATES: readonly RoundAction[] = ['Water', 'Feed'];
+
+/**
+ * Plants that already have this action logged today, PENDING EVENTS INCLUDED.
+ *
+ * The pending part is the whole point. On the first real walk the owner opened
+ * four plants one at a time and watered them, then reached for the fast
+ * multi-select round and did not deselect those four — and the round showed
+ * them as "6 days past the 7-day interval", because a care event moves no
+ * number until Update folds it in. Four duplicate Water events on 14 Sep. The
+ * app did not fail to warn them; it had nothing to warn with.
+ *
+ * So this reads the raw log rather than derived state, which is the only place
+ * the last ten minutes exist yet.
+ */
+export function loggedTodayIds(
+  action: RoundAction,
+  plants: readonly DerivedPlant[],
+  events: readonly StoredEvent[],
+  as_of: ISODate,
+): Set<PlantId> {
+  const out = new Set<PlantId>();
+  if (!GUARD_DUPLICATES.includes(action)) return out;
+  for (const p of plants) {
+    if (lastOfType(events, p.plant_id, action) === as_of) out.add(p.plant_id);
+  }
+  return out;
 }
 
 /** Active plants only. An archived plant is not a valid `plant_id` for an event. */
@@ -155,9 +203,22 @@ export function toggle(selected: readonly PlantId[], id: PlantId): PlantId[] {
   return selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
 }
 
-/** Chips add to the selection rather than replacing it — they read `+ Kitchen`. */
-export function addAll(selected: readonly PlantId[], ids: readonly PlantId[]): PlantId[] {
-  return [...selected, ...ids.filter((id) => !selected.includes(id))];
+/**
+ * Chips add to the selection rather than replacing it — they read `+ Kitchen`.
+ *
+ * `done` is never swept back in: a bulk gesture must not silently re-select a
+ * plant the owner has already watered by hand this morning. Tapping that
+ * plant's own row still can — see `loggedTodayIds`.
+ */
+export function addAll(
+  selected: readonly PlantId[],
+  ids: readonly PlantId[],
+  done?: ReadonlySet<PlantId>,
+): PlantId[] {
+  return [
+    ...selected,
+    ...ids.filter((id) => !selected.includes(id) && !done?.has(id)),
+  ];
 }
 
 export interface SelectionGroup {
@@ -194,7 +255,8 @@ export function selectionGroups(plants: DerivedPlant[], registry: Registry): Sel
 /* The per-row line                                                            */
 /* -------------------------------------------------------------------------- */
 
-export type RowTone = 'past' | 'due' | 'quiet';
+/** `done` = already logged today. See `GUARD_DUPLICATES`. */
+export type RowTone = 'past' | 'due' | 'quiet' | 'done';
 
 export interface RowStatus {
   text: string;
@@ -231,6 +293,13 @@ export function rowStatus(
   events: readonly StoredEvent[],
   as_of: ISODate,
 ): RowStatus {
+  // Before anything about intervals: if it was done today, that is the fact
+  // about this plant, and the interval arithmetic underneath it is stale by
+  // exactly the event the owner just wrote. See `loggedTodayIds`.
+  if (GUARD_DUPLICATES.includes(action) && lastOfType(events, p.plant_id, action) === as_of) {
+    return { text: `${ROUND_COPY[action].past} today`, tone: 'done' };
+  }
+
   if (action === 'Water') {
     const { days_past, interval_days } = p.adherence;
     if (days_past === null || interval_days === null) {
@@ -261,6 +330,15 @@ export function rowStatus(
 /* -------------------------------------------------------------------------- */
 /* Copy                                                                        */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * What a row asks before it will accept a second one today. Only ever seen for
+ * `GUARD_DUPLICATES`, so only `water` and `feed` reach it.
+ */
+export function againPrompt(action: RoundAction): string {
+  const verb = ROUND_COPY[action].verb;
+  return `${verb.charAt(0).toUpperCase()}${verb.slice(1)} again today? Tap to confirm`;
+}
 
 export function roundHeading(action: RoundAction): string {
   return ROUND_COPY[action].heading;

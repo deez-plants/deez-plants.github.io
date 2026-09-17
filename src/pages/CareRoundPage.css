@@ -212,6 +212,21 @@
 .care-row-status.past { color: var(--warn); }
 .care-row-status.due { color: var(--accent); }
 
+/* Already done today. Quieter than the rest of the list, not struck through:
+   the plant is fine, it is just not what this round is for. */
+.care-row-status.done { color: var(--accent); }
+
+/* The one extra tap a second same-day watering costs. */
+.care-row-status.again {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+/* A row logged today and not selected sits back. Selecting it on purpose
+   returns it to full strength, because then it is part of the round like any
+   other. */
+.care-row.done:not(.on) { opacity: 0.62; }
+
 .care-row-pending {
   flex: none;
   font: 600 22px/1 var(--mono);

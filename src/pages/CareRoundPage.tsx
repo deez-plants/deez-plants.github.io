@@ -6,7 +6,7 @@ import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import {
   COMMON_TIER, EMPTY_DRAFT, NOTE_MAX, RARE_TIER, ROUTINE_TIER,
-  addAll, commitUpdate, emptyDetailDraft,
+  addAll, againPrompt, commitUpdate, emptyDetailDraft, loggedTodayIds,
   eventCount, groupLabel, logDetailEvent, logRound, preselectFor, roundButtonLabel,
   roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
   type DetailDraft, type RoundAction, type RoundDraft,
@@ -161,6 +161,14 @@ export default function CareRoundPage({
 
   const plants = useMemo(() => roundCandidates(state), [state]);
   const groups = useMemo(() => selectionGroups(plants, registry), [plants, registry]);
+  /**
+   * Already logged today, pending events included — the four duplicate Water
+   * events of 14 Sep in one line. See `loggedTodayIds`.
+   */
+  const done = useMemo(
+    () => (draft.action ? loggedTodayIds(draft.action, plants, events, as_of) : new Set<PlantId>()),
+    [draft.action, plants, events, as_of],
+  );
   const dueCount = useMemo(
     () => preselectFor('Water', plants).length,
     [plants],
@@ -178,12 +186,43 @@ export default function CareRoundPage({
     openTierFor(action);
     setDraft(draft.action === action
       ? EMPTY_DRAFT
-      : { action, selected: preselectFor(action, plants), note: draft.note });
+      : {
+        action,
+        // Not what was watered ten minutes ago by hand.
+        selected: preselectFor(action, plants, loggedTodayIds(action, plants, events, as_of)),
+        note: draft.note,
+      });
   };
 
   const setSelection = (ids: readonly PlantId[]) => {
     setFlash(null);
     setDraft({ ...draft, selected: ids });
+  };
+
+  /**
+   * A row already logged today takes one extra tap, and says why.
+   *
+   * The owner's rule is that a second same-day Water should not happen by
+   * accident. It is not that it can never happen — you can water twice on a
+   * hot day and mean it. So the guard is a question, asked once, on the row
+   * itself: nothing is silently dropped and nothing is silently written.
+   */
+  const [confirming, setConfirming] = useState<PlantId | null>(null);
+
+  const tapRow = (plant_id: PlantId) => {
+    if (done.has(plant_id) && !selected.has(plant_id) && confirming !== plant_id) {
+      setConfirming(plant_id);
+      return;
+    }
+    setConfirming(null);
+    setSelection(toggle(draft.selected, plant_id));
+  };
+
+  const rowClass = (on: boolean, alreadyDone: boolean) => {
+    const parts = ['care-row'];
+    if (on) parts.push('on');
+    if (alreadyDone) parts.push('done');
+    return parts.join(' ');
   };
 
   /* -------------------------------------------------------------- writes -- */
@@ -340,7 +379,7 @@ export default function CareRoundPage({
               <button
                 type="button"
                 className="care-chip"
-                onClick={() => setSelection(preselectFor('Water', plants))}
+                onClick={() => setSelection(preselectFor('Water', plants, done))}
               >
                 Past interval
               </button>
@@ -348,9 +387,9 @@ export default function CareRoundPage({
             <button
               type="button"
               className="care-chip"
-              onClick={() => setSelection(plants.map((p) => p.plant_id))}
+              onClick={() => setSelection(addAll([], plants.map((p) => p.plant_id), done))}
             >
-              All {plants.length}
+              All {plants.length - done.size}
             </button>
             <button type="button" className="care-chip" onClick={() => setSelection([])}>
               None
@@ -370,7 +409,7 @@ export default function CareRoundPage({
                 key={`${g.shared_water ? 'planter' : 'room'}:${g.name}`}
                 type="button"
                 className={g.shared_water ? 'care-chip group shared' : 'care-chip group'}
-                onClick={() => setSelection(addAll(draft.selected, g.ids))}
+                onClick={() => setSelection(addAll(draft.selected, g.ids, done))}
                 title={g.shared_water ? 'Shared soil — one soak serves all of them' : undefined}
               >
                 + {groupLabel(g.name)} <span className="care-chip-n">{g.ids.length}</span>
@@ -388,9 +427,9 @@ export default function CareRoundPage({
                 <li key={p.plant_id}>
                   <button
                     type="button"
-                    className={on ? 'care-row on' : 'care-row'}
+                    className={rowClass(on, done.has(p.plant_id))}
                     aria-pressed={on}
-                    onClick={() => setSelection(toggle(draft.selected, p.plant_id))}
+                    onClick={() => tapRow(p.plant_id)}
                   >
                     <span className="care-box" aria-hidden="true">{on ? '✓' : ''}</span>
                     {url
@@ -399,7 +438,13 @@ export default function CareRoundPage({
                     <span className="care-row-body">
                       <span className="care-row-name">{p.name}</span>
                       {/* Rule 9: this states the calendar, never an instruction. */}
-                      <span className={`care-row-status ${status.tone}`}>{status.text}</span>
+                      {confirming === p.plant_id
+                        ? (
+                          <span className="care-row-status again">
+                            {againPrompt(draft.action as RoundAction)}
+                          </span>
+                        )
+                        : <span className={`care-row-status ${status.tone}`}>{status.text}</span>}
                     </span>
                     {p.pending_event_ids.length > 0 && (
                       <span className="care-row-pending">{p.pending_event_ids.length} pending</span>
