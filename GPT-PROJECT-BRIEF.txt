@@ -44,8 +44,9 @@ EACH TIME YOU WANT A REVIEW:
      On the laptop:  C:\Users\604dr\OneDrive\Deez Plants\3 ai\
      Named like:     2026-09-14 2130 review package.zip
 
-     Inside it: manifest.json, events.json, transcript.txt,
-     markers.json, screen_log.json.
+     Inside it: manifest.json, events.json, transcript.txt and
+     markers.json. Four files. The screen log is INSIDE
+     markers.json, not a fifth file.
 
   5. Photos, if you want an opinion on how something LOOKS.
      These are not in the package - attach them to the chat by
@@ -70,8 +71,10 @@ WHERE THINGS LIVE, ALL OF IT:
   Public copy of all   github.com/deez-plants/deez-plants.github.io
 
 WHAT COMES BACK: one JSON file. Save it into "3 ai", then
-in the app: More > Apply AI update > Choose file. You approve
-every row separately. There is no accept-all.
+in the app: More > Apply AI update > Choose file. Every change
+is listed with its current value, its proposed value and its
+reason. Select all, untick the ones you disagree with, Apply.
+Nothing arrives ticked.
 
 
 ===============================================================
@@ -149,8 +152,11 @@ whole, not partially applied.
 3. notes_user AND collection_notes_user ARE HIS. Read them for
    context. An update file naming either is rejected outright.
 
-4. EVERY PROPOSED CHANGE IS APPROVED ONE AT A TIME. Write each
-   as a standalone change with its own reason. Never bundle.
+4. EVERY PROPOSED CHANGE IS SEEN AND SELECTABLE ON ITS OWN.
+   Write each as a standalone change with its own reason, never
+   bundled — the owner scans the whole list, unticks what they
+   disagree with, and applies the rest in one action. Two ideas
+   sharing one reason is a row they cannot reject half of.
 
 5. NEVER SAY AN INTERVAL PASSING MEANS A PLANT NEEDS WATER.
    "Four days past its interval" is a fact about the calendar
@@ -177,9 +183,9 @@ transcript.txt   HIM, TALKING, WALKING PAST THE PLANTS. Read
                  place he says WHY.
 
 markers.json     Which plant's page was open at each moment of a
-                 walk. This is what attributes his words.
-
-screen_log.json  The same in more detail.
+                 walk. This is what attributes his words. The
+                 screen log lives inside this file, under
+                 "screen_log" — there is no fifth file.
 
 THE AUDIO IS NOT IN THE PACKAGE AND NO LONGER EXISTS. Once a
 walk is transcribed and the coverage check passes, the

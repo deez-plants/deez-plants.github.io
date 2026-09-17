@@ -29,23 +29,37 @@ function toManifestPlant(p: DerivedPlant): ManifestPlant {
     species: p.species,
     acquired: p.acquired,
     room: p.room,
+    spot: p.spot,
     pot: p.pot,
     planter: p.planter,
+    planter_shared_water: p.planter_shared_water,
     water_interval_days: p.water_interval_days,
     water_interval_days_winter: p.water_interval_days_winter,
     feed: p.feed,
     light: p.light,
     soil: p.soil,
+    environment: p.environment,
+    repotting: p.repotting,
+    pruning: p.pruning,
+    pests: p.pests,
+    season: p.season,
+    propagation: p.propagation,
     status_label: p.status_label,
     do_next: p.do_next,
     notes_user: p.notes_user,
     care_instructions: p.care_instructions,
     health: p.health.current,
+    health_source: p.health.source,
     health_confirmed: p.health.confirmed,
+    health_changed: p.health.changed,
     health_stale: p.health.stale,
-    adherence_state: p.adherence.state,
+    adherence: p.adherence.state,
     on_time_count: p.adherence.on_time_count,
     care_count: p.adherence.care_count,
+    avg_days_late: p.adherence.avg_days_late,
+    interval_days: p.adherence.interval_days,
+    next_due: p.adherence.next_due,
+    days_past: p.adherence.days_past,
     last_checked: p.last_checked,
   };
 }
@@ -167,9 +181,26 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
   const active = state.order.map((id) => state.plants[id]).filter((p) => !p.archived);
   const package_id = await mintDatedId(db, 'PKG', as_of) as PackageId;
 
+  // Stated, not left to be counted off the list: the first real package
+  // carried 21 plants against a record of 22 and nothing in it said which was
+  // right. Archived plants are named here and nowhere else — they are still
+  // not eligible for an AI update, and appearing in `plants` is what would
+  // make them so.
+  const archived = state.order.map((id) => state.plants[id]).filter((p) => p.archived);
   const manifest: Manifest = {
     package_id,
     generated: as_of,
+    collection: {
+      permanent_record_count: state.order.length,
+      active_count: active.length,
+      archived_count: archived.length,
+      archived: archived.map((p) => ({
+        plant_id: p.plant_id,
+        name: p.name,
+        date: p.archived_date,
+        reason: p.archived_reason,
+      })),
+    },
     plants: active.map(toManifestPlant),
   };
 

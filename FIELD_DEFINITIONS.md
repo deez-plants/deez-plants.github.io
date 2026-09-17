@@ -271,7 +271,8 @@ rules — rule 1 forbids the app computing *health*, not the AI knowing botany.
 Observations about *your* plant — when yours actually flowered, how it
 responded to being moved — belong here too, and only you can write those.
 
-`editable_by: both`, so the AI proposes and you approve row by row like any
+`editable_by: both`, so the AI proposes and you approve in the review table
+like any
 other change (rule 4). Empty is a normal, permanent state: a field nobody has
 filled reads as empty, never as invented content.
 
@@ -281,14 +282,14 @@ filled reads as empty, never as invented content.
 |---|---|---|---|
 | `health` | integer | 1–10, or null when unrated — **integer only, never stored as a decimal** | both |
 | `health_source` | enum | `Me`, `AI` | derived |
-| `health_confirmed` | string | `MMM DD` — when the rating was last confirmed | derived |
+| `health_confirmed` | string | `MMM DD` on screen, ISO in the data — when the rating was last confirmed | derived |
 | `health_changed` | string | `MMM DD` — when the value last actually moved | derived |
 | `health_stale` | boolean | true when `health_confirmed` is over 90 days old | derived |
 | `adherence` | enum | `on`, `slip`, `behind` | derived |
 | `on_time_count` / `care_count` | integer | the on-time record | derived |
 | `avg_days_late` | number | average lateness | derived |
 | `status_label` | enum | `Stable`, `Improving`, `Declining`, `Needs attention` | both |
-| `do_next` | string | one instruction, ≤ 160 chars | both |
+| `do_next` | string | one current care priority, ≤ 160 chars, up to two concise sentences | both |
 | `last_checked` | string | `MMM DD` | derived |
 
 `health_source` is derived from who last wrote the number, and the app shows it
@@ -336,7 +337,7 @@ append-only, which is what makes multi-device sync safe (section 8).
 |---|---|---|
 | `event_id` | string | unique across devices |
 | `plant_id` | string | must exist and not be archived |
-| `type` | enum | `Water`, `Feed`, `Prune`, `Repot`, `Photo`, `Inspect`, `Support`, `Pest treat`, `Rate`, `Other`, `Edit`, `Archive` |
+| `type` | enum | `Water`, `Feed`, `Repot`, `Photo`, `Inspect`, `Support`, `Pest treat`, `Top-dress`, `Soil flush`, `Took cuttings`, `Hard prune`, `Dead leaves`, `Trim back`, `Rotate`, `Wipe leaves`, `Mist`, `Rate`, `Other`, `Edit`, `Archive`, and the retired `Prune` |
 | `date` | string | `YYYY-MM-DD` |
 | `time` | string | `HH:MM`, 24h |
 | `note` | string | ≤ 400 chars, optional |
@@ -627,10 +628,20 @@ deez-plants-YYYY-MM-DD.zip
 ├── manifest.json      package_id, export date, every plant with all fields above
 ├── events.json        every event since the previous package
 ├── transcript.txt     timestamped, with a coverage report
-├── markers.json       one marker track per session
+├── markers.json       one marker track per session, plus the screen log
 ├── sessions/          audio, one file per recording session
 └── media/             photos, named NNN-XXX_YYYY-MM-DD_HHMM_NN.jpg
 ```
+
+**The screen log rides inside `markers.json`**, under `screen_log`, with the
+"evidence, not fact" note attached to it — not in a fifth file. One contract,
+named here because the AI brief claimed a separate `screen_log.json` and a
+reviewer reasonably reported it as missing data. It was never missing.
+
+**Audio is no longer in the archive either.** See the golden rule in section 6:
+once a transcript is attached and its coverage passes, the recording is
+deleted — phone, laptop and backups. `sessions/` holds only walks that have not
+been transcribed yet, or whose transcript failed coverage.
 
 The manifest is the schema. Whatever fields it contains are the only fields that
 exist, and the AI should treat any field absent from it as out of scope.
@@ -814,6 +825,28 @@ rejected whole, with the reason named.
     value, the AI's value, and that you were the last to set it. You choose
     before it can be approved.
 
+### Approval, and the reversal of 2026-09-16
+
+This document, `CLAUDE.md` and the GPT brief all used to say approval was per
+row and that there was **no apply-all button, ever**. The owner reversed that
+on 2026-09-16, after the first real review, and the reasoning is theirs:
+
+> the substantive review now happens in conversation, before the update file
+> is generated. By the time the table renders, the argument is over.
+
+Re-approving twenty-two settled decisions one at a time was the rule outliving
+its reason. **What the rule was actually protecting is unchanged and is not
+negotiable:**
+
+- Every proposed change is listed, with current value, proposed value and its
+  own reason.
+- Any single row can be rejected on its own.
+- **Rows arrive unselected.** Select all is one tap; zero taps must never
+  accept anything, or a mis-tap on Apply takes twenty-two changes unread.
+
+Anywhere else in this file, in `CLAUDE.md`, or in the AI briefs that still
+reads "approve every row one at a time" is superseded by this.
+
 ---
 
 ## 12. Running this without API costs
@@ -824,7 +857,8 @@ files move by hand:
 1. App builds the review set into `outbox/`. You download or open it.
 2. You drop those files into a Claude or GPT chat on your existing subscription.
 3. The AI replies with the update JSON. You save it to `inbox/`.
-4. You drop that file into the app and approve changes one by one.
+4. You drop that file into the app, scan the review table, and apply what you
+   approve. See the note on batch approval under section 11.
 
 Total cost is the subscription you already pay for. Two manual file moves per
 cycle. The one decision that could introduce cost is transcription — local

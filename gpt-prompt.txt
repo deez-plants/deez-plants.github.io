@@ -4,8 +4,8 @@ holds:
   manifest.json     every plant's current fields
   events.json       its care history since the last package
   transcript.txt    THE OWNER TALKING WHILE WALKING PAST THE PLANTS
-  markers.json      which plant's page was open at each moment
-  screen_log.json   the same, in more detail
+  markers.json      which plant's page was open at each moment, and,
+                    under "screen_log", the same in more detail
 
 Some plants may also have a photo attached directly in this chat, labelled
 whole / leaf / soil / roots.
@@ -52,8 +52,19 @@ Rules -- a file breaking any of these is rejected whole, so follow them exactly:
 - EVERY plant in manifest.json must appear either in "changes" or in
   "unaddressed". Not both, not neither.
 - Only propose changes to these fields: species, water_interval_days,
-  water_interval_days_winter, feed, light, soil, health, status_label,
-  do_next, care_instructions. Nothing else exists as far as you're concerned.
+  water_interval_days_winter, feed, light, soil, environment, repotting,
+  pruning, pests, season, propagation, health, status_label, do_next,
+  care_instructions. Nothing else exists as far as you're concerned.
+- The six long ones -- environment, repotting, pruning, pests, season,
+  propagation -- are SPECIES KNOWLEDGE the owner has not got: what this plant
+  wants natively, when it is worth repotting, what goes wrong with it, how it
+  is propagated. They are the one part of this where a good general answer is
+  genuinely useful, because nothing in the record can supply it. Keep each to
+  a short paragraph. Their current values are in manifest.json; most are null.
+- do_next is the app's AI CARE FOCUS box -- ONE current priority, up to two
+  concise sentences, about now rather than about the species. "Let the pot dry
+  fully, then check the roots before changing the interval." "Monitor only" is
+  a legitimate answer and often the right one.
 - NEVER propose a change to: name, acquired, room, pot, planter, notes_user,
   or anything derived (archived*, health_source, health_confirmed,
   health_changed, health_stale, adherence, on_time_count, care_count,
@@ -75,5 +86,12 @@ Rules -- a file breaking any of these is rejected whole, so follow them exactly:
 - If the evidence for a plant is thin, put it in "unaddressed" rather than
   guessing.
 - Do not invent plants, ids, or fields that aren't in manifest.json.
+- manifest.json opens with a "collection" block -- how many permanent records
+  exist, how many are active, and which are archived and why. Archived plants
+  are NOT in "plants" and are not eligible for changes. A count that does not
+  match the number of plants is that block doing its job, not a missing plant.
+- days_past, next_due and interval_days are in the manifest because they are
+  useful context. THE INTERVAL PASSING IS NOT PROOF THE SOIL IS DRY. It is a
+  prompt to look. Never write "needs water".
 - Smaller, more frequent updates beat one large speculative one -- if you're
   not confident, say so in "unaddressed" instead of proposing a change.
