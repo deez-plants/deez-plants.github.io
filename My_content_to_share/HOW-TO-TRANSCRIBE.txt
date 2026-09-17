@@ -209,6 +209,20 @@ A transcript that fails coverage is exactly when the recording
 is still needed. Those walks keep everything.
 
 
+ONE THING TO DO ONCE, 16 Sep
+-------------------------------------------
+Until today the app could not read the timestamps the
+transcriber writes, so every transcript came in as "unverified",
+the coverage check never ran, and THE AUDIO WAS NEVER ACTUALLY
+DELETED. Walk 4's recording is still on your phone.
+
+To collect it: More > Recordings > walk 4 > Add transcript, and
+choose the same file from "2 transcripts" again. It will come
+back verified this time and tell you how much it released.
+
+Nothing was lost. It just never fired.
+
+
 ===============================================================
  PART 4 - THE AI ROUND-TRIP
 ===============================================================
