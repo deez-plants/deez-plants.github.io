@@ -242,9 +242,13 @@ interface WhisperShape {
 }
 
 /**
- * Whisper's own JSON (`--output_format json`), or its SRT/VTT subtitle output,
- * or plain text. Anything without timestamps parses to zero segments, which is
- * what puts it in the unverified tier rather than failing.
+ * Whisper's own JSON (`--output_format json`), its SRT/VTT subtitle output,
+ * **the report `transcribe_walk.py` writes**, or plain text. Anything without
+ * timestamps parses to zero segments, which is what puts it in the unverified
+ * tier rather than failing.
+ *
+ * The third of those was missing until 2026-09-16, and its absence was the
+ * single most expensive bug in this file's history — see `parsePlainCues`.
  */
 export function parseTranscript(raw: string): ParsedTranscript {
   const trimmed = raw.trim();
@@ -274,6 +278,13 @@ export function parseTranscript(raw: string): ParsedTranscript {
   if (cues.length) {
     return { text: cues.map((c) => c.text).join('\n').trim(), segments: cues };
   }
+
+  // The whole file is kept as the text, not just the spoken lines. That report
+  // carries the plant each stretch was attributed to and the transcriber's own
+  // coverage findings, and both are worth more to whoever reads it next than a
+  // tidier body would be.
+  const plain = parsePlainCues(trimmed);
+  if (plain.length) return { text: trimmed, segments: plain };
 
   return { text: trimmed, segments: [] };
 }
@@ -316,4 +327,70 @@ function parseCues(raw: string): TranscriptSegment[] {
 
 function toSeconds(h: string, m: string, s: string, frac: string): number {
   return Number(h) * 3600 + Number(m) * 60 + Number(s) + Number(frac) / 10 ** frac.length;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The transcriber's own format                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `0:07  words`, or `1:02:03  words` once a walk runs past the hour. One
+ * timestamp at the start of the line, two spaces, then what was said —
+ * `transcribe_walk.py`, the line that writes the body of every transcript
+ * this app is ever handed.
+ *
+ * **Why this exists.** The transcriber and this parser were written a week
+ * apart and never matched. Whisper JSON and SRT were understood; the format
+ * the owner's own toolchain actually produces was not. So every real
+ * transcript arrived with zero segments and was filed `unverified`, the
+ * coverage gate never ran on any of them, and — because the audio is released
+ * only when coverage passes — no walk's audio was ever deleted. One unread
+ * line shape, three symptoms, none of which pointed at it.
+ *
+ * Minutes are not capped at two digits: `mmss()` writes `%d:%02d`, so a
+ * ninety-minute walk ends in `90:12` and not `1:30:12`.
+ */
+const PLAIN_CUE_RE = /^(?:(\d{1,3}):)?(\d{1,4}):([0-5]\d)[ \t]{1,}(\S.*)$/;
+
+/** A last segment's end has to be guessed; this is the floor for that guess. */
+const MIN_SEGMENT_S = 2;
+
+/**
+ * Timestamps that mark where a segment BEGINS, with no end times.
+ *
+ * Each segment runs until the next one starts. The last has nothing after it,
+ * so it gets the median of the others — the alternative, ending it the instant
+ * it began, would hand the tail assertion a shortfall the walk did not have
+ * and fail honest transcripts near the tolerance.
+ *
+ * Two matching lines are required before a file is read this way. One line
+ * beginning `12:30` is as likely to be somebody typing about a plumber as it
+ * is to be a cue, and misreading pasted prose as a timestamped track would
+ * promote it to `verified` — the one direction this must never get wrong.
+ */
+function parsePlainCues(raw: string): TranscriptSegment[] {
+  const starts: { start: number; text: string }[] = [];
+
+  for (const line of raw.split(/\r?\n/)) {
+    const m = PLAIN_CUE_RE.exec(line);
+    if (!m) continue;
+    const start = Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+    // Out of order means this is not the track it looks like. Bail rather than
+    // hand the monotonic assertion something this function invented.
+    if (starts.length && start < starts[starts.length - 1].start) return [];
+    starts.push({ start, text: m[4].trim() });
+  }
+
+  if (starts.length < 2) return [];
+
+  const gaps = starts.slice(1).map((s, i) => s.start - starts[i].start).filter((g) => g > 0);
+  const sorted = [...gaps].sort((a, b) => a - b);
+  const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : MIN_SEGMENT_S;
+  const tail = Math.max(MIN_SEGMENT_S, median);
+
+  return starts.map((s, i) => ({
+    start: s.start,
+    end: i + 1 < starts.length ? starts[i + 1].start : s.start + tail,
+    text: s.text,
+  }));
 }

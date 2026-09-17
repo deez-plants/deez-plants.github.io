@@ -239,5 +239,96 @@ eq('malformed JSON falls back to prose rather than throwing',
     checkCoverage(full, 786, []).passed, true);
 }
 
+/* --------------------------- the format the transcriber actually writes --- */
+
+/**
+ * The bug this whole block exists for: `transcribe_walk.py` writes
+ * `0:07  words`, and this parser understood only Whisper JSON and SRT. Every
+ * real transcript therefore arrived with no segments, landed `unverified`,
+ * never met the coverage gate, and — since the audio is released only on a
+ * pass — no walk's audio was ever deleted.
+ */
+{
+  const REPORT = [
+    'session: SES-2026-09-14-4-part1',
+    'transcript_tier: verified',
+    'duration_s: 785',
+    'segments: 105',
+    'coverage: pass',
+    'quiet: 572.9-576.0',
+    '',
+    '--- coverage report ---',
+    'PASS  last segment ends 13:06, recording 13:05',
+    'PASS  largest gap 10s',
+    '',
+    '--- transcript ---',
+    '',
+    '[no plant page open]',
+    '0:00  okay this is my first real walk',
+    '0:07  starting with the large Monstera',
+    '',
+    '[013-OXA]',
+    '0:12  today I watered it',
+  ].join('\n');
+
+  const parsed = parseTranscript(REPORT);
+  eq('the transcriber\'s own lines are timestamps', parsed.segments.length, 3);
+  eq('and they are read in seconds',
+    parsed.segments.map((s) => s.start), [0, 7, 12]);
+  // Each runs until the next begins; the last gets the median of the others,
+  // because ending it where it started would invent a shortfall.
+  eq('each segment ends where the next begins',
+    parsed.segments.map((s) => s.end), [7, 12, 19]);
+  // The whole report is kept, not just the spoken lines: the plant headings
+  // are the attribution and the coverage lines are the transcriber's account.
+  eq('the report is kept whole as the text',
+    parsed.text.includes('[013-OXA]') && parsed.text.includes('PASS  largest gap 10s'), true);
+  // The header lines must not be mistaken for speech.
+  eq('the header is not read as cues',
+    parsed.segments.some((s) => s.text.includes('coverage')), false);
+
+  eq('an hour-long walk is minutes past sixty, not H:MM:SS',
+    parseTranscript('90:12  still going\n95:00  nearly done').segments.map((s) => s.start),
+    [5412, 5700]);
+  eq('but H:MM:SS is read too',
+    parseTranscript('1:02:03  one\n1:02:09  two').segments.map((s) => s.start),
+    [3723, 3729]);
+
+  // The one direction this must never get wrong: promoting prose to verified.
+  eq('one stamped line in prose is not a track',
+    parseTranscript('I told him 12:30 and he came at two').segments.length, 0);
+  eq('plain prose stays unverified',
+    parseTranscript('just some words about a plant').segments.length, 0);
+  eq('timestamps out of order are not a track',
+    parseTranscript('5:00  later\n1:00  earlier').segments.length, 0);
+}
+
+/**
+ * The owner's real walk of 14 Sep, end to end, if the file is still on this
+ * machine. Skipped rather than failed when it is not — the transcript lives in
+ * OneDrive, not the repo, and a check that fails on another machine is a check
+ * nobody runs.
+ */
+{
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  const real = path.join(home, 'OneDrive', 'Deez Plants', '2 transcripts',
+    '2026-09-14 1833 walk 4 - TRANSCRIPT.txt');
+
+  if (fs.existsSync(real)) {
+    const raw = fs.readFileSync(real, 'utf8');
+    const { segments } = parseTranscript(raw);
+    const duration = parseDuration(raw);
+    eq('the real walk parses to its 105 segments', segments.length, 105);
+    eq('and its measured duration is read', duration, 785);
+    const report = checkCoverage(segments, duration, [], parseQuiet(raw));
+    eq('and it passes coverage, which is what releases the audio',
+      report.passed, true);
+  } else {
+    console.log('skip the real walk of 14 Sep — not on this machine');
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
