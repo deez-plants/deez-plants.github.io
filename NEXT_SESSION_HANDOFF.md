@@ -207,6 +207,57 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### 2026-09-16 — the first real AI review, and six fixes from it
+
+The owner ran a walk, made a package, and had their GPT review it. The reply
+is in `REVIEW-RESPONSE-2026-09-15.txt` at the repo root, with the full
+contract-drift matrix. **Six of the eight items were approved and are built
+and pushed.** What matters for whoever reads this next:
+
+**1. The parser gap was the big one, and it is fixed.** `transcribe_walk.py`
+writes `0:07  words`; `parseTranscript` knew Whisper JSON and SRT and nothing
+else. So every real transcript arrived with zero segments, was filed
+`unverified`, never met the coverage gate — and since audio is released only
+on a pass, **no walk's audio had ever been deleted. The golden rule had never
+once fired.** One unread line shape, three symptoms. Checked against the
+owner's real walk of 14 Sep: 105 segments, 785s, coverage passes.
+
+**2. The marker offsets that reset to 0 were the `capturedMs` wall-clock bug**,
+already fixed on 14 Sep — the reviewed package predates the fix. **Do not
+accept that as an architectural limitation.** But a real problem is underneath
+it and is NOT fixed: the walk clock said 357s against 785s of audio, because
+iOS keeps recording while backgrounded and the clock does not. Markers after a
+backgrounding are progressively early against the stitched transcript. That is
+the reason for the part map, item 3b, which is **deliberately not built yet**
+— the owner's instruction is to try deriving part boundaries from the existing
+`segment_starts` first (accurate to about ±3s, zero change to any recording
+file) and only touch the capture chain if that proves inadequate.
+
+**3. Rule 4 was knowingly reversed.** Select all / Clear now exist on the AI
+review table. The owner's reasoning: the substantive review happens in
+conversation before the update file is generated, so the old rule made them
+re-approve twenty-two settled decisions. Recorded in `CLAUDE.md` rule 4 and
+FIELD_DEFINITIONS section 11. **Rows still arrive unselected and that part is
+not negotiable** — one tap to take the lot, zero taps must not.
+
+**Also built:** the Record tab pushes instead of clearing the stack while a
+walk is live (that one bug caused all three navigation complaints), a walk
+strip with Pause/Resume above the tab bar, same-day Water/Feed duplicate
+prevention reading pending events, the manifest's missing fields plus a
+collection block, and AI CARE FOCUS — `do_next` relabelled, always shown, and
+editable by the owner.
+
+**Still owed, in the owner's order:** 3b-lite (part boundaries from
+`segment_starts`), then a real interrupted walk to test it, then 3b-full only
+if needed, then 3c (flag a photo for AI review, ship a resized copy in the
+package under its semantic name — the flag does not exist yet and is the
+larger half of that job).
+
+**Shared water: option B is the agreed architecture** — a planter-level
+watering interval that shared-soil members are judged against, with each
+plant keeping its own reference intervals as species knowledge. Not urgent,
+not built, not breaking anything today.
+
 **The recording is solved: it was never lost audio, it was a container** —
 three self-contained recordings glued into one file no player reads past the
 first join. See "The recording, solved" below. **One backgrounded walk from
