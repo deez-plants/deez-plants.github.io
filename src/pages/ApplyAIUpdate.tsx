@@ -13,9 +13,22 @@ import './ApplyAIUpdate.css';
  * changes until you approve it." A file failing any of section 11's checks
  * is rejected whole, with the reason named — that happens before the review
  * table ever renders, so there is no partial or "mostly valid" state to
- * design for. Once it renders, there is no select-all: every row toggles on
- * its own (rule 4), defaulting to unapproved so accepting anything is a
- * deliberate act, never something left checked by default.
+ * design for.
+ *
+ * **Select all exists, and that is a knowing reversal of rule 4** ("approval
+ * is per row … no apply-all button, ever"), made by the owner on 2026-09-16
+ * after the first real review. Their reasoning, and it is right: the
+ * substantive review now happens in conversation BEFORE the update file is
+ * generated, so by the time this table renders the argument is over and the
+ * rule was making them re-approve twenty-two decisions they had already
+ * argued through. What rule 4 was actually protecting — that no change is
+ * applied the owner has not seen, and that any single row can be rejected on
+ * its own — is untouched.
+ *
+ * So: every row is still listed, still shows current against proposed with a
+ * reason, still toggles on its own, and rows still arrive UNSELECTED. One tap
+ * takes the lot; zero taps must not, because a mis-tap on Apply would then
+ * accept everything unread. That asymmetry is the whole of the safety here.
  */
 
 export interface ApplyAIUpdateProps {
@@ -86,6 +99,16 @@ export default function ApplyAIUpdate({ state, as_of, backLabel, onBack, onChang
     setScreen({ ...screen, approved });
   };
 
+  const selectAll = () => {
+    if (screen.kind !== 'review') return;
+    setScreen({ ...screen, approved: new Set(screen.rows.map((_, i) => i)) });
+  };
+
+  const clearAll = () => {
+    if (screen.kind !== 'review') return;
+    setScreen({ ...screen, approved: new Set() });
+  };
+
   const apply = async () => {
     if (screen.kind !== 'review') return;
     const approvedRows = screen.rows.filter((_, i) => screen.approved.has(i));
@@ -151,9 +174,27 @@ export default function ApplyAIUpdate({ state, as_of, backLabel, onBack, onChang
         <>
           <p className="apply-sub">
             {screen.rows.length} proposed change{screen.rows.length === 1 ? '' : 's'} from {screen.package_id}.
-            Approve each one you want — nothing is applied until you tap Apply below.
+            Approve the ones you want — nothing is applied until you tap Apply below.
           </p>
           {screen.notes && <p className="apply-notes">"{screen.notes}"</p>}
+          {/* Select all, and nothing more. Rows still arrive unselected: one
+              tap to take the lot, zero taps should not. */}
+          <div className="apply-bulk">
+            <button type="button" className="apply-bulk-btn" onClick={selectAll}>
+              Select all {screen.rows.length}
+            </button>
+            <button
+              type="button"
+              className="apply-bulk-btn"
+              onClick={clearAll}
+              disabled={screen.approved.size === 0}
+            >
+              Clear
+            </button>
+            {screen.approved.size > 0 && (
+              <span className="apply-bulk-count">{screen.approved.size} selected</span>
+            )}
+          </div>
           <ul className="apply-rows">
             {screen.rows.map((row, i) => (
               <li key={i} className={screen.approved.has(i) ? 'apply-row on' : 'apply-row'}>

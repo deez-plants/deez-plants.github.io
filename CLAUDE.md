@@ -119,8 +119,15 @@ drop any of them.
    ("on time 14 of 18 · average 2 days late"), never a number out of 10.
 3. **`notes_user` is untouchable by import.** Validation rejects any update
    file naming `notes_user` or `collection_notes_user`, whole.
-4. **Approval is per row.** No apply-all button, ever — every proposed change
-   is accepted or rejected individually.
+4. **Every proposed change is visible and individually rejectable.** The
+   review table lists all of them with current value, proposed value and
+   reason; any single row can be unchecked; rows arrive unselected. **Select
+   all / Clear exist** — the owner reversed the old "no apply-all button,
+   ever" on 2026-09-16, because the substantive review now happens in
+   conversation before the update file is generated, and re-approving
+   twenty-two settled decisions one at a time was the rule outliving its
+   reason. What must not come back is a default-selected table: one tap to
+   take the lot, zero taps must not.
 5. **Events are append-only.** Nothing is edited in place; a correction is a
    new event. This is what makes two-device merging safe.
 6. **The score block is one component.** If it renders differently on any

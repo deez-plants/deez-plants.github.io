@@ -234,3 +234,32 @@
   color: var(--ink);
   text-wrap: pretty;
 }
+
+/* Select all / Clear. See the reversal of rule 4 noted in ApplyAIUpdate.tsx —
+   the rows below are unchanged, this only saves twenty-two taps. */
+.apply-bulk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 14px;
+}
+
+.apply-bulk-btn {
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-on);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.apply-bulk-btn:disabled {
+  opacity: 0.4;
+}
+
+.apply-bulk-count {
+  font-size: 20px;
+  color: var(--dim);
+}
