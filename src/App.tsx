@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { boot, refresh, type Booted } from './boot';
 import { useNav } from './nav/useNav';
 import type { PlantScopedKind, Screen } from './nav/types';
 import type { PlantId } from './types/ids';
 import { TabBar } from './nav/TabBar';
+import { WalkStrip } from './nav/WalkStrip';
+import { getPhase, subscribe as subscribeRecorder } from './capture/recording';
 import AllPages, { type AllPagesGroup } from './nav/AllPages';
 import PlantPicker from './nav/PlantPicker';
 import { screenTitle } from './nav/screenTitle';
@@ -81,6 +83,9 @@ export default function App() {
   // dropped inside `enterScreen`, so navigating through a screen writes
   // nothing; opening a plant's page also places a `plant_open` marker when a
   // walk happens to be running.
+  const recPhase = useSyncExternalStore(subscribeRecorder, getPhase, getPhase);
+  const walking = recPhase === 'recording' || recPhase === 'paused';
+
   const current = nav.current;
   const screenKind = current.kind;
   const screenPlant = 'plant_id' in current ? current.plant_id : undefined;
@@ -136,6 +141,34 @@ export default function App() {
     const label = on?.name ?? screenTitle(current);
     nav.push({ kind: 'all-pages' }, label);
   };
+
+  /**
+   * The Rec button, and the one piece of navigation the first real walk broke.
+   *
+   * Record is a root tab, and `goRoot` replaces the whole stack. So every time
+   * the owner tapped Rec to pause — which is what you do when you stop to fill
+   * a watering can — the plant they were standing in front of was thrown away,
+   * Back had nothing behind it, and the edge swipe was correctly inert because
+   * as far as the app was concerned they were at a root. They reported all
+   * three symptoms separately and they are all this.
+   *
+   * **While a walk is live the recorder is a place you visit, not a place you
+   * start from.** So it pushes, carrying whatever you were looking at, and
+   * Back puts you back in front of the plant. With no walk running it is still
+   * a root, because then it genuinely is where you are starting from.
+   *
+   * The plant page's own "Record a note" already pushed correctly. This makes
+   * the tab bar agree with it.
+   */
+  const openRecorder = () => {
+    if (current.kind === 'record') return;
+    const on = 'plant_id' in current && current.plant_id
+      ? state.plants[current.plant_id]
+      : undefined;
+    if (recPhase === 'ready' || recPhase === 'finished') { nav.goRoot('record'); return; }
+    nav.push({ kind: 'record' }, on?.name ?? screenTitle(current));
+  };
+
 
   // Active plants, in list order — the Prev/Next strip and the All-plants
   // picker on plant detail both walk this (DESIGN_REFERENCE.md screen 04,
@@ -557,13 +590,19 @@ export default function App() {
 
   return (
     <>
-      <div className="app-content">{body}</div>
-      <TabBar
-        active={nav.activeTab}
-        onTab={nav.goRoot}
-        onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
-        onMore={openAllPages}
-      />
+      <div className={walking ? 'app-content walking' : 'app-content'}>{body}</div>
+      <div className="app-bottom">
+        {/* Pause and resume without losing your place — see `WalkStrip`. Not on
+            the Record screen, which says all of it larger. */}
+        <WalkStrip hidden={current.kind === 'record'} onOpen={openRecorder} />
+        <TabBar
+          active={nav.activeTab}
+          onTab={nav.goRoot}
+          onRecord={openRecorder}
+          onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
+          onMore={openAllPages}
+        />
+      </div>
     </>
   );
 }

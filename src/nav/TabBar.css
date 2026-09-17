@@ -4,11 +4,7 @@
  * size by looking at all four options at their phone's real width.
  */
 .tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
+  /* Positioned by `.app-bottom`, which holds the walk strip above it too. */
   display: flex;
   align-items: center;
   justify-content: space-around;

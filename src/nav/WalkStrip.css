@@ -1,0 +1,77 @@
+/*
+ * The live-walk strip, sitting directly on top of the tab bar. Both live in
+ * `.app-bottom`, which is the fixed thing — that way the strip's height never
+ * has to be guessed at from the tab bar's padding, and changing either one
+ * cannot leave a seam.
+ */
+
+.walkstrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--panel-raised);
+  border-top: 1px solid var(--line);
+}
+
+.walkstrip-open {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.walkstrip-dot {
+  align-self: center;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
+/* Paused is a square, the same way the tab bar's core is — a shape that reads
+   at a glance without waiting for the word underneath it. */
+.walkstrip.paused .walkstrip-dot {
+  background: var(--dim);
+  border-radius: 3px;
+}
+
+.walkstrip-time {
+  font: 700 22px/1 var(--mono);
+  color: var(--warn);
+  font-variant-numeric: tabular-nums;
+}
+
+.walkstrip.paused .walkstrip-time { color: var(--ink); }
+
+.walkstrip-word {
+  font-size: 20px;
+  color: var(--dim);
+}
+
+/* 20px floor, and wide enough to hit while walking rather than sitting down. */
+.walkstrip-act {
+  flex: none;
+  min-height: 44px;
+  padding: 8px 20px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel-on);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.walkstrip.paused .walkstrip-act {
+  color: #0d1410;
+  background: var(--accent);
+  border-color: var(--accent);
+}

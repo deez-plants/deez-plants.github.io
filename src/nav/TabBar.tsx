@@ -6,7 +6,11 @@ import './TabBar.css';
 
 export interface TabBarProps {
   active: RootTab | null;
-  onTab: (tab: RootTab) => void;
+  /** Home and Plants only. The recorder goes through `onRecord`, which has to
+      decide between clearing the stack and pushing onto it. */
+  onTab: (tab: 'home' | 'plants') => void;
+  /** Open the recorder. See `openRecorder` in `App.tsx`. */
+  onRecord: () => void;
   /** Log care, from anywhere. */
   onLog: () => void;
   onMore: () => void;
@@ -54,7 +58,7 @@ const ICONS: Record<'home' | 'plants' | 'log' | 'more' | 'rec', IconName> = {
 
 const ICON_PX = 32;
 
-export function TabBar({ active, onTab, onLog, onMore }: TabBarProps) {
+export function TabBar({ active, onTab, onRecord, onLog, onMore }: TabBarProps) {
   const phase = useSyncExternalStore(subscribe, getPhase, getPhase);
   const live = phase === 'recording' || phase === 'paused';
 
@@ -82,7 +86,7 @@ export function TabBar({ active, onTab, onLog, onMore }: TabBarProps) {
         type="button"
         className={live ? `tabbar-rec live ${phase}` : 'tabbar-rec'}
         aria-label={live ? 'Open the walk in progress' : 'Open the recorder'}
-        onClick={() => onTab('record')}
+        onClick={onRecord}
       >
         <span className="tabbar-rec-dot" aria-hidden="true">
           {/* The mock's ring: scales to 1.35 and fades, 1.6s, only while
