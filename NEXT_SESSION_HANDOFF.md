@@ -299,24 +299,36 @@ well as right.
 
 `known-good-2026-09-18` is the tag to revert to. Since it: the transcription
 parts bug, exact seam durations, the review-table verification, the last of the
-stale pending copy, and **3c photo flags** (`src/package/reviewFlags.ts` —
-flags live outside the event log, clear on a confirmed send, cap 20).
+stale pending copy, **3c photo flags** (`src/package/reviewFlags.ts` — flags
+live outside the event log, clear on a confirmed send, cap 20), and the three
+navigation items below, all now done.
+
+**The navigation work, 2026-09-18, and the two rules a later pass must not
+undo:**
+
+- **`nav/stack.ts` holds the rules, pure and tested.** `useNav.ts` is the React
+  binding and nothing else. Same reasoning as `capture/clock.ts`: "Back went
+  somewhere odd" is found weeks later by a person, never by a type checker.
+  `check/nav.check.cjs` pins the reported bug AND the four cases that must keep
+  behaving identically.
+- **`swapPlant` is deliberately narrow.** It rewrites the entry underneath only
+  when the page behind is the OLD plant's own detail page. **The owner
+  explicitly asked for the small version** — "I want to keep this and just add
+  the go forward" — after I proposed a blanket "Back always goes up to this
+  plant" rule. That blanket rule was considered and dropped because it would
+  have changed cases nobody complained about. **Do not reinstate it without
+  asking.**
+- **Forward clears on any new navigation.** Not a limitation: after a different
+  turn those screens are a branch that no longer exists, and offering them
+  would be inventing a history.
 
 **Next, agreed and not started:**
 
-1. **Back means "up to this plant".** The owner found it: open the Shamrock's
-   More page from the Monstera and Back still reads "Large Monstera" and goes
-   there. `nav.replace` keeps the pushing entry's `backLabel`, which was right
-   for Prev/Next on Plant Detail and wrong one level deeper. **The rule to
-   build: from any plant-scoped sub-page, Back goes to that plant's own detail
-   page.** Only Plant Detail itself backs out to wherever you came from. ~1 hr,
-   `useNav.ts` and `App.tsx`.
-2. **Forward swipe** — right edge, undoes the last Back, cleared on any new
-   navigation. Mirrors `useEdgeSwipeBack`. ~1 hr. Check it against the Plant
-   Detail Prev/Next strip on the phone.
-3. **Sticky Apply bar** on the AI review table. 228 rows is a long scroll to a
-   button. ~30 min.
-4. Then the brief rewrite, then a package to settle the format with the GPT.
+1. **Rewrite `GPT-PROJECT-BRIEF.txt` from scratch** — see the block above for
+   why, and for the split that must stay clean.
+2. A package to settle the format with the owner's GPT.
+3. Then the owner uses the app for a while before the web interface is
+   discussed at all.
 
 #### The AI round-trip actually happened
 
@@ -618,10 +630,9 @@ underneath it stays and is the whole value**: Record no longer clears the
 stack while a walk is live. Do not add a second timer back; the reasoning is
 written into `TabBar.tsx`.
 
-**Still owed:** a real interrupted walk from the owner to test 3b-lite, then
-3b-full only if needed, then 3c (flag a photo for AI review, ship a resized
-copy in the package under its semantic name — the flag does not exist yet and
-is the larger half of that job).
+**All of that is settled now.** The owner recorded the interrupted walk on
+17 Sep, the derived mapping held, the exact durations closed it, and 3c is
+built. See the 18 Sep sections at the top.
 
 **Shared water: option B is the agreed architecture** — a planter-level
 watering interval that shared-soil members are judged against, with each
