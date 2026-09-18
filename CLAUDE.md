@@ -75,7 +75,7 @@ src/
     seed.ts                 First-run import of SEED_PLANTS.json + seed-photos/
                             as Photo events (section 6b)
   care/
-    careRound.ts          Multi-select care round logging, pending state, Update commit
+    careRound.ts          Multi-select care round logging, the same-day guard, Undo
   score/
     ScoreBlock.tsx          The one health score component (section 3b) — used
                             everywhere a score appears, never reimplemented
@@ -85,6 +85,10 @@ src/
     import.ts                 Apply an approved update file, per-row approval only
   capture/
     recording.ts            MediaRecorder (audio/mp4), wake lock, foreground handling
+    clock.ts                 How much of a walk reached the disk. Pure, and wrong
+                              three times before it was pulled out of recording.ts
+    parts.ts                  Where each recording of an interrupted walk sits in
+                              the stitched audio. Derived; touches no capture code
     screenLog.ts             Always-on screen log, 5s pass-through filter, 7-day/500-entry retention
     photos.ts                 Capture, four labels, hero selection, transient per-plant cache
   notes/
@@ -129,7 +133,10 @@ drop any of them.
    reason. What must not come back is a default-selected table: one tap to
    take the lot, zero taps must not.
 5. **Events are append-only.** Nothing is edited in place; a correction is a
-   new event. This is what makes two-device merging safe.
+   new event. This is what makes two-device merging safe. A mis-tapped entry is
+   taken back with a `Void` event naming it — both stay in the log, neither
+   counts, and history shows both. **Never a deletion:** a deleted entry could
+   return from a backup with no record of the intent to remove it.
 6. **The score block is one component.** If it renders differently on any
    screen, that's a bug — same three lines, same order, same type sizes
    everywhere (section 3b).
@@ -142,6 +149,7 @@ drop any of them.
 9. **Never render elapsed interval as proof a plant needs care.** "4 days past
    interval", "check soil" — never "water overdue" as an instruction. The
    interval passing is a prompt to look, not a fact about the soil.
-10. **Rebuild derived state from events, never patch it.** The Update commit
+10. **Rebuild derived state from events, never patch it.** Every write
     recomputes everything from scratch. It's 22 plants — performance is not a
-    concern here.
+    concern here. (Entries counted only after a manual "Update" until
+    2026-09-16; that step is gone, and the rebuild now runs on every write.)

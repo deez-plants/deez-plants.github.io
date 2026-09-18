@@ -207,6 +207,109 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### WHERE THIS STANDS — 2026-09-18
+
+**Read this block, then the dated sections under it for the reasoning.** This
+session (15–18 Sep) ran the first real AI review round and rebuilt a lot off
+the back of it. Nothing below is speculative; it is all built, tested and
+pushed.
+
+#### The one thing the owner is doing next
+
+They are **reviewing their GPT's first real response** — species knowledge for
+the six reference fields, AI CARE FOCUS text, and its read on the plants. Expect
+to be asked to fine-tune whatever that surfaces. **They have also agreed to do
+one deliberately interrupted walk** and export it for analysis; see "3b-lite"
+below for what that test is for and why the audio must not be transcribed
+before it is looked at.
+
+#### The AI round-trip, and the three documents that drive it
+
+The owner has their own GPT project ("plant bot") doing the review. Claude Code
+does not talk to it — the owner carries files both ways. Three documents live in
+the repo root and are the standing contract:
+
+- `GPT-PROJECT-BRIEF.txt` — Part 0 is for the owner (what to upload, where every
+  file lives); Parts 1–8 are the GPT's standing instructions.
+- `gpt-prompt.txt` — the output contract: which fields may be proposed, in what
+  shape.
+- `FIELD_DEFINITIONS.md` — the data model and the validation chain.
+
+Three one-off notes were written for specific rounds and are also in the repo
+and in `OneDrive\Deez Plants\3 ai`:
+
+- `REVIEW-RESPONSE-2026-09-15.txt` — the reply to its first review, with the
+  contract-drift matrix.
+- `GPT-UPDATE-2026-09-17.txt` — what got built from that review.
+- `GPT-UPDATE-2026-09-18.txt` — the stale-manifest finding, answered.
+
+**If the owner asks for "another doc for GPT", these are the pattern.** They are
+written to be pasted whole, they lead with what would otherwise be misread, and
+they say plainly where the AI was wrong as well as where it was right.
+
+#### Architecture decisions made this session — do not quietly undo these
+
+1. **Care logs count immediately.** The pending/Update two-step is gone;
+   `appendEvents` folds. Pending delayed the numbers, never the record.
+2. **`Void` is the undo.** An entry, never a deletion. Narrow on purpose: the
+   round just logged, from the screen that logged it. **Must not grow into a
+   general correction mechanism.**
+3. **Snapshots come from meaningful boundaries** — building a review package
+   takes one, plus `Mark this point` on Home and on Since last time.
+4. **A package is "sent" only when the owner confirms it saved.** Building and
+   marking are separate (`confirmSent`), with `unsendPackage` as the recovery.
+   **Do not move the marking back inside the build.**
+5. **Select all / Clear exist on the AI review table.** A knowing reversal of
+   the old "no apply-all, ever". Rows still arrive unselected and that part is
+   not negotiable.
+6. **`do_next` is AI CARE FOCUS.** Same field, relabelled, always shown, owner-
+   editable. One priority, up to two sentences, 160 chars.
+7. **Same-day Water/Feed are guarded** by refusing the selection visibly, never
+   by silently dropping an event.
+8. **Record pushes rather than clearing the nav stack while a walk is live.**
+9. **The walk-clock arithmetic lives in `capture/clock.ts`, pure and tested.**
+   It was wrong three times inside `recording.ts`. **Do not move it back.**
+10. **Marker-to-audio mapping is derived, not recorded** (`capture/parts.ts`).
+    The capture chain is untouched, and stays untouched until a real interrupted
+    walk proves the derived version inadequate.
+11. **The golden rule holds:** audio is deleted once a transcript is attached
+    AND coverage passes. Not before, and the coverage condition is not a hedge.
+
+#### What is still owed
+
+**Mine:**
+
+- **3b-full** — recording-part metadata written during capture. Only if the
+  owner's interrupted walk shows the derived mapping is not good enough.
+- **3c — flagged photos in packages.** Agreed in full: a flagged photo travels
+  in the zip under its semantic filename, resized for review. The "flag this
+  photo for AI" control does not exist and is the larger half of that job.
+- **Shared planters, option B** — a planter-level watering interval that
+  shared-soil members are judged against, with each plant keeping its own
+  reference intervals as species knowledge. Agreed as the direction. Not
+  urgent, nothing broken today.
+- **Reminders** — still a design conversation, not an authorisation. The
+  owner's direction: off-able, weekly summary rather than daily, an interval
+  passing prompts inspection rather than an alarm.
+- **The desk console** — deliberately last, still.
+
+**Theirs:**
+
+- the interrupted walk, exported
+- two new plants to add
+- the AI round-trip's second half: approving rows from its update file
+
+#### Two standing instructions from this session
+
+- **In-app text stays short.** State the fact; the reasoning belongs in the code
+  comment. Six lines were trimmed on 18 Sep at the owner's request. The
+  Water-again confirm, the golden-rule audio message and the coverage-failure
+  text stay long on purpose.
+- **Stale instructions cost more than none.** Three separate times now, in-app
+  or guide text has sent the owner to do work the app already did. When a
+  mechanism changes, the copy describing it is part of the change.
+
+
 ### 2026-09-18 (later) — three separate meanings of "done", kept separate
 
 The owner's GPT asked whether committed / snapshotted / sent-to-AI were still
