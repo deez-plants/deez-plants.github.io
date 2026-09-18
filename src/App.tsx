@@ -10,7 +10,7 @@ import { getPhase, subscribe as subscribeRecorder } from './capture/recording';
 import AllPages, { type AllPagesGroup } from './nav/AllPages';
 import PlantPicker from './nav/PlantPicker';
 import { screenTitle } from './nav/screenTitle';
-import { useEdgeSwipeBack } from './nav/useEdgeSwipeBack';
+import { useEdgeSwipe } from './nav/useEdgeSwipe';
 import Placeholder from './nav/Placeholder';
 import Home from './pages/Home';
 import PlantsList from './pages/PlantsList';
@@ -106,7 +106,12 @@ export default function App() {
   // Swipe from the left edge to go back, on every screen that has something
   // behind it. The owner asked for a back that works everywhere and noted
   // there may be no room for one — this costs no space at all.
-  useEdgeSwipeBack(nav.canGoBack, nav.back);
+  useEdgeSwipe({
+    canGoBack: nav.canGoBack,
+    onBack: nav.back,
+    canGoForward: nav.canGoForward,
+    onForward: nav.forward,
+  });
 
   if (load.status === 'loading') return <main className="shell"><p className="dim">Opening…</p></main>;
   if (load.status === 'error') {
@@ -304,7 +309,8 @@ export default function App() {
         onBack={nav.back}
         detailPlantId={screen.plant_id}
         allPlants={activePlants}
-        onNavigate={(plant_id) => nav.replace({ kind: 'care', plant_id })}
+        onNavigate={(plant_id) => nav.swapPlant({ kind: 'care', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
         onOpenThisPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
         onOpenPlant={(plant_id) => nav.push({ kind: 'care', plant_id }, 'Log care')}
         onAllPlants={() => nav.push({ kind: 'care' }, screenTitle(screen))}
@@ -358,7 +364,8 @@ export default function App() {
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
           allPlants={activePlants}
-          onNavigate={(plant_id) => nav.replace({ kind: 'history', plant_id })}
+          onNavigate={(plant_id) => nav.swapPlant({ kind: 'history', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
           onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onViewAll={() => nav.push({ kind: 'entries', plant_id: plant.plant_id }, 'History')}
           onCareCalendar={() => nav.push({ kind: 'calendar', plant_id: plant.plant_id }, 'History')}
@@ -379,7 +386,8 @@ export default function App() {
           backLabel={nav.backLabel ?? 'History'}
           onBack={nav.back}
           allPlants={activePlants}
-          onNavigate={(plant_id) => nav.replace({ kind: 'entries', plant_id })}
+          onNavigate={(plant_id) => nav.swapPlant({ kind: 'entries', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
           onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
         />
       );
@@ -399,7 +407,8 @@ export default function App() {
           backLabel={nav.backLabel ?? 'History'}
           onBack={nav.back}
           allPlants={activePlants}
-          onNavigate={(plant_id) => nav.replace({ kind: 'calendar', plant_id, all: screen.all })}
+          onNavigate={(plant_id) => nav.swapPlant({ kind: 'calendar', plant_id, all: screen.all },
+            state.plants[plant_id]?.name ?? 'Plant')}
           onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onViewAll={screen.all ? undefined : () => nav.push({ kind: 'calendar', plant_id: plant.plant_id, all: true }, 'Care calendar')}
         />
@@ -419,7 +428,8 @@ export default function App() {
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
           allPlants={activePlants}
-          onNavigate={(plant_id) => nav.replace({ kind: 'more', plant_id })}
+          onNavigate={(plant_id) => nav.swapPlant({ kind: 'more', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
           onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onChanged={reload}
         />
@@ -440,7 +450,8 @@ export default function App() {
           backLabel={nav.backLabel ?? 'Plants'}
           onBack={nav.back}
           allPlants={activePlants}
-          onNavigate={(plant_id) => nav.replace({ kind: 'info', plant_id })}
+          onNavigate={(plant_id) => nav.swapPlant({ kind: 'info', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
           onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
           onChanged={reload}
         />
@@ -500,7 +511,8 @@ export default function App() {
           onBack={nav.back}
           onChanged={reload}
           allPlants={activePlants}
-          onNavigate={(plant_id) => nav.replace({ kind: 'photos', plant_id })}
+          onNavigate={(plant_id) => nav.swapPlant({ kind: 'photos', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
           onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, screenTitle(screen))}
         />
       );
@@ -550,7 +562,8 @@ export default function App() {
           ? () => nav.push({ kind: 'photos', plant_id: screen.plant_id as PlantId }, 'What works')
           : undefined}
         allPlants={activePlants}
-        onNavigate={(plant_id) => nav.replace({ kind: 'works', plant_id })}
+        onNavigate={(plant_id) => nav.swapPlant({ kind: 'works', plant_id },
+            state.plants[plant_id]?.name ?? 'Plant')}
       />
     );
   } else if (screen.kind === 'how') {

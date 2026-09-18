@@ -27,6 +27,7 @@
     "../src/score/whatWorks.ts",
     "../src/capture/coverage.ts",
     "../src/capture/parts.ts",
-    "../src/capture/clock.ts"
+    "../src/capture/clock.ts",
+    "../src/nav/stack.ts"
   ]
 }

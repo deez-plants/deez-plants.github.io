@@ -225,9 +225,19 @@ export default function ApplyAIUpdate({ state, as_of, backLabel, onBack, onChang
               ({screen.unaddressed.join(', ')}).
             </p>
           )}
-          <button type="button" className="apply-submit" onClick={() => void apply()}>
-            Apply {screen.approved.size} approved change{screen.approved.size === 1 ? '' : 's'}
-          </button>
+          {/* Pinned, not at the foot. 228 rows is a long way to scroll to press
+              a button, and the owner said so after doing exactly that. It sits
+              above the tab bar and counts as you tick. */}
+          <div className="apply-bar">
+            <button
+              type="button"
+              className="apply-submit"
+              disabled={screen.approved.size === 0}
+              onClick={() => void apply()}
+            >
+              Apply {screen.approved.size} approved change{screen.approved.size === 1 ? '' : 's'}
+            </button>
+          </div>
         </>
       )}
 

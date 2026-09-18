@@ -263,3 +263,25 @@
   font-size: 20px;
   color: var(--dim);
 }
+
+/* The Apply button, pinned above the tab bar rather than at the foot of the
+   list. The owner scrolled 228 rows to reach it once and said so. */
+.apply-bar {
+  position: sticky;
+  /* Clear of the tab bar, which is fixed at the bottom. */
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  margin: 18px 0 0;
+  padding: 10px 0;
+  /* Fades the rows out behind it rather than cutting them off mid-word. */
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--bg) 22%,
+    var(--bg)
+  );
+}
+
+.apply-submit:disabled {
+  opacity: 0.4;
+}
