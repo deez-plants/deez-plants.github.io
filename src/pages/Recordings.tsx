@@ -307,20 +307,26 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
       {sessions !== null && sessions.length > 0 && (
         <details className="recs-how">
           <summary>How a walk becomes a transcript</summary>
+          {/* Rewritten 2026-09-18. Every one of these three steps was stale:
+              it named a filename the export stopped using, told the owner to
+              move the zip to the laptop and run a script by hand — which the
+              watcher has done for them since 14 Sep — and ended by saying
+              paste, when the file picker has been the path for weeks. Stale
+              instructions cost more than none: they sent the owner to do work
+              that was already done. */}
           <ol className="recs-how-steps">
             <li>
-              <strong>Export for Whisper</strong> on this phone. You get
-              <code> deez-plants-&lt;session&gt;.zip</code> — the audio and a
-              sidecar naming the plants on the route.
+              <strong>Export for Whisper</strong> → Save to Files →{' '}
+              <code>1 walks in</code>.
             </li>
             <li>
-              <strong>Move it to the laptop</strong> and run Whisper over it
-              (<code>transcribe_walk.py</code>, see <code>TRANSCRIBE.md</code>).
-              This phone cannot do it — Whisper does not run here.
+              <strong>Start the watcher</strong> on the laptop — the Desktop
+              shortcut. A transcript lands in <code>2 transcripts</code> in
+              about a minute.
             </li>
             <li>
-              <strong>Add transcript</strong> — <strong>back on this phone</strong>,
-              on this same walk. Paste in what Whisper wrote.
+              <strong>Add transcript</strong> here, on this same walk. Choose
+              the file from <code>2 transcripts</code>.
             </li>
           </ol>
           <p className="recs-how-note">
@@ -343,7 +349,7 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
               only needs saying once. */}
           <p className="recs-how-note">
             <strong>A walk cut short is never a walk lost.</strong> Audio is
-            written to this device every ten seconds while you record, so if
+            written to this device every three seconds while you record, so if
             iOS stops the capture — a call, or switching apps — everything up
             to that moment is already saved, and the walk can be picked up
             where it left off.
@@ -591,8 +597,8 @@ export default function Recordings({ backLabel, onBack }: RecordingsProps) {
               {transcribing === s.session_id && (
                 <div className="recs-attach">
                   <p className="recs-attach-note">
-                    This wants a file Whisper produced on the laptop — export
-                    the walk first if you have not. Whisper JSON or SRT gives a{' '}
+                    The file from <code>2 transcripts</code> — export the walk
+                    first if you have not. A transcript with timestamps gives a{' '}
                     <strong>verified</strong> transcript, because its timestamps
                     let the app check coverage against the {formatDuration(s.duration_s)} it
                     recorded itself. Typed or dictated text is accepted whole as
