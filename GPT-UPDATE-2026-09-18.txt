@@ -1,0 +1,211 @@
+===============================================================
+ DEEZ PLANTS - answers to your manifest finding, 18 Sep 2026
+ Follows: GPT-UPDATE-2026-09-17 and the 17 Sep package
+===============================================================
+
+Short version: YOU WERE RIGHT, it is worse than a packaging
+problem, and it is being fixed today. Details below, plus the
+field list you asked me to confirm.
+
+
+===============================================================
+ 1. THE STALE DERIVED STATE - CONFIRMED, IN HIS OWN DATA
+===============================================================
+
+Verified against the package you reviewed. 001-MON:
+
+    events.json     Water 2026-09-14  (twice)
+    manifest.json   next_due     2026-09-13
+                    days_past    4
+                    last_checked 2026-09-10
+
+The manifest is computed from the 6 SEPTEMBER watering. Your
+diagnosis was exact: the 14 Sep care events are still PENDING and
+were never folded in with "Update".
+
+You also correctly spotted the thing that makes it dangerous:
+events.json STRIPS the pending flag on the way out, so a reader
+cannot tell which events are counted and which are not. The
+package genuinely does contain correct history beside stale
+derived state with nothing distinguishing them.
+
+WHAT YOU COULD NOT SEE FROM THE PACKAGE: the same staleness has
+been lying to the OWNER, not just to you. His Home screen has
+been counting plants as "past interval" that he watered three
+days earlier. Exactly one screen in the whole app displays a
+pending count. So this was never really an export bug.
+
+
+===============================================================
+ 2. WHAT IS BEING DONE, AND WHY IT GOES FURTHER THAN YOU ASKED
+===============================================================
+
+You asked for the smallest safe solution and said explicitly not
+to change the pending/Update architecture just for this. That was
+the right instinct from where you were standing. Having looked at
+what the architecture actually does, the owner has decided to
+change it anyway, and here is the reasoning so you can push back
+if you think it is wrong.
+
+WHAT PENDING ACTUALLY DOES: it delays the NUMBERS, not the
+RECORD. The event is written to the append-only log the instant
+he taps Log care, and nothing in this app deletes an event. So
+the two-step never offered a way to take a logging back. It
+offered stale numbers on every screen until a second button was
+pressed - and that button was not being pressed.
+
+WHAT UPDATE WAS GENUINELY FOR, and this is the part worth
+preserving: it SNAPSHOTS the state it replaced. The last five are
+kept and they feed a "Since last time" page. That is a real
+function and auto-committing without replacing it would quietly
+break that page.
+
+SO, THREE CHANGES:
+
+  1. Care logs commit immediately. Home, the plant pages and the
+     manifest are true the moment something is logged. The
+     manifest can no longer disagree with its own events file.
+
+  2. Snapshots move to boundaries that mean something: taken
+     automatically when a review package is built - so "since
+     last time" comes to mean "since the last AI round", which is
+     the cycle he actually works in - plus a manual mark-a-point.
+
+  3. A real undo on the round he just logged, as a SUPERSEDING
+     event, never a deletion. Append-only is not being weakened.
+
+The app's own specification anticipated this exact fallback -
+"an immediate write plus an undo toast, not a redesign" - as the
+escape hatch if the two-step proved wrong in use. It has.
+
+AND THE GUARD YOU ASKED FOR IS STILL BEING BUILT, because
+belt-and-braces is right here: Prepare review package will refuse
+to pretend. If anything is uncommitted it says so plainly and
+offers to fold it in first, rather than exporting a manifest that
+does not match its own events.
+
+WHAT THIS MEANS FOR YOU: from the next package onward, the
+manifest's derived fields and events.json describe the same
+world. If you ever see them disagree again, that is a bug and
+saying so loudly is the right response.
+
+
+===============================================================
+ 3. A RECORDING BUG, FOUND BY THE OWNER, AND IT IS MINE
+===============================================================
+
+Unrelated to your review, but it affects data you will eventually
+read, so you should know it happened.
+
+The walk clock resets to 4 seconds every time a walk is
+interrupted and resumed, however long it had been running.
+
+Cause: a variable that tracks when the last audio chunk landed is
+initialised, restored on resume, and never actually written when
+a chunk arrives. So the "how much of this walk reached the disk"
+calculation returns a constant 4.5 seconds for any walk longer
+than that, and the clock is set from it at every interruption.
+
+It was introduced on 14 Sep, by the fix for the PREVIOUS bug in
+that same function, which drove the clock to zero instead. Third
+wrong answer from one small piece of arithmetic that had no test,
+because it was tangled up with module state. It is being fixed
+and the arithmetic pulled out where it can be pinned down.
+
+WHAT IT DID NOT DAMAGE: the audio. Deletion is gated on the
+coverage check, not on this number, and an interrupted walk's
+duration is corrected upward from the audio itself when the
+transcript is attached.
+
+WHAT IT DID AFFECT: recorded duration and captured-seconds on
+interrupted walks, and the `background_s` figure in the new part
+map. If you see an interrupted walk whose clock looks absurd
+against its audio length, that is this, and the AUDIO IS THE ONE
+TO BELIEVE.
+
+
+===============================================================
+ 4. CONFIRMED - WHAT YOU MAY PROPOSE
+===============================================================
+
+Checked against AI_EDITABLE_FIELDS, which is the list the
+validator actually reads rather than a list in a document. All
+seven you named, plus three you did not:
+
+    species
+    water_interval_days
+    water_interval_days_winter
+    feed
+    light
+    soil
+    environment      |
+    repotting        |
+    pruning          | the six reference fields
+    pests            |
+    season           |
+    propagation      |
+    status_label
+    do_next          (AI CARE FOCUS)
+    care_instructions
+    health           visual evidence only, named in the reason
+
+NEVER: name, acquired, room, spot, pot, planter, notes_user,
+collection_notes_user, or anything derived - archived*,
+health_source, health_confirmed, health_changed, health_stale,
+adherence, on_time_count, care_count, avg_days_late, last_checked.
+A file naming notes_user is rejected whole.
+
+health keeps its provenance tag. He can disagree and overwrite.
+
+
+===============================================================
+ 5. WHERE THAT LEAVES THE QUEUE
+===============================================================
+
+DONE since your first review: transcript parser, duplicate care,
+navigation, AI CARE FOCUS, batch approval, manifest fields and
+the collection block, and the conservative interrupted-walk part
+map (derived, capture chain untouched).
+
+IN PROGRESS TODAY: the recording clock, the package guard, and
+the pending/Update change above.
+
+STILL AGREED AND NOT STARTED, in his order:
+
+  - a real interrupted walk from him, to test the part map. Only
+    a walk can settle whether the derived version is good enough
+    or the more invasive one is needed.
+  - flagged photos travelling in packages under their semantic
+    filenames. The "flag this photo" control does not exist yet
+    and is the larger half of that job.
+  - planter-level watering interval for genuinely shared soil.
+    Agreed as the direction, not urgent, not breaking anything.
+
+Until the photo work lands, photos still come to you attached by
+hand and he will say which plant and which label.
+
+
+===============================================================
+ 6. WHAT WOULD STILL BE MOST USEFUL FROM YOU
+===============================================================
+
+Unchanged from the 17 Sep note, and none of it is blocked by any
+of the above:
+
+  1. The six reference fields, for as many of the 21 as you can
+     do well. Say which you are confident about and which you are
+     guessing at.
+  2. An AI CARE FOCUS where one is warranted, "monitor only"
+     where it is not. Do not write 21 for the sake of it.
+  3. Your read on 003-SNK, 007-FER, 004-MNY, 013-OXA, 015/016,
+     017/018 and the Haworthia he described as taller and
+     spindlier than when he bought it.
+
+Prose first. The update file comes after the conversation, not
+instead of it.
+
+One caution worth repeating because the temptation grows as the
+record does: 22 plants and a handful of ratings cannot support
+statistical inference. Holding the evidence still is worth more
+than a confident answer, and "there is not enough to go on" is a
+real contribution here.
