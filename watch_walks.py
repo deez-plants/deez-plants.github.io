@@ -107,14 +107,26 @@ def settled(path, checks=2, gap=2.0):
 
 
 def audio_in(folder):
-    """The file to hand the transcriber: part1 if the walk was interrupted."""
+    """The file to hand the transcriber: the FIRST recording of the walk.
+
+    `transcribe_walk.py` finds the rest from it, so handing it the wrong one
+    means transcribing part of a walk. That is not hypothetical: walk 5
+    transcribed 59 seconds of 170 because the export had been renamed to
+    "audio 1 of 3" and nothing here knew that shape.
+
+    Both shapes are matched now, first one wins, alphabetical as the fallback.
+    A third naming scheme belongs here and in `PART_PATTERNS` in the same
+    commit that introduces it.
+    """
     names = sorted(os.listdir(folder))
-    audio = [n for n in names if os.path.splitext(n)[1].lower()
-             in (".m4a", ".webm", ".ogg", ".mp3", ".audio")]
+    audio = [n for n in names if os.path.splitext(n)[1].lower() in AUDIO_EXT]
     if not audio:
         return None
-    first = [n for n in audio if "-part1." in n]
-    return os.path.join(folder, first[0] if first else audio[0])
+    for marker in (" audio 1 of ", "-part1."):
+        first = [n for n in audio if marker in n]
+        if first:
+            return os.path.join(folder, first[0])
+    return os.path.join(folder, audio[0])
 
 
 def transcript_passed(path):
@@ -205,7 +217,9 @@ def handle(zip_path, root):
         print("  no audio inside - leaving it alone", flush=True)
         return False
 
-    parts = len([n for n in os.listdir(work) if "-part" in n and n.endswith(os.path.splitext(audio)[1])])
+    ext = os.path.splitext(audio)[1]
+    parts = len([n for n in os.listdir(work)
+                 if n.endswith(ext) and ("-part" in n or " audio " in n)])
     if parts > 1:
         print("  %d recordings in this walk - transcribed in order" % parts, flush=True)
 

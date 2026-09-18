@@ -86,6 +86,15 @@ export interface SessionRecord {
    * Absent on walks recorded before 2026-09-14, which are read as one segment.
    */
   segment_starts?: number[];
+  /**
+   * Each recording's true length in seconds, as the transcriber decoded it.
+   *
+   * Absent until a transcript is attached, and absent on walks transcribed
+   * before 2026-09-18. Where present it replaces the chunk-count estimate in
+   * `capture/parts.ts` and the seam positions become exact rather than
+   * accurate to about three seconds.
+   */
+  part_durations?: number[];
   /** Markers are written by the app as it goes — page opens, care, photos. */
   markers: SessionMarker[];
   transcript: string | null;

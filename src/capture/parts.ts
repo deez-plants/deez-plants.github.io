@@ -110,6 +110,17 @@ export const PARTS_NOTE =
 export function walkParts(session: SessionRecord): WalkPart[] {
   const starts = session.segment_starts ?? [];
   const total = session.duration_s;
+  /**
+   * The transcriber's decoded lengths, when a transcript has been attached.
+   *
+   * These make the seams EXACT. Without them each boundary comes from a chunk
+   * count that assumes every chunk is a full `CHUNK_S`, and the last chunk of
+   * a part never is — about 0.6s of rounding per seam, measured at 2.3s across
+   * the three recordings of the owner's walk of 17 Sep. With them there is no
+   * estimate left. See `parsePartDurations`.
+   */
+  const measured = session.part_durations ?? [];
+  const exact = measured.length === starts.length;
 
   // A walk with no segment record, or one segment, is one part: clock and
   // audio are the same timeline and there is nothing to translate.
@@ -146,8 +157,12 @@ export function walkParts(session: SessionRecord): WalkPart[] {
   for (let i = 0; i < starts.length; i++) {
     const clock_from = i === 0 ? 0 : seams[i - 1].offset_s;
     const clock_to = i + 1 < starts.length ? seams[i].offset_s : total;
-    const stitched_from = starts[i] * CHUNK_S;
-    const stitched_to = i + 1 < starts.length ? starts[i + 1] * CHUNK_S : total;
+    const stitched_from = exact
+      ? measured.slice(0, i).reduce((a, b) => a + b, 0)
+      : starts[i] * CHUNK_S;
+    const stitched_to = exact
+      ? measured.slice(0, i + 1).reduce((a, b) => a + b, 0)
+      : (i + 1 < starts.length ? starts[i + 1] * CHUNK_S : total);
 
     const clockSpan = Math.max(0, clock_to - clock_from);
     const audioSpan = Math.max(0, stitched_to - stitched_from);

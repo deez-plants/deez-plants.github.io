@@ -9,6 +9,7 @@
  */
 
 const { CHUNK_S, mapMarkers, walkParts } = require('./build/capture/parts.js');
+const { parsePartDurations } = require('./build/capture/coverage.js');
 
 let pass = 0, fail = 0;
 const eq = (name, got, want) => {
@@ -124,6 +125,65 @@ const session = (over) => ({
   });
   eq('a marker cannot be pushed past the end of its own recording',
     mapMarkers(s)[0].stitched_at_least_s, 30);
+}
+
+/* ------------------------------- exact seams from the transcriber -------- */
+
+/**
+ * The owner's walk of 17 Sep, with the numbers the transcriber decoded:
+ * 59.37 / 67.33 / 43.92. The chunk estimate put the second seam at 129 against
+ * a true 126.70 — 2.3s out, and growing about 0.6s per seam. These remove the
+ * estimate entirely.
+ */
+{
+  const REAL = [59.37, 67.33, 43.92];
+  const s = session({
+    duration_s: 170,
+    segment_starts: [0, 20, 43],
+    part_durations: REAL,
+    markers: [
+      { type: 'session_start', offset_s: 0 },
+      { type: 'plant_open', plant_id: '004-MNY', offset_s: 16 },
+      { type: 'gap', gap_s: 40, offset_s: 59 },
+      { type: 'plant_open', plant_id: '011-HOL', offset_s: 70 },
+      { type: 'gap', gap_s: 29, offset_s: 126 },
+      { type: 'plant_open', plant_id: '008-ALO', offset_s: 138 },
+      { type: 'session_end', offset_s: 170 },
+    ],
+  });
+
+  const parts = walkParts(s);
+  eq('the seams are the decoded lengths, not chunk counts',
+    parts.map((p) => Number(p.stitched_from_s.toFixed(2))), [0, 59.37, 126.7]);
+  eq('and the last part ends where the audio does',
+    Number(parts[2].stitched_to_s.toFixed(2)), 170.62);
+
+  // What the estimate produced for the same walk, kept so the improvement is
+  // visible rather than asserted.
+  const estimated = walkParts({ ...s, part_durations: undefined });
+  eq('the chunk estimate put the second seam 2.3s late',
+    Number((estimated[2].stitched_from_s - parts[2].stitched_from_s).toFixed(2)), 2.3);
+
+  eq('008-ALO lands in the third recording',
+    mapMarkers(s).find((m) => m.marker.plant_id === '008-ALO').part, 3);
+
+  // A list that does not match the recordings is not usable: a partial one
+  // would put every seam after it in the wrong place.
+  eq('a mismatched list falls back to the estimate',
+    walkParts({ ...s, part_durations: [59.37, 67.33] })[1].stitched_from_s, 60);
+}
+
+/* --------------------------------------------- parsing the header line --- */
+
+{
+  eq('the durations line is read',
+    parsePartDurations('recordings: 3\npart_durations: 59.37, 67.33, 43.92\nquiet: 1-2'),
+    [59.37, 67.33, 43.92]);
+  eq('no line means no numbers', parsePartDurations('duration_s: 170'), []);
+  // One bad entry makes the whole list unusable — see the note on the function.
+  eq('a nonsense entry discards the list',
+    parsePartDurations('part_durations: 59.37, banana, 43.92'), []);
+  eq('a zero discards it too', parsePartDurations('part_durations: 59.37, 0'), []);
 }
 
 /* ------------------------------------ the owner's real walk of 14 Sep ---- */

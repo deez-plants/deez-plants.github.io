@@ -329,6 +329,37 @@ function toSeconds(h: string, m: string, s: string, frac: string): number {
   return Number(h) * 3600 + Number(m) * 60 + Number(s) + Number(frac) / 10 ** frac.length;
 }
 
+/**
+ * `part_durations: 59.37, 67.33, 43.92` — each recording's true length, decoded
+ * by the transcriber.
+ *
+ * **What this replaces.** `capture/parts.ts` places each recording in the
+ * stitched audio from its own chunk count, which assumes every chunk is a full
+ * 3 seconds. The last chunk of a part never is, so each seam inherits up to 3s
+ * of rounding and it accumulates — measured at 2.3s across the three
+ * recordings of the owner's walk of 17 Sep.
+ *
+ * The transcriber decodes the files, so it knows exactly. This reads what it
+ * measured, and the boundaries stop being an estimate. Same principle as
+ * `parseDuration`: where the app's count and the audio disagree, the audio is
+ * the ground truth — by the time this is read the app has deleted the
+ * recording and cannot check for itself.
+ */
+export function parsePartDurations(raw: string): number[] {
+  const line = /^part_durations:(.*)$/mi.exec(raw);
+  if (!line) return [];
+  const out: number[] = [];
+  for (const piece of line[1].split(',')) {
+    const n = Number(piece.trim());
+    // One unusable entry makes the whole list unusable: a partial list would
+    // put every seam after it in the wrong place, which is worse than falling
+    // back to the chunk estimate.
+    if (!Number.isFinite(n) || n <= 0) return [];
+    out.push(n);
+  }
+  return out;
+}
+
 /* -------------------------------------------------------------------------- */
 /* The transcriber's own format                                                */
 /* -------------------------------------------------------------------------- */

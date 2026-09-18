@@ -17,6 +17,7 @@ Requires: pip install faster-whisper
 import argparse
 import json
 import os
+import re
 import sys
 
 try:
@@ -103,27 +104,63 @@ def attribute(offset, opens):
     return current
 
 
+# Both shapes the app has ever exported a multi-recording walk under. The
+# readable one came in on 14 Sep when the owner asked for filenames they could
+# recognise, and THIS FUNCTION WAS NOT UPDATED WITH IT - so walk 5 transcribed
+# its first 59 seconds of 170 and stopped. Coverage caught it and the audio was
+# kept, which is the only reason it cost nothing.
+#
+# Both are matched now, and neither is guessed at from a count: the files are
+# found on disk. A third naming scheme must be added here in the same commit
+# that introduces it.
+PART_PATTERNS = (
+    # 2026-09-14 onward: "<label> - audio 1 of 3.m4a"
+    re.compile(r"^(?P<stem>.*? )audio 1 of (?P<total>\d+)$"),
+    # Before that: "SES-2026-09-14-4-part1.m4a"
+    re.compile(r"^(?P<stem>.*)-part1$"),
+)
+
+
 def walk_parts(audio_path):
     """Every recording in this walk, in order.
 
     A walk interrupted by iOS is several recordings, not one. Each is a
     self-contained file - gluing them makes bytes no player reads past the
-    first join - so the app exports SES-...-part1.m4a, -part2 and so on.
+    first join - so the app exports one file per recording.
 
-    Give this script part1 (or the only file) and it finds the rest.
+    Give this the first file (or the only file) and it finds the rest.
     """
-    base, ext = os.path.splitext(audio_path)
-    if not base.endswith("-part1"):
-        return [audio_path]
-    stem = base[: -len("-part1")]
-    parts, i = [], 1
-    while True:
-        candidate = "%s-part%d%s" % (stem, i, ext)
-        if not os.path.exists(candidate):
-            break
-        parts.append(candidate)
-        i += 1
-    return parts or [audio_path]
+    folder, name = os.path.split(audio_path)
+    base, ext = os.path.splitext(name)
+
+    for pattern in PART_PATTERNS:
+        m = pattern.match(base)
+        if not m:
+            continue
+        stem = m.group("stem")
+        total = int(m.groupdict().get("total") or 0)
+        found = []
+        i = 1
+        while True:
+            if "total" in m.groupdict() and m.group("total"):
+                candidate = "%saudio %d of %d%s" % (stem, i, total, ext)
+            else:
+                candidate = "%s-part%d%s" % (stem, i, ext)
+            path = os.path.join(folder, candidate)
+            if not os.path.exists(path):
+                break
+            found.append(path)
+            i += 1
+        # A walk that says "of 3" and has two files on disk is a walk missing a
+        # recording. Say so rather than transcribing what is there and letting
+        # the coverage gate report it as a short transcript.
+        if total and len(found) != total:
+            print("  WARNING: this walk names %d recordings and %d are here"
+                  % (total, len(found)), flush=True)
+        if found:
+            return found
+
+    return [audio_path]
 
 
 def quiet_stretches(paths, floor_db=-45.0, min_len=3.0):
@@ -245,6 +282,37 @@ def audio_duration(paths):
     return total if total > 0 else None
 
 
+def part_durations(paths):
+    """Each recording's true length, in order, decoded rather than estimated.
+
+    **This is what makes marker attribution exact.** The app derives where each
+    recording sits in the stitched audio from its own chunk count, which is
+    good to about one 3-second chunk and drifts by roughly 0.6s per seam - it
+    measured 2.3s across the three recordings of walk 5. These numbers remove
+    the estimate: the app stores them and the boundaries become the real ones.
+
+    Used twice: to shift each part into walk time while stitching, and written
+    to the header for the app. The app checks its own coverage and computes
+    its own mapping; the one thing it cannot do is measure the audio, because
+    by then it has deleted it. See `capture/parts.ts`.
+    """
+    try:
+        import av
+    except ImportError:
+        return []
+    out = []
+    for path in paths:
+        try:
+            with av.open(path) as container:
+                stream = container.streams.audio[0]
+                rate = stream.codec_context.sample_rate or 48000
+                samples = sum(f.samples for f in container.decode(stream))
+            out.append(samples / float(rate))
+        except Exception:
+            return []
+    return out
+
+
 def mmss(seconds):
     seconds = int(round(seconds))
     return "%d:%02d" % (seconds // 60, seconds % 60)
@@ -346,8 +414,14 @@ def main():
     # Each part's timestamps start at zero, so they are shifted into walk time
     # as we go. Without this, part 2 would claim to start at 0:00 and every
     # marker offset would attribute to the wrong plant.
+    # Each part is shifted into walk time BY ITS DECODED LENGTH. Whisper's own
+    # reported duration is not that number - with VAD on it can fall short of
+    # the file, and a segment can end past it - which made part 2 start before
+    # part 1 had finished and failed the monotonic assertion on a complete
+    # transcript. The decoded length is the one fact here that cannot be off.
+    lengths = part_durations(parts)
     segments, offset, info = [], 0.0, None
-    for part in parts:
+    for i, part in enumerate(parts):
         raw, part_info = model.transcribe(part, language=args.language,
                                           vad_filter=True, beam_size=5)
         if info is None:
@@ -361,7 +435,11 @@ def main():
                                  "text": text})
             last_end = max(last_end, s.end)
             print("\r  %s" % mmss(offset + s.end), end="", flush=True)
-        offset += getattr(part_info, "duration", None) or last_end
+        step = lengths[i] if i < len(lengths) else (
+            getattr(part_info, "duration", None) or last_end)
+        # Never behind where this part's words actually ended: a seam that
+        # moves backwards is the one thing a stitched timeline must not do.
+        offset += max(step, last_end)
     print()
 
     measured = audio_duration(parts)
@@ -400,6 +478,13 @@ def main():
         f.write("coverage: %s\n" % ("pass" if ok else "FAIL"))
         if len(parts) > 1:
             f.write("recordings: %d\n" % len(parts))
+            # Exact, decoded, in order. The app reads these to place its
+            # markers on the stitched timeline instead of estimating from
+            # chunk counts - see `part_durations`.
+            lengths = part_durations(parts)
+            if lengths:
+                f.write("part_durations: %s\n"
+                        % ", ".join("%.2f" % d for d in lengths))
         # Where the audio itself was quiet. The app reads this so it can tell
         # "nobody was talking" from "someone was and Whisper missed it" - only
         # the second is a fault worth failing a walk over.

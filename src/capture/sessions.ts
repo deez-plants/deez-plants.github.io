@@ -1,7 +1,9 @@
 import JSZip from 'jszip';
 import type { DeezDB, ScreenLogEntry, SessionRecord } from '../db/schema';
 import { deleteSessionAudio, extensionFor, readSessionSegments, sessionAudioBytes } from './recording';
-import { checkCoverage, parseDuration, parseQuiet, parseTranscript } from './coverage';
+import {
+  checkCoverage, parseDuration, parsePartDurations, parseQuiet, parseTranscript,
+} from './coverage';
 import { screenLogForSession } from './screenLog';
 import { routeMarkerCount } from './liveSession';
 import { PARTS_NOTE, mapMarkers, walkParts } from './parts';
@@ -249,8 +251,14 @@ export async function attachTranscript(
     ? checkCoverage(segments, duration_s, session.markers, parseQuiet(raw))
     : null;
 
+  // Exact seam positions, measured from the audio by the transcriber. See
+  // `parsePartDurations` — without these, `walkParts` estimates from chunk
+  // counts and drifts about 0.6s per interruption.
+  const part_durations = parsePartDurations(raw);
+
   await db.put('sessions', {
     ...session,
+    ...(part_durations.length > 1 ? { part_durations } : {}),
     // Corrected duration is persisted, not just used for the check: every
     // later reader — Recordings, the export, the review package the AI sees —
     // should see the walk's real length rather than the clock's guess.
