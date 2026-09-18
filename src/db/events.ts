@@ -6,6 +6,7 @@ import type { DerivedState, Snapshot } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { derive } from './derive';
 import { markCareLogged, markPhoto, sessionStamp } from '../capture/liveSession';
+import { nowLocalStamp } from '../lib/dates';
 
 /**
  * Appending events, and the Update commit.
@@ -60,9 +61,19 @@ export async function deviceId(db: DeezDB): Promise<DeviceId> {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Add events to the log. New events arrive pending unless they say otherwise;
- * `Rate` and `Archive` reach the committed view immediately anyway (derive.ts
- * skips the pending filter for both), so pending on those is only a badge.
+ * Add events to the log. **They count immediately** (2026-09-18).
+ *
+ * Entries used to arrive `pending: 1` and move no number until a separate
+ * Update was tapped. That step is gone — see `foldPending` for why, and for
+ * what replaced the one thing it was genuinely doing. The fold happens HERE,
+ * in the one place every write already goes through, rather than at six call
+ * sites where the seventh would eventually be forgotten.
+ *
+ * They are still written pending and folded a moment later rather than stored
+ * committed outright, so the two steps stay separable: an entry that is
+ * written but not yet folded is a state the log can hold and recover from,
+ * and collapsing them would remove the only seam a future two-device merge
+ * could use.
  *
  * Refuses to overwrite an existing `event_id`: append-only means append-only,
  * and a silent overwrite here would lose a watering.
@@ -94,7 +105,10 @@ export async function appendEvents(db: DeezDB, events: PlantEvent[]): Promise<St
   // automatically; `Rate`, `Edit` and `Archive` have no marker type and get none.
   if (stamp) {
     for (const e of stored) {
-      if (e.type === 'Rate' || e.type === 'Edit' || e.type === 'Archive') continue;
+      // A Void has no marker of its own: the marker it takes back is already
+      // in the walk's track, and adding a second one would make an undo read
+      // as two things happening rather than one being unwritten.
+      if (e.type === 'Rate' || e.type === 'Edit' || e.type === 'Archive' || e.type === 'Void') continue;
       if (e.type === 'Photo' && e.media?.length) {
         for (const media of e.media) markPhoto(e.plant_id, media);
       } else {
@@ -102,6 +116,12 @@ export async function appendEvents(db: DeezDB, events: PlantEvent[]): Promise<St
       }
     }
   }
+
+  // Count it. Everything above this line is the write; this is what makes the
+  // numbers agree with it. `folded_at` is the entry's own date rather than a
+  // separate "today", because an entry backdated by hand should read as folded
+  // in when it happened, not when it was typed.
+  await foldPending(db, stored[0]?.date ?? nowLocalStamp().slice(0, 10) as ISODate);
 
   return stored;
 }
@@ -131,6 +151,44 @@ async function readLog(db: DeezDB) {
 }
 
 /**
+ * Fold every waiting entry in, and take no snapshot.
+ *
+ * **This is what every write calls now, 2026-09-18.** Logging care, editing a
+ * field and applying an approved AI row all fold immediately, so the numbers
+ * on Home, on a plant's page and in a review package are true the moment
+ * something is written.
+ *
+ * **Why the two-step went.** Entries were marked pending until a separate
+ * Update was tapped. The owner did not tap it, and the reason he did not is
+ * that it was never worth tapping: pending delayed the NUMBERS, never the
+ * RECORD. The entry was already written, append-only, with nothing able to
+ * remove it — so the step offered a safety that did not exist while charging
+ * stale figures on every screen for it. By 17 Sep his manifest was reporting
+ * plants as past their interval that he had watered three days earlier, and
+ * his own Home screen had been saying the same thing to him.
+ *
+ * The app's own specification named this fallback in advance, in its closed
+ * decisions: "an immediate write plus an undo toast, not a redesign". The undo
+ * is `VoidEvent`, and it is the safety the two-step only appeared to be.
+ *
+ * What the two-step genuinely did, and what had to be kept: it SNAPSHOTTED.
+ * That is now `takeSnapshot`, taken at boundaries that mean something rather
+ * than at every tap — see `commitUpdate`.
+ */
+export async function foldPending(db: DeezDB, as_of: ISODate): Promise<EventId[]> {
+  const log = await readLog(db);
+  const pending = log.events.filter((e) => e.pending === 1);
+  if (!pending.length) return [];
+
+  const tx = db.transaction('events', 'readwrite');
+  for (const e of pending) {
+    await tx.store.put({ ...e, pending: 0, folded_at: as_of });
+  }
+  await tx.done;
+  return pending.map((e) => e.event_id);
+}
+
+/**
  * Section 5: Update recomputes adherence, due dates, needs-attention, calendars
  * and history in one pass, and saves a snapshot of the state it replaced.
  *
@@ -140,6 +198,13 @@ async function readLog(db: DeezDB) {
  *
  * Ratings are never touched by this. A `Rate` event is already in the committed
  * view the moment it is written; all this does for one is clear its badge.
+ *
+ * **Since 2026-09-18 this is the SNAPSHOT path, not the commit path.** Writes
+ * fold themselves (`foldPending`), so by the time this runs there is usually
+ * nothing waiting — and it takes a snapshot anyway, because marking a point to
+ * compare against is now the whole of its job. It is called when a review
+ * package is built, which makes "since last time" mean "since the last AI
+ * round", and by the owner marking a point by hand.
  */
 export async function commitUpdate(db: DeezDB, as_of: ISODate): Promise<CommitResult> {
   const log = await readLog(db);
@@ -148,10 +213,6 @@ export async function commitUpdate(db: DeezDB, as_of: ISODate): Promise<CommitRe
   const replaced = derive({ ...log, as_of, include_pending: false });
 
   const pending = log.events.filter((e) => e.pending === 1);
-  if (!pending.length) {
-    return { folded_event_ids: [], plants_touched: 0, state: replaced, replaced: null };
-  }
-
   const folded_event_ids = pending.map((e) => e.event_id);
   const plants_touched = new Set(pending.map((e) => e.plant_id).filter((id) => id !== null)).size;
 

@@ -417,5 +417,49 @@ const run = (baselines, events, as_of, include_pending = false) =>
   eq('malformed value leaves the field alone', s.plants['001-MON'].water_interval_days, 7);
 }
 
+/* ---------------- Void: taken back, not deleted ---------------- */
+
+/**
+ * The safety net that replaced the pending step (2026-09-18). A mis-tapped
+ * watering can be taken back from the screen that wrote it — as an entry, not
+ * as a deletion, so it merges like anything else and history still shows both.
+ */
+{
+  const watered = ev({ type: 'Water', date: '2026-09-10' });
+  const voided = ev({ type: 'Void', date: '2026-09-10', voids: watered.event_id });
+
+  const kept = run([base('001-MON')], [watered], '2026-09-12');
+  eq('a watering counts', kept.plants['001-MON'].adherence.last_water, '2026-09-10');
+
+  const undone = run([base('001-MON')], [watered, voided], '2026-09-12');
+  eq('and stops counting once it is taken back',
+    undone.plants['001-MON'].adherence.last_water, null);
+
+  // Order must not matter: the fold collects Voids in a first pass rather than
+  // unwinding an effect already applied, which is the patching rule 10 forbids.
+  const reversed = run([base('001-MON')], [voided, watered], '2026-09-12');
+  eq('the order the two arrive in makes no difference',
+    reversed.plants['001-MON'].adherence.last_water, null);
+
+  // A Void naming something that is not there must do nothing at all rather
+  // than throw or silently swallow a neighbouring entry.
+  const orphan = ev({ type: 'Void', date: '2026-09-11', voids: 'EV-NOT-A-THING' });
+  const withOrphan = run([base('001-MON')], [watered, orphan], '2026-09-12');
+  eq('a Void pointing at nothing changes nothing',
+    withOrphan.plants['001-MON'].adherence.last_water, '2026-09-10');
+
+  // It takes back exactly what it names.
+  const other = ev({ type: 'Water', plant_id: '002-SNK', date: '2026-09-10' });
+  const two = run([base('001-MON'), base('002-SNK')], [watered, other, voided], '2026-09-12');
+  eq('the other plant keeps its watering',
+    two.plants['002-SNK'].adherence.last_water, '2026-09-10');
+
+  // A Rate reaches the committed view immediately, so a Void of one must too.
+  const rated = ev({ type: 'Rate', date: '2026-09-10', to: 8 });
+  const unrated = run([base('001-MON')],
+    [rated, ev({ type: 'Void', date: '2026-09-10', voids: rated.event_id })], '2026-09-12');
+  eq('a rating can be taken back as well', unrated.plants['001-MON'].health.current, null);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import type { DeezDB, PackageRecord, SessionRecord, TranscriptTier } from '../db/schema';
 import { mintDatedId } from '../db/counters';
+import { commitUpdate } from '../db/events';
 import { SCREEN_LOG_NOTE, sidecarFor } from '../capture/sessions';
 import { readScreenLog } from '../capture/screenLog';
 import { routeMarkerCount } from '../capture/liveSession';
@@ -188,6 +189,22 @@ export async function previewReviewPackage(db: DeezDB, state: DerivedState): Pro
 }
 
 export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of: ISODate): Promise<ReviewPackage> {
+  /**
+   * Mark this point before anything is measured.
+   *
+   * Two jobs at once, and both were learned the hard way. It folds in anything
+   * somehow still waiting, so the manifest can never disagree with the events
+   * file beside it — the 17 Sep package said a plant was four days past its
+   * interval while carrying its own watering from three days earlier, and a
+   * reviewer had no way to tell which half to believe.
+   *
+   * And it takes the snapshot. "Since last time" now means "since the last AI
+   * round", which is the rhythm the owner actually works in, rather than
+   * whenever a button last got tapped.
+   */
+  const marked = await commitUpdate(db, as_of);
+  state = marked.state;
+
   const active = state.order.map((id) => state.plants[id]).filter((p) => !p.archived);
   const package_id = await mintDatedId(db, 'PKG', as_of) as PackageId;
 

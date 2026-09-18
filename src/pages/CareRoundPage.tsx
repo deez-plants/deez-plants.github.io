@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import type { ClockTime, ISODate, PlantId } from '../types/ids';
+import type { ClockTime, EventId, ISODate, PlantId } from '../types/ids';
 import type { CareEventType, StoredEvent } from '../types/event';
 import type { DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
 import {
   COMMON_TIER, EMPTY_DRAFT, NOTE_MAX, RARE_TIER, ROUTINE_TIER,
-  addAll, againPrompt, commitUpdate, emptyDetailDraft, loggedTodayIds,
+  addAll, againPrompt, emptyDetailDraft, loggedTodayIds, undoRound,
   eventCount, groupLabel, logDetailEvent, logRound, preselectFor, roundButtonLabel,
   roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
   type DetailDraft, type RoundAction, type RoundDraft,
@@ -22,10 +22,20 @@ import './CareRoundPage.css';
  * Pick what you did, then who you did it to. Two taps for a whole watering
  * round, and no per-plant navigation anywhere on the way.
  *
- * The two-step: logging is instant and writes one pending event per plant;
- * Update is the commit that recomputes adherence, due dates, needs-attention,
- * calendars and history from the whole log in one pass (rule 10), and saves a
- * snapshot of the state it replaced. Ratings are never touched by it.
+ * **Logging counts immediately** (2026-09-18). One event per plant, and
+ * adherence, due dates, needs-attention, calendars and history are all rebuilt
+ * from the whole log in one pass (rule 10) before the screen redraws.
+ *
+ * There used to be an Update button here and a pending badge on every row. Both
+ * are gone, and the reason is worth keeping: pending delayed the NUMBERS, never
+ * the RECORD — the entry was written the instant you tapped Log and nothing
+ * could remove it — so the step offered a safety that did not exist, and
+ * charged stale figures on every screen for it. It was not being tapped, and by
+ * 17 Sep the owner's own Home screen had been calling plants overdue that he
+ * had watered three days earlier.
+ *
+ * `Undo`, on the confirmation, is the safety it only looked like. See
+ * `undoRound`, and `db/events.ts` for the fold.
  */
 
 export interface CareRoundPageProps {
@@ -64,8 +74,9 @@ export interface CareRoundPageProps {
 }
 
 type Flash =
-  | { kind: 'logged'; action: RoundAction; count: number }
-  | { kind: 'folded'; events: number; plants: number }
+  /** `event_ids` is what Undo takes back — see `undoRound`. */
+  | { kind: 'logged'; action: RoundAction; count: number; event_ids: EventId[] }
+  | { kind: 'undone'; count: number }
   | { kind: 'error'; message: string };
 
 type DetailFlash =
@@ -175,7 +186,6 @@ export default function CareRoundPage({
   );
 
   const selected = new Set(draft.selected);
-  const pending = state.pending_count;
 
   /* ----------------------------------------------------------- selection -- */
 
@@ -234,7 +244,12 @@ export default function CareRoundPage({
       const db = await openDeezPlants();
       const round = await logRound(db, draft, as_of);
       await onChanged();
-      setFlash({ kind: 'logged', action: round.action, count: round.event_ids.length });
+      setFlash({
+        kind: 'logged',
+        action: round.action,
+        count: round.event_ids.length,
+        event_ids: round.event_ids,
+      });
       setDraft({ action: draft.action, selected: [], note: '' });
     } catch (e: unknown) {
       setFlash({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
@@ -243,18 +258,21 @@ export default function CareRoundPage({
     }
   };
 
-  const update = async () => {
-    if (busy) return;
+  /**
+   * The whole safety net for a mis-tap, and deliberately a narrow one: the
+   * round just logged, from the screen that logged it, until you leave.
+   *
+   * It writes a Void per entry rather than deleting anything — see
+   * `undoRound`. History keeps both, which is the honest account.
+   */
+  const undo = async () => {
+    if (busy || flash?.kind !== 'logged') return;
     setBusy(true);
     try {
       const db = await openDeezPlants();
-      const result = await commitUpdate(db, as_of);
+      const count = await undoRound(db, flash.event_ids, as_of);
       await onChanged();
-      setFlash({
-        kind: 'folded',
-        events: result.folded_event_ids.length,
-        plants: result.plants_touched,
-      });
+      setFlash({ kind: 'undone', count });
     } catch (e: unknown) {
       setFlash({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -446,9 +464,6 @@ export default function CareRoundPage({
                         )
                         : <span className={`care-row-status ${status.tone}`}>{status.text}</span>}
                     </span>
-                    {p.pending_event_ids.length > 0 && (
-                      <span className="care-row-pending">{p.pending_event_ids.length} pending</span>
-                    )}
                   </button>
                 </li>
               );
@@ -473,26 +488,30 @@ export default function CareRoundPage({
                   <span>
                     <b>{eventCount(flash.count)} logged</b>
                     <span className="care-flash-detail">
-                      {flash.action} · saved, and not folded into the record until you tap Update.
+                      {flash.action} · counted. Adherence, due dates and the calendars
+                      are already current.
                     </span>
                   </span>
+                  {/* Until you leave this screen. Beyond that it is a correction,
+                      which is a different and much larger thing. */}
+                  <button
+                    type="button"
+                    className="care-undo"
+                    disabled={busy}
+                    onClick={() => void undo()}
+                  >
+                    Undo
+                  </button>
                 </>
               )}
-              {flash.kind === 'folded' && (
+              {flash.kind === 'undone' && (
                 <>
                   <span className="care-flash-tick" aria-hidden="true">✓</span>
                   <span>
-                    <b>
-                      {flash.events
-                        ? `${eventCount(flash.events)} folded in`
-                        : 'Nothing was waiting'}
-                    </b>
+                    <b>{eventCount(flash.count)} undone</b>
                     <span className="care-flash-detail">
-                      {flash.events
-                        ? `Across ${flash.plants} plant${flash.plants === 1 ? '' : 's'}. `
-                          + 'Adherence, due dates, needs attention, calendars and history are all '
-                          + 'recalculated. Your ratings are untouched.'
-                        : 'Adherence, due dates and the calendars already match the log.'}
+                      Taken back, not deleted — the entries and the undo both stay in
+                      history. Nothing they moved is still moved.
                     </span>
                   </span>
                 </>
@@ -645,33 +664,12 @@ export default function CareRoundPage({
             {detailDraft.type ? `Log ${detailDraft.type.toLowerCase()}` : 'Pick what you did'}
           </button>
           <p className="care-save-note">
-            Saves one event — not folded in until you tap Update.
+            Saves one event, counted straight away.
           </p>
           </>
         </section>
       )}
 
-      {/* The commit. Present whether or not an action is picked — it is the same
-          action as the Update button on Home, not a second implementation. */}
-      <section className="care-commit">
-        <div className="care-commit-head">
-          <span className="care-commit-label">PENDING</span>
-          <button
-            type="button"
-            className={pending ? 'care-update on' : 'care-update'}
-            disabled={!pending || busy}
-            onClick={() => void update()}
-          >
-            {pending ? `Update · ${pending}` : 'Up to date'}
-          </button>
-        </div>
-        <p className="care-commit-note">
-          {pending
-            ? `${eventCount(pending)} logged and waiting. Update folds them into adherence, due `
-              + 'dates, needs attention, calendars and history — never into your ratings.'
-            : 'Everything is folded in. Adherence, due dates and the calendars are current.'}
-        </p>
-      </section>
     </main>
   );
 }

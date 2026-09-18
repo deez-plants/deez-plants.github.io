@@ -402,7 +402,10 @@ export interface LoggedRound {
 
 /**
  * Log the round. Instant and local — the events land pending and move no number
- * until Update folds them in (section 5).
+ * and count immediately (2026-09-18 — see `db/events.ts`). What used to be
+ * the safety here, the pending step, was never one: the entry was written the
+ * instant you tapped Log and nothing could remove it. `undoRound` is the
+ * safety it only looked like.
  */
 export async function logRound(
   db: DeezDB,
@@ -417,8 +420,61 @@ export async function logRound(
 }
 
 /**
- * The commit, re-exported so the care screen has one import: the Update button
- * here and the one on Home are the same action, not two implementations.
+ * Take back the round just logged.
+ *
+ * **The whole of the safety net, and deliberately a small one.** The owner
+ * asked for one thing when care logs started counting immediately: to be able
+ * to unselect a plant they had just logged by mistake. This is that, and it
+ * is offered on the round's own confirmation, until they leave the screen.
+ *
+ * It writes a `Void` per entry rather than deleting anything. Rule 5 holds —
+ * a deleted entry could walk back in from a backup with no record of the
+ * intent to remove it, while a Void merges like any other entry and says what
+ * happened. History shows the watering AND the undo, because that is a truer
+ * account of the morning than a gap where the watering was.
+ *
+ * Not a correction mechanism. It reaches the entries from one round, from the
+ * screen that wrote them, and nothing else — an older mistake stays in the
+ * record and is discussed with the AI rather than edited away.
+ */
+export async function undoRound(
+  db: DeezDB,
+  event_ids: readonly EventId[],
+  today: ISODate,
+): Promise<number> {
+  if (!event_ids.length) return 0;
+  const device_id = await deviceId(db);
+  const time = nowClockTime();
+  const existing = new Map((await db.getAll('events')).map((e) => [e.event_id, e]));
+
+  const voids = event_ids.flatMap((id) => {
+    const target = existing.get(id);
+    // Already gone, or already taken back. Either way there is nothing to
+    // undo, and a Void pointing at nothing would be a lie in the log.
+    if (!target || target.plant_id === null) return [];
+    return [{
+      event_id: mintEventId(device_id, today, time),
+      plant_id: target.plant_id,
+      type: 'Void' as const,
+      voids: id,
+      date: today,
+      time,
+      source: 'user' as const,
+      device_id,
+    }];
+  });
+
+  if (!voids.length) return 0;
+  await appendEvents(db, voids);
+  return voids.length;
+}
+
+/**
+ * The snapshot, re-exported so the care screen has one import.
+ *
+ * No longer a commit — writes fold themselves now. This marks a point to
+ * compare against, which is the one thing the old Update step was genuinely
+ * doing. See `db/events.ts`.
  */
 export { commitUpdate };
 export type { CommitResult } from '../db/events';

@@ -1,5 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { boot, refresh, type Booted } from './boot';
+import { openDeezPlants } from './db/schema';
+import { commitUpdate } from './db/events';
 import { useNav } from './nav/useNav';
 import type { PlantScopedKind, Screen } from './nav/types';
 import type { PlantId } from './types/ids';
@@ -519,6 +521,11 @@ export default function App() {
         backLabel={nav.backLabel ?? 'All pages'}
         onBack={nav.back}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Since last time')}
+        onMarkPoint={async () => {
+          const db = await openDeezPlants();
+          await commitUpdate(db, as_of);
+          await reload();
+        }}
       />
     );
   } else if (screen.kind === 'works') {

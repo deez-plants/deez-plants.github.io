@@ -35,6 +35,9 @@ export function eventLabel(e: StoredEvent): string {
     case 'Rate': return `Rated ${e.to}/10`;
     case 'Archive': return 'Archived';
     case 'Edit': return `Edited ${e.field.replace(/_/g, ' ')}`;
+    // Shown, never hidden. "Watered, then undone" is a truer account of the
+    // morning than a gap where the watering was.
+    case 'Void': return 'Undone';
     default: return CARE_LABELS[e.type];
   }
 }

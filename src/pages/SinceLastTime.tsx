@@ -9,7 +9,11 @@ import './SinceLastTime.css';
  * DESIGN_REFERENCE.md screen 17 — "saved states stacked for comparison. What
  * changed since a chosen earlier point."
  *
- * A snapshot is written on every Update commit and the last five are kept
+ * A snapshot is written whenever a review package is built — so "last time"
+ * means "the last AI round", which is the rhythm the owner actually works in —
+ * and whenever he marks a point here by hand. Until 2026-09-18 one was written
+ * on every Update commit; care logs now count immediately and there is no
+ * commit to hang it on. The last five are kept
  * (`SNAPSHOT_LIMIT`). Each is a whole frozen `DerivedState`, so comparing is a
  * matter of reading two states side by side — never of recomputing history,
  * which rule 10 forbids anyway.
@@ -28,6 +32,8 @@ export interface SinceLastTimeProps {
   backLabel: string;
   onBack: () => void;
   onOpenPlant: (plant_id: PlantId) => void;
+  /** Save the state as it stands as a point to compare against later. */
+  onMarkPoint: () => Promise<void> | void;
 }
 
 type Row =
@@ -38,8 +44,9 @@ type Row =
   | { kind: 'archived'; plant_id: PlantId; name: string };
 
 export default function SinceLastTime({
-  state, snapshots, backLabel, onBack, onOpenPlant,
+  state, snapshots, backLabel, onBack, onOpenPlant, onMarkPoint,
 }: SinceLastTimeProps) {
+  const [marking, setMarking] = useState(false);
   // Newest first: the most recent saved state is the one you usually mean by
   // "last time".
   const choices = useMemo(() => [...snapshots].reverse(), [snapshots]);
@@ -91,13 +98,24 @@ export default function SinceLastTime({
       <button type="button" className="screen-back since-back" onClick={onBack}>‹ {backLabel}</button>
       <h1 className="since-title">Since last time</h1>
 
+      {/* The manual half of where snapshots come from. The other is building a
+          review package, which marks a point on its own. */}
+      <button
+        type="button"
+        className="since-mark"
+        disabled={marking}
+        onClick={() => { setMarking(true); void Promise.resolve(onMarkPoint()).finally(() => setMarking(false)); }}
+      >
+        {marking ? 'Marking…' : 'Mark this point'}
+      </button>
+
       {choices.length === 0 ? (
         <>
           <p className="since-dek">Nothing saved to compare against yet.</p>
           <p className="since-empty">
-            A state is saved every time you tap Update, and the last five are
-            kept. Once there are two, this screen shows what moved between
-            them.
+            A point is saved whenever you build a review package, and whenever
+            you tap Mark this point above. The last five are kept. Once there
+            are two, this screen shows what moved between them.
           </p>
         </>
       ) : (

@@ -156,3 +156,19 @@
   color: var(--ink-50);
   text-wrap: pretty;
 }
+
+/* Mark this point — the manual half of where snapshots come from since care
+   logs stopped needing an Update commit to hang one on. */
+.since-mark {
+  display: block;
+  margin: 0 0 16px;
+  min-height: 44px;
+  padding: 10px 20px;
+  font: 600 20px/1 var(--sans);
+  color: var(--ink);
+  background: var(--panel-on);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.since-mark:disabled { opacity: 0.4; }

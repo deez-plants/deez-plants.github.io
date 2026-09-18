@@ -490,6 +490,24 @@ export const derive: Derive = ({ baselines, events, registry, as_of, include_pen
     ordered.push(e);
   }
 
+  /**
+   * Entries taken back by a `Void`, collected before the fold runs.
+   *
+   * Gathered in a first pass rather than handled in order, because a Void is
+   * always written AFTER the entry it names — handling it in sequence would
+   * mean unwinding an effect already applied, which is exactly the patching
+   * rule 10 forbids. Skipping both on the way through needs no unwinding.
+   *
+   * The voided entry stays in the log and still renders in history. It simply
+   * moves no number. See `VoidEvent`.
+   */
+  const voided = new Set<string>();
+  for (const e of ordered) {
+    if (e.type !== 'Void') continue;
+    if (e.pending === 1 && !include_pending) continue;
+    voided.add(e.voids);
+  }
+
   // Pending ids come off the full list whatever `include_pending` says: the
   // screens show the committed numbers with a pending badge beside them, so
   // both facts are needed at once.
@@ -520,6 +538,10 @@ export const derive: Derive = ({ baselines, events, registry, as_of, include_pen
     if (e.pending === 1 && !include_pending && e.type !== 'Rate' && e.type !== 'Archive') {
       continue;
     }
+
+    // A Void and the entry it takes back both move nothing. Neither is
+    // removed from the log, and history shows both.
+    if (e.type === 'Void' || voided.has(e.event_id)) continue;
 
     if (e.plant_id === null) {
       if (e.type === 'Edit') {

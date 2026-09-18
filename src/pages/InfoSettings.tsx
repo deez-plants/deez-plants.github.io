@@ -3,7 +3,6 @@ import type { ISODate, PlantId } from '../types/ids';
 import type { DerivedPlant } from '../types/derived';
 import type { Registry } from '../types/plant';
 import { openDeezPlants } from '../db/schema';
-import { commitUpdate } from '../db/events';
 import { editPlantFields, type FieldChange } from '../care/editField';
 import { archivePlant, ARCHIVE_REASON_MAX } from '../care/archive';
 import { PlantChrome } from '../components/PlantChrome';
@@ -16,10 +15,9 @@ import './InfoSettings.css';
  * field, so the user can freely edit any of it directly, no review table
  * needed (that's for import). Saving batches every changed field into one
  * `editPlantFields` call — one `Edit` event per field that actually changed,
- * never a blob write (rule 5). Those events are pending like any other,
- * per `care/editField.ts`'s own note, so this screen surfaces the same
- * pending/Update footer Log care uses rather than pretending the edit is
- * already live.
+ * never a blob write (rule 5). Those events count the moment they are saved
+ * (2026-09-18 — see `db/events.ts`), so this screen confirms what was written
+ * rather than warning that it has not landed yet.
  */
 
 export interface InfoSettingsProps {
@@ -106,12 +104,11 @@ export default function InfoSettings({
   plant, registry, as_of, backLabel, onBack, allPlants, onNavigate, onOpenPlant, onChanged,
 }: InfoSettingsProps) {
   const [form, setForm] = useState<FormState>(() => toForm(plant));
-  // The typed "from" for the next diff — starts as `plant`'s own values, but
-  // becomes whatever was just saved after a successful save, since `plant`
-  // itself won't reflect it until Update commits (Edit events are pending,
-  // same as a logged care event; see care/editField.ts). Without this, a
-  // second save before the next Update would diff against the still-stale
-  // `plant` and write a duplicate edit for anything already saved once.
+  // The typed "from" for the next diff — starts as `plant`'s own values and
+  // becomes whatever was just saved. `onChanged` does flow a fresh `plant`
+  // back down, but not synchronously, so a second save in the same breath
+  // would otherwise diff against the previous render and write a duplicate
+  // edit for something already saved once.
   const [baseline, setBaseline] = useState<PlantFields>(() => plant);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,30 +191,6 @@ export default function InfoSettings({
     }
   };
 
-  const updateNow = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const db = await openDeezPlants();
-      const result = await commitUpdate(db, as_of);
-      await onChanged();
-      // `onChanged` flows a new `plant` prop back down eventually, but not
-      // synchronously here — read the freshly-committed value straight off
-      // the commit result instead of leaving this screen showing the
-      // pre-Update numbers until some later, unrelated render.
-      const updated = result.state.plants[plant.plant_id];
-      if (updated) {
-        setForm(toForm(updated));
-        setBaseline(updated);
-      }
-      setSaved(0);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <main className="info">
@@ -307,12 +280,9 @@ export default function InfoSettings({
       {!dirty && saved > 0 && (
         <div className="info-pending">
           <p>
-            {saved} field{saved === 1 ? '' : 's'} saved and waiting. Update
-            folds them into the record, the same as a logged care event.
+            {saved} field{saved === 1 ? '' : 's'} saved, and counted — the record
+            already reflects them.
           </p>
-          <button type="button" className="info-update" disabled={busy} onClick={() => void updateNow()}>
-            Update now
-          </button>
         </div>
       )}
 
@@ -363,7 +333,7 @@ export default function InfoSettings({
                 </button>
               </div>
               <p className="info-archive-note">
-                Archiving waits for Update, like everything else — so if this
+                Archiving counts straight away, like everything else — so if this
                 was the wrong plant, you have until then.
               </p>
             </div>
@@ -386,14 +356,6 @@ export default function InfoSettings({
         </section>
       )}
 
-      {!dirty && saved === 0 && plant.pending_event_ids.length > 0 && (
-        <div className="info-pending">
-          <p>{plant.pending_event_ids.length} change{plant.pending_event_ids.length === 1 ? '' : 's'} still waiting on this plant.</p>
-          <button type="button" className="info-update" disabled={busy} onClick={() => void updateNow()}>
-            Update now
-          </button>
-        </div>
-      )}
     </main>
   );
 }

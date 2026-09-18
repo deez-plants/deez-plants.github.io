@@ -592,3 +592,19 @@
   border-style: solid;
   color: var(--on-accent);
 }
+
+/* Undo, on the round's own confirmation. The only way back from a mis-tap,
+   and only until you leave the screen — see `undoRound`. */
+.care-undo {
+  flex: none;
+  margin-left: auto;
+  min-height: 44px;
+  padding: 8px 20px;
+  font: 600 20px/1 var(--sans);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.care-undo:disabled { opacity: 0.4; }

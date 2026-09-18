@@ -22,30 +22,6 @@ import './PlantDetail.css';
 const FOCUS_MAX = 160;
 
 /**
- * The focus as the owner last wrote it, including an edit that has not been
- * folded in yet.
- *
- * An `Edit` event lands pending like any other entry, and derived state
- * deliberately ignores pending events until Update commits them. Without this,
- * writing a focus and tapping Save left the card still reading "Nothing set
- * yet" — which looks exactly like a save that failed. So the card shows what
- * was written and badges it, the same bargain every other pending number on
- * this app makes.
- */
-function pendingFocus(
-  events: readonly StoredEvent[],
-  plant_id: PlantId,
-): { value: string | null } | null {
-  let latest: (StoredEvent & { to: string | null }) | null = null;
-  for (const e of events) {
-    if (e.type !== 'Edit' || e.plant_id !== plant_id || e.field !== 'do_next') continue;
-    if (e.pending !== 1) continue;
-    if (!latest || e.event_id > latest.event_id) latest = e;
-  }
-  return latest ? { value: latest.to } : null;
-}
-
-/**
  * Plant detail — DESIGN_REFERENCE.md screen 04, rebuilt 2026-09-08 after the
  * design audit found this the furthest-drifted screen in the app.
  *
@@ -159,9 +135,9 @@ export default function PlantDetail({
   const interval = rowStatus('Water', plant, events, as_of);
   const confirmation = confirmationLine(plant.health);
   const ratings = ratingHistory(plant.plant_id, events);
-  const unfoldedFocus = pendingFocus(events, plant.plant_id);
-  const unfolded = unfoldedFocus !== null;
-  const shownFocus = unfolded ? unfoldedFocus.value : plant.do_next;
+  // No pending dance any more: an edit counts the moment it is saved, so what
+  // derived state says IS what was written. See `db/events.ts`, 2026-09-18.
+  const shownFocus = plant.do_next;
 
   /**
    * The owner's own edit of AI CARE FOCUS.
@@ -279,11 +255,6 @@ export default function PlantDetail({
               {shownFocus
                 ? <p className="detail-donext-body">{shownFocus}</p>
                 : <p className="detail-card-sub">Nothing set yet.</p>}
-              {unfolded && (
-                <p className="detail-focus-pending">
-                  Waiting for Update, like any other entry.
-                </p>
-              )}
               <button
                 type="button"
                 className="detail-focus-edit"

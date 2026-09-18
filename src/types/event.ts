@@ -9,7 +9,9 @@ export type EventType =
   | 'Support' | 'Pest treat' | 'Rate' | 'Other' | 'Edit' | 'Archive'
   // Added 2026-09-13 alongside the CareEventType additions below.
   | 'Top-dress' | 'Soil flush' | 'Took cuttings' | 'Hard prune'
-  | 'Dead leaves' | 'Trim back' | 'Rotate' | 'Wipe leaves' | 'Mist';
+  | 'Dead leaves' | 'Trim back' | 'Rotate' | 'Wipe leaves' | 'Mist'
+  // Added 2026-09-18. See `VoidEvent`.
+  | 'Void';
 
 /**
  * Section 5 lists `user | ai | round`. Section 6b's seed example writes
@@ -108,6 +110,35 @@ export interface EditEvent extends EventCommon {
   op?: 'add' | 'replace' | 'delete';
 }
 
+/**
+ * Takes back an entry that was just written, without removing it.
+ *
+ * **Why this exists.** Care logs commit the moment they are written
+ * (2026-09-18 — see `db/events.ts`), so the numbers are always true. That left
+ * nothing at all between a mis-tap and a permanent entry, and the owner asked
+ * for exactly one thing: to be able to unselect a plant they had just logged
+ * by mistake.
+ *
+ * **Why it is an event and not a delete.** Rule 5 — entries are append-only,
+ * and that is what makes two-device merging safe. An entry deleted here could
+ * walk back in from a backup or another device's copy and there would be no
+ * record of the intent to remove it. A `Void` travels with the log, merges
+ * like anything else, and says plainly that this happened and was taken back.
+ *
+ * Derived state skips the entry it names. History still shows both, because
+ * "watered then undone" is a truer account of the morning than silence.
+ *
+ * It is not a general correction mechanism and must not grow into one. The
+ * owner's mistaken watering of 008-ALO on 14 Sep stays in the record; this
+ * only ever applies to an entry written moments ago, from the screen that
+ * wrote it.
+ */
+export interface VoidEvent extends EventCommon {
+  type: 'Void';
+  /** The entry being taken back. Always on the same plant. */
+  voids: EventId;
+}
+
 /** Section 4. `archived`, `archived_date` and `archived_reason` come from this. */
 export interface ArchiveEvent extends EventCommon {
   type: 'Archive';
@@ -117,7 +148,7 @@ export interface ArchiveEvent extends EventCommon {
 }
 
 /** What travels in `events.json`. */
-export type PlantEvent = CareEvent | RateEvent | EditEvent | ArchiveEvent;
+export type PlantEvent = CareEvent | RateEvent | EditEvent | ArchiveEvent | VoidEvent;
 
 /**
  * Local-only columns. Stripped on export — they are not part of the record,
