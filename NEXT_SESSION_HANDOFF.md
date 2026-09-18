@@ -207,6 +207,61 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### 2026-09-18 (evening) — the attribution test passed, and what it cost to get there
+
+**3b is closed. 3b-full stays unbuilt.** The owner recorded a deliberately
+interrupted walk (walk 5: three recordings, 170s, six plants named aloud) and
+it settled everything the derived mapping was built to do.
+
+**All six plants correctly attributed, across two seams** — including "it came
+back to the small Boston fern plant" landing with 007-FER on the far side of
+the first one. The clock fix held too: clock 170s against 170.62s of decoded
+audio, captured climbing 59 → 126 → 170.
+
+**Two bugs surfaced on the way, both in the transcription chain:**
+
+1. `walk_parts` looked for `-part1` while the export had been renamed to
+   `audio 1 of 3` on 14 Sep. It transcribed 59 seconds of 170. **Coverage
+   failed and the audio was kept, which is the only reason it cost nothing** —
+   the third time that guard has earned itself.
+2. Parts were shifted into walk time by Whisper's *reported* duration, which
+   with VAD on can fall short of the file. Part 2 began before part 1's last
+   word and a complete transcript failed the monotonic assertion. They are
+   shifted by the **decoded** length now.
+
+**The seams are exact.** `transcribe_walk.py` writes `part_durations:` into the
+header, `parsePartDurations` reads it, `walkParts` prefers it over chunk
+arithmetic. The estimate put walk 5's second seam 2.3s late and that error grows
+~0.6s per interruption; there is no estimate left. A mismatched list falls back
+rather than placing every later seam wrongly.
+
+**`Select all` was verified against a fabricated update file** before the owner
+leans on it — 5 rows, select all, untick two, apply, "3 applied, 2 not written",
+and the accepted change on the plant page immediately. That run flushed out four
+more lines still describing the pending step. **Third sweep for stale copy. When
+a mechanism goes, the copy describing it is part of the change.**
+
+**Still not built, deliberately: 3c photo flags.** Agreed and designed — the
+flag lives OUTSIDE the event log (a flag is an intent about the next package,
+not history), clears when a package is confirmed sent, ~20 photo cap. Held back
+so a new feature does not land in the version the owner is about to trust with
+their first AI update.
+
+**Option B is dropped.** The owner decided each plant keeps its own watering
+schedule even in a shared planter — 015-PTH on 10 days, 016-SYN on 7, watered
+together and watched. Two plants with two needs sharing a pot, and the differing
+due dates are accepted rather than a defect. **No code change.** Planter add and
+remove already exist in `RoomsPlanters`.
+
+**Reminders: the blocker is the platform, and it is worth knowing before anyone
+promises a Reminders screen.** A web app cannot schedule a notification for
+later. iOS Web Push needs a server pushing, and this app has no server by
+design. Two things that ARE buildable and are the agreed direction for a future
+date: a catch-up banner on open, and **calendar export — the app writes an
+`.ics`, the phone subscribes, and iOS notifies natively with no server.** The
+second is the real answer and works across devices, which is also the only way
+the desk console could ever notify the phone.
+
 ### WHERE THIS STANDS — 2026-09-18
 
 **Read this block, then the dated sections under it for the reasoning.** This
@@ -279,15 +334,13 @@ they say plainly where the AI was wrong as well as where it was right.
 
 **Mine:**
 
-- **3b-full** — recording-part metadata written during capture. Only if the
-  owner's interrupted walk shows the derived mapping is not good enough.
-- **3c — flagged photos in packages.** Agreed in full: a flagged photo travels
-  in the zip under its semantic filename, resized for review. The "flag this
-  photo for AI" control does not exist and is the larger half of that job.
-- **Shared planters, option B** — a planter-level watering interval that
-  shared-soil members are judged against, with each plant keeping its own
-  reference intervals as species knowledge. Agreed as the direction. Not
-  urgent, nothing broken today.
+- ~~**3b-full**~~ — **not needed.** Walk 5 settled it; the derived mapping plus
+  the transcriber's decoded lengths is exact. Do not build it.
+- **3c — flagged photos in packages.** Agreed in full and designed: the flag
+  lives outside the event log, clears on a confirmed send, ~20 cap. The "flag
+  this photo" control is the larger half of the job.
+- ~~**Shared planters, option B**~~ — **dropped by the owner.** Each plant keeps
+  its own watering schedule, shared pot or not. No code change.
 - **Reminders** — still a design conversation, not an authorisation. The
   owner's direction: off-able, weekly summary rather than daily, an interval
   passing prompts inspection rather than an alarm.
