@@ -487,10 +487,7 @@ export default function CareRoundPage({
                   <span className="care-flash-tick" aria-hidden="true">✓</span>
                   <span>
                     <b>{eventCount(flash.count)} logged</b>
-                    <span className="care-flash-detail">
-                      {flash.action} · counted. Adherence, due dates and the calendars
-                      are already current.
-                    </span>
+                    <span className="care-flash-detail">{flash.action} · counted and current</span>
                   </span>
                   {/* Until you leave this screen. Beyond that it is a correction,
                       which is a different and much larger thing. */}
@@ -509,10 +506,7 @@ export default function CareRoundPage({
                   <span className="care-flash-tick" aria-hidden="true">✓</span>
                   <span>
                     <b>{eventCount(flash.count)} undone</b>
-                    <span className="care-flash-detail">
-                      Taken back, not deleted — the entries and the undo both stay in
-                      history. Nothing they moved is still moved.
-                    </span>
+                    <span className="care-flash-detail">Taken back. Both stay in history.</span>
                   </span>
                 </>
               )}
@@ -663,9 +657,7 @@ export default function CareRoundPage({
           >
             {detailDraft.type ? `Log ${detailDraft.type.toLowerCase()}` : 'Pick what you did'}
           </button>
-          <p className="care-save-note">
-            Saves one event, counted straight away.
-          </p>
+          <p className="care-save-note">Saves one event.</p>
           </>
         </section>
       )}

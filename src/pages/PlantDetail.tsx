@@ -272,7 +272,7 @@ export default function PlantDetail({
                 maxLength={FOCUS_MAX}
                 rows={3}
                 autoFocus
-                placeholder="One priority, right now. &quot;Monitor only&quot; counts."
+                placeholder="One priority, right now."
                 onChange={(e) => setFocus(e.target.value)}
               />
               <div className="detail-focus-actions">

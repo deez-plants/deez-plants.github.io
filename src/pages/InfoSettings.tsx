@@ -279,10 +279,7 @@ export default function InfoSettings({
 
       {!dirty && saved > 0 && (
         <div className="info-pending">
-          <p>
-            {saved} field{saved === 1 ? '' : 's'} saved, and counted — the record
-            already reflects them.
-          </p>
+          <p>{saved} field{saved === 1 ? '' : 's'} saved.</p>
         </div>
       )}
 

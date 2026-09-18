@@ -113,9 +113,8 @@ export default function SinceLastTime({
         <>
           <p className="since-dek">Nothing saved to compare against yet.</p>
           <p className="since-empty">
-            A point is saved whenever you build a review package, and whenever
-            you tap Mark this point above. The last five are kept. Once there
-            are two, this screen shows what moved between them.
+            Saved when you build a review package, or tap Mark this point.
+            Last five kept.
           </p>
         </>
       ) : (
