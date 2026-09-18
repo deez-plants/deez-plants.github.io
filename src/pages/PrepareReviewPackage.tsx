@@ -92,7 +92,7 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
 
       {status.kind === 'loading' && <p className="prep-note">Counting what's changed…</p>}
 
-      {(status.kind === 'ready' || status.kind === 'building' || status.kind === 'done') && (
+      {(status.kind === 'ready' || status.kind === 'building' || status.kind === 'asking' || status.kind === 'done') && (
         <ul className="prep-files">
           <li>
             <span className="prep-file-name">manifest.json</span>

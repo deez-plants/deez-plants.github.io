@@ -42,6 +42,11 @@ export interface HomeProps {
   onPreparePackage: () => void;
   onApplyUpdate: () => void;
   onBackup: () => void;
+  /** Null until a backup has been saved. */
+  lastBackup: ISODate | null;
+  onSinceLastTime: () => void;
+  /** Save the state as it stands as a point to compare against later. */
+  onMarkPoint: () => Promise<void> | void;
 }
 
 /** One line per package sent or update applied, newest first. */
@@ -58,8 +63,9 @@ const MOST_URGENT_CAP = 6;
 
 export default function Home({
   state, snapshots, onOpenPlant, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
-  onPreparePackage, onApplyUpdate, onBackup,
+  onPreparePackage, onApplyUpdate, onBackup, lastBackup, onSinceLastTime, onMarkPoint,
 }: HomeProps) {
+  const [marking, setMarking] = useState(false);
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
     [state],
@@ -340,12 +346,34 @@ export default function Home({
       <div className="home-utility">
         {/* Section 8. The reference has always had this row; it was waiting
             on there being something behind it. */}
+        <button type="button" className="home-util-row" onClick={onSinceLastTime}>
+          <span className="home-row-icon"><Icon name="history" size={22} /></span>
+          <span className="home-row-body">
+            <span className="home-row-name">Since last time</span>
+          </span>
+          <span className="home-row-chev" aria-hidden="true">›</span>
+        </button>
+        {/* The other half of where snapshots come from — a package takes one on
+            its own. Here rather than only on Since last time, because marking a
+            point is something you do before a change, not while reading one. */}
+        <button
+          type="button"
+          className="home-util-row"
+          disabled={marking}
+          onClick={() => { setMarking(true); void Promise.resolve(onMarkPoint()).finally(() => setMarking(false)); }}
+        >
+          <span className="home-row-icon"><Icon name="add" size={22} /></span>
+          <span className="home-row-body">
+            <span className="home-row-name">{marking ? 'Marking…' : 'Mark this point'}</span>
+          </span>
+        </button>
         <button type="button" className="home-util-row backup" onClick={onBackup}>
           <span className="home-row-icon"><Icon name="apply" size={22} /></span>
           <span className="home-row-body">
-            <span className="home-row-name">Back up now</span>
+            <span className="home-row-name">Back up</span>
+            {/* The owner's wording: "Last" then the date, to save the width. */}
             <span className="home-row-sub">
-              {active.length} plants held on this device only
+              {lastBackup ? `Last ${formatDayMonth(lastBackup)}` : 'Never backed up'}
             </span>
           </span>
           <span className="home-row-chev" aria-hidden="true">›</span>

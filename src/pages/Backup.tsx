@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { openDeezPlants } from '../db/schema';
+import { openDeezPlants, META_KEY, type DeezDB } from '../db/schema';
 import { sessionAudioBytes } from '../capture/recording';
 import {
   exportEverything,
@@ -84,10 +84,24 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
     }
   };
 
+  /**
+   * Remember when a backup was last made, for Home's row.
+   *
+   * Recorded on the save rather than on a confirmation, unlike a review
+   * package. The asymmetry is deliberate: a package wrongly marked sent loses
+   * evidence permanently, while a backup date that is a day optimistic only
+   * misleads about recency — nothing is lost and the next save corrects it.
+   */
+  const noteBackup = async (db: DeezDB) => {
+    const meta = await db.get('meta', META_KEY);
+    if (meta) await db.put('meta', { ...meta, last_state_export: as_of }, META_KEY);
+  };
+
   const doExportRecord = () => run('record', async () => {
     const db = await openDeezPlants();
     const out = await exportRecord(db, as_of);
     saveFile(out.blob, out.filename);
+    await noteBackup(db);
     setSaved(`${out.filename} · ${out.plant_count} plants · ${out.event_count} entries · ${formatBytes(out.bytes)}`);
   });
 
@@ -95,6 +109,7 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
     const db = await openDeezPlants();
     const out = await exportEverything(db, as_of);
     saveFile(out.blob, out.filename);
+    await noteBackup(db);
     setSaved(`${out.filename} · ${formatBytes(out.bytes)} including photos and audio`);
   });
 

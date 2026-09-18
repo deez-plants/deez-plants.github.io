@@ -126,6 +126,14 @@ export default function App() {
     setLoad({ status: 'ready', data: await refresh() });
   };
 
+  /** Save the state as it stands as something to compare against later. Both
+      Home and Since last time offer it; a review package takes one on its own. */
+  const markPoint = async () => {
+    const db = await openDeezPlants();
+    await commitUpdate(db, as_of);
+    await reload();
+  };
+
   const placeholder = (title: string, subtitle: string | undefined, backLabel: string) =>
     nav.push({ kind: 'placeholder', title, subtitle }, backLabel);
 
@@ -247,6 +255,9 @@ export default function App() {
         onPreparePackage={() => nav.push({ kind: 'prepare-package' }, 'Home')}
         onApplyUpdate={() => nav.push({ kind: 'apply-update' }, 'Home')}
         onBackup={() => nav.push({ kind: 'backup' }, 'Home')}
+        lastBackup={load.data.last_backup}
+        onSinceLastTime={() => nav.push({ kind: 'since' }, 'Home')}
+        onMarkPoint={markPoint}
       />
     );
   } else if (screen.kind === 'record') {
@@ -521,11 +532,7 @@ export default function App() {
         backLabel={nav.backLabel ?? 'All pages'}
         onBack={nav.back}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Since last time')}
-        onMarkPoint={async () => {
-          const db = await openDeezPlants();
-          await commitUpdate(db, as_of);
-          await reload();
-        }}
+        onMarkPoint={markPoint}
       />
     );
   } else if (screen.kind === 'works') {

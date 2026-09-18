@@ -1,4 +1,4 @@
-import { closeDeezPlants, openDeezPlants, DB_NAME, REGISTRY_KEY, type DeezDB } from './db/schema';
+import { closeDeezPlants, openDeezPlants, DB_NAME, META_KEY, REGISTRY_KEY, type DeezDB } from './db/schema';
 import { runFirstRunSeed, type SeedOutcome } from './db/seedRun';
 import { derive } from './db/derive';
 import { deviceId } from './db/events';
@@ -33,6 +33,8 @@ export interface Booted {
   snapshots: Snapshot[];
   /** media_id -> object URL for that photo's thumbnail. */
   thumbs: Map<string, string>;
+  /** When a backup was last saved, for Home's row. Null until one is. */
+  last_backup: ISODate | null;
   as_of: ISODate;
 }
 
@@ -152,7 +154,13 @@ async function start(): Promise<Booted> {
   await restoreInterrupted().catch(() => false);
   void askToPersist();
   const derived = await readAndDerive(db, as_of);
-  return { outcome, ...derived, thumbs: await loadThumbs(db, heroIds(derived.state)), as_of };
+  return {
+    outcome,
+    ...derived,
+    thumbs: await loadThumbs(db, heroIds(derived.state)),
+    last_backup: (await db.get('meta', META_KEY))?.last_state_export ?? null,
+    as_of,
+  };
 }
 
 // React StrictMode runs effects twice in development. Sharing one promise keeps
@@ -174,6 +182,7 @@ export async function refresh(): Promise<Booted> {
     outcome: current?.outcome ?? { ran: false, already_seeded: true, plants: 0, events: 0, photos: 0, missing: [] },
     ...refreshed,
     thumbs: await loadThumbs(db, heroIds(refreshed.state)),
+    last_backup: (await db.get('meta', META_KEY))?.last_state_export ?? null,
     as_of,
   };
 }
