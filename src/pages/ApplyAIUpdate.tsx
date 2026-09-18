@@ -236,9 +236,8 @@ export default function ApplyAIUpdate({ state, as_of, backLabel, onBack, onChang
       {screen.kind === 'done' && (
         <div className="apply-done">
           <p>
-            {screen.accepted} change{screen.accepted === 1 ? '' : 's'} applied, {screen.rejected} left as proposed
-            and not written. Applied changes are pending, same as a logged
-            care event — Update folds them in.
+            {screen.accepted} change{screen.accepted === 1 ? '' : 's'} applied,
+            {' '}{screen.rejected} not written.
           </p>
         </div>
       )}

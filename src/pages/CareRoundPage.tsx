@@ -640,7 +640,7 @@ export default function CareRoundPage({
                   <span>
                     <b>{detailFlash.type} logged</b>
                     <span className="care-flash-detail">
-                      Saved, and not folded into the record until you tap Update.
+                      Saved and counted.
                     </span>
                   </span>
                 </>

@@ -3,7 +3,6 @@ import type { ISODate, InstructionId, PlantId } from '../types/ids';
 import type { DerivedPlant } from '../types/derived';
 import { formatDayMonthYear } from '../lib/dates';
 import { openDeezPlants } from '../db/schema';
-import { commitUpdate } from '../db/events';
 import { addCareInstruction, deleteCareInstruction } from '../notes/careInstructions';
 import { setNotesUser } from '../notes/notesUser';
 import { Icon } from '../components/Icon';
@@ -88,26 +87,6 @@ export default function MoreAboutPlant({
     }
   };
 
-  const updateNow = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const db = await openDeezPlants();
-      const result = await commitUpdate(db, as_of);
-      await onChanged();
-      const updated = result.state.plants[plant.plant_id];
-      if (updated) {
-        setNotes(updated.notes_user);
-        setNotesBaseline(updated.notes_user);
-      }
-      setNotesSaved(false);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const addInstruction = async () => {
     if (!newInstruction.trim() || busy) return;
@@ -237,20 +216,7 @@ export default function MoreAboutPlant({
           </button>
         )}
         {!notesDirty && notesSaved && (
-          <div className="more-notes-pending">
-            <p>Saved and waiting. Update folds it into the record, the same as a logged care event.</p>
-            <button type="button" className="more-notes-update" disabled={busy} onClick={() => void updateNow()}>
-              Update now
-            </button>
-          </div>
-        )}
-        {!notesDirty && !notesSaved && plant.pending_event_ids.length > 0 && (
-          <div className="more-notes-pending">
-            <p>{plant.pending_event_ids.length} change{plant.pending_event_ids.length === 1 ? '' : 's'} still waiting on this plant.</p>
-            <button type="button" className="more-notes-update" disabled={busy} onClick={() => void updateNow()}>
-              Update now
-            </button>
-          </div>
+          <div className="more-notes-pending"><p>Saved.</p></div>
         )}
       </section>
     </main>
