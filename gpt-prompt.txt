@@ -5,7 +5,13 @@ holds:
   events.json       its care history since the last package
   transcript.txt    THE OWNER TALKING WHILE WALKING PAST THE PLANTS
   markers.json      which plant's page was open at each moment, and,
-                    under "screen_log", the same in more detail
+                    under "screen_log", the same in more detail.
+                    An interrupted walk also carries "parts" and,
+                    per marker, "part" and "stitched_at_least_s" --
+                    the EARLIEST point in the transcript that
+                    marker can be at, never a position. Raw
+                    "offset_s" is on the walk's clock, which is not
+                    the transcript's timeline.
 
 Some plants may also have a photo attached directly in this chat, labelled
 whole / leaf / soil / roots.

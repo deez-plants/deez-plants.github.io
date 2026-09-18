@@ -25,6 +25,7 @@
     "../src/care/archive.ts",
     "../src/score/score.ts",
     "../src/score/whatWorks.ts",
-    "../src/capture/coverage.ts"
+    "../src/capture/coverage.ts",
+    "../src/capture/parts.ts"
   ]
 }

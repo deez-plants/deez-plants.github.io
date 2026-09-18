@@ -4,6 +4,7 @@ import { deleteSessionAudio, extensionFor, readSessionSegments, sessionAudioByte
 import { checkCoverage, parseDuration, parseQuiet, parseTranscript } from './coverage';
 import { screenLogForSession } from './screenLog';
 import { routeMarkerCount } from './liveSession';
+import { PARTS_NOTE, mapMarkers, walkParts } from './parts';
 import type { SessionId } from '../types/ids';
 
 /**
@@ -62,11 +63,19 @@ export function formatBytes(bytes: number): string {
  * tool-dependent, and stripped by anything that re-encodes."
  */
 export function sidecarFor(session: SessionRecord) {
+  const parts = walkParts(session);
+  const mapped = mapMarkers(session);
   return {
     session_id: session.session_id,
     started: session.started,
     duration_s: session.duration_s,
-    markers: session.markers,
+    /** Only for a walk that was interrupted — see `capture/parts.ts`. A walk
+        that ran start to finish has one clock and one recording, and saying so
+        in four extra fields helps nobody. */
+    ...(parts.length > 1 ? { parts, parts_note: PARTS_NOTE } : {}),
+    markers: parts.length > 1
+      ? mapped.map((m) => ({ ...m.marker, part: m.part, stitched_at_least_s: m.stitched_at_least_s }))
+      : session.markers,
   };
 }
 

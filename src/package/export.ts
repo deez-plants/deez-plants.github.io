@@ -114,7 +114,17 @@ function packageTier(sessions: readonly SessionRecord[]): TranscriptTier | null 
 }
 
 async function transcriptFile(sessions: readonly SessionRecord[]): Promise<string> {
-  if (!sessions.length) return 'No recording sessions on this device yet.\n';
+  // Not "no recordings on this device": walks go out in exactly one package,
+  // so an empty file here usually means every walk has already been sent, not
+  // that none exists. The first version said the wrong one of those and a
+  // reviewer reasonably read it as missing data.
+  if (!sessions.length) {
+    return 'No new walks in this package.\n\n'
+      + 'A walk is carried by exactly one package, never repeated. If earlier\n'
+      + 'packages contained walks, those words still stand - nothing has been\n'
+      + 'withdrawn or replaced. An empty file here means nothing new has been\n'
+      + 'recorded since the last package, not that the device holds no walks.\n';
+  }
 
   const parts = sessions.map((s) => {
     const head = `=== ${s.session_id} · ${s.started} · ${s.duration_s}s ===`;

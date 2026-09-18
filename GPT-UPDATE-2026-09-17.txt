@@ -36,9 +36,10 @@ words have not changed. What HAS changed is the manifest, which
 now shows you fields you were previously being asked to fill in
 blind.
 
-The line "No recording sessions on this device yet" is wrong
+The line "No recording sessions on this device yet" is the wrong
 wording for this case - there is one, it simply already went out.
-Being fixed.
+Fixed today; the package in your hands was built an hour before
+that, so it still carries the old sentence. Ignore it.
 
 Do not ask for walk 4 again. Do not treat the empty events file as
 a gap in the record.
@@ -258,15 +259,39 @@ Your rule stands and is correct, for this reason rather than the
 one you gave: NEVER TREAT RAW MARKER OFFSETS AS ONE MONOTONIC
 TIMELINE ACROSS AN INTERRUPTED WALK.
 
-Being built next, in the conservative form you argued for: the
-part boundaries are derived from information the app already
-stores, accurate to about three seconds, with NO change to the
-recording, saving, stitching or transcription chain. The version
-that writes new metadata during capture is held back until the
-cheap version is proved inadequate on a real walk. That was the
-owner's call and it is the right one.
+NOW BUILT, in the conservative form you argued for. The part
+boundaries are derived from what the app already stores, with NO
+change to the recording, saving, stitching or transcription
+chain. The version that writes new metadata during capture is
+held back until the cheap one is proved inadequate on a real
+walk. That was the owner's call and it is the right one.
 
-UNTIL THEN: the words are primary evidence. Markers are weaker
+From the next walk onward, an INTERRUPTED walk's entry in
+markers.json carries:
+
+  "parts": [
+    { "part": 1,
+      "clock_from_s": .., "clock_to_s": ..,
+      "stitched_from_s": .., "stitched_to_s": ..,
+      "background_s": ..  <- audio with no clock behind it
+    }, ... ]
+
+and every marker gains two fields:
+
+  "part"                 which recording it was written during
+  "stitched_at_least_s"  the EARLIEST point in the transcript
+                         that marker can be at
+
+READ THAT SECOND FIELD AS A FLOOR, NOT A POSITION. Audio time
+only ever runs ahead of clock time, never behind, so elapsed
+clock is a true lower bound and the part's own stitched_to_s is
+the upper one. Where a part's background_s is large, attribution
+inside it is loose and you should lean harder on the words.
+
+A walk that ran start to finish carries none of this, because it
+has one clock and one recording and they agree.
+
+IN ALL CASES: the words are primary evidence. Markers are weaker
 attribution evidence. Where they disagree, the words win.
 
 

@@ -185,7 +185,17 @@ transcript.txt   HIM, TALKING, WALKING PAST THE PLANTS. Read
 markers.json     Which plant's page was open at each moment of a
                  walk. This is what attributes his words. The
                  screen log lives inside this file, under
-                 "screen_log" — there is no fifth file.
+                 "screen_log" - there is no fifth file.
+
+                 A walk that was INTERRUPTED holds several
+                 recordings, and its markers carry "part" and
+                 "stitched_at_least_s" as well as "offset_s".
+                 The walk's clock and the stitched audio are not
+                 the same timeline - iOS keeps recording while
+                 the app is backgrounded and the clock does not.
+                 "stitched_at_least_s" is the EARLIEST point in
+                 the transcript a marker can be at. Never treat
+                 raw "offset_s" as a position in the transcript.
 
 THE AUDIO IS NOT IN THE PACKAGE AND NO LONGER EXISTS. Once a
 walk is transcribed and the coverage check passes, the
