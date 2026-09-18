@@ -207,6 +207,37 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### 2026-09-18 (later) — three separate meanings of "done", kept separate
+
+The owner's GPT asked whether committed / snapshotted / sent-to-AI were still
+three things. Two were clean. **The third had a real hole and it is fixed.**
+
+`buildReviewPackage` wrote the package record one line before the Share sheet
+opened — and **nothing reports back from a Share sheet.** Cancelling it marked
+a walk and every event since the last package as sent, with no file anywhere.
+They would never appear in a future package and nothing would say so.
+
+Now: `buildReviewPackage` returns `confirmSent`, and Prepare asks **"did it
+save?"** before calling it. Answer No and nothing is marked. Plus **"This one
+never saved"** on an open round in the Handoff log, which un-sends a package so
+its evidence goes out again — offered only where no reply has been applied,
+since un-sending a package an update was applied against would orphan the
+reply. A wrong answer now costs nothing in either direction.
+
+**Do not move the marking back inside the build.** Two passes wrote that line
+without seeing the problem, because it reads like bookkeeping at the end of a
+function that has already succeeded.
+
+`Mark this point` and `Since last time` are on Home as well, above `Back up`,
+which now reads `Last 15 Sep`. The backup date IS recorded on the save rather
+than on a confirmation — deliberately, and noted in `Backup.tsx`: a wrong
+backup date misleads about recency, a wrong "sent" loses evidence.
+
+**In-app text was trimmed** at the owner's request (six lines, listed in
+`322190e`). The Water-again confirm, the golden-rule audio message and the
+coverage-failure text stay long on purpose. **Keep new in-app copy to the fact;
+the reasoning belongs in the code comment.**
+
 ### 2026-09-18 — the pending step is gone, and the clock bug that hid in the fix
 
 **Care logs count immediately.** `appendEvents` folds, in the one place every
