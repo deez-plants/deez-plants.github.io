@@ -4,6 +4,10 @@
 next** — it has exactly where things stood at the end of the last one and
 what's next. This file is read automatically at the start of every
 conversation in this repo.
+`PROJECT-CHARTER.txt` is the stable one — who does what, where each fact
+lives, the rules that do not bend, and what this system cannot do. Read it once
+and the rest of the documents make sense.
+
 The full spec lives in `FIELD_DEFINITIONS.md` (data model, validation, the build
 spec) and `HANDOFF.md` (build order, model-usage guidance). Read those by
 section number when a task needs them — don't re-read them whole every turn.

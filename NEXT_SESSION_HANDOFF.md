@@ -278,6 +278,61 @@ one deliberately interrupted walk** and export it for analysis; see "3b-lite"
 below for what that test is for and why the audio must not be transcribed
 before it is looked at.
 
+#### The four documents, and which is which
+
+- **`PROJECT-CHARTER.txt`** (new, 2026-09-18) — **the stable one.** Who does
+  what, where each fact lives, the ten rules that do not bend, the cycle, what
+  the system cannot do, and the habits learned the expensive way. The app's
+  screens change; this does not. Also copied into `3 ai` for the GPT project.
+- `GPT-PROJECT-BRIEF.txt` — how the AI should read a package. **Due a rewrite
+  from scratch once the app stops moving**, not a fifth amendment.
+- `gpt-prompt.txt` — the output contract: which fields may be proposed.
+- `FIELD_DEFINITIONS.md` — the data model and the validation chain.
+
+The one-off notes for specific rounds (`REVIEW-RESPONSE-2026-09-15.txt`,
+`GPT-UPDATE-2026-09-17.txt`, `GPT-UPDATE-2026-09-18.txt`) are the pattern to
+follow when the owner asks for "another doc for GPT": paste-whole, leading with
+whatever would otherwise be misread, saying plainly where the AI was wrong as
+well as right.
+
+#### Built since the tag, still unbuilt, in order
+
+`known-good-2026-09-18` is the tag to revert to. Since it: the transcription
+parts bug, exact seam durations, the review-table verification, the last of the
+stale pending copy, and **3c photo flags** (`src/package/reviewFlags.ts` —
+flags live outside the event log, clear on a confirmed send, cap 20).
+
+**Next, agreed and not started:**
+
+1. **Back means "up to this plant".** The owner found it: open the Shamrock's
+   More page from the Monstera and Back still reads "Large Monstera" and goes
+   there. `nav.replace` keeps the pushing entry's `backLabel`, which was right
+   for Prev/Next on Plant Detail and wrong one level deeper. **The rule to
+   build: from any plant-scoped sub-page, Back goes to that plant's own detail
+   page.** Only Plant Detail itself backs out to wherever you came from. ~1 hr,
+   `useNav.ts` and `App.tsx`.
+2. **Forward swipe** — right edge, undoes the last Back, cleared on any new
+   navigation. Mirrors `useEdgeSwipeBack`. ~1 hr. Check it against the Plant
+   Detail Prev/Next strip on the phone.
+3. **Sticky Apply bar** on the AI review table. 228 rows is a long scroll to a
+   button. ~30 min.
+4. Then the brief rewrite, then a package to settle the format with the GPT.
+
+#### The AI round-trip actually happened
+
+**2026-09-17: 228 changes, validated clean, applied.** The six reference fields
+are now populated for all 21 active plants, eleven have an AI CARE FOCUS, and
+27 watering intervals moved. No health values were proposed — it was allowed to
+and chose not to.
+
+**One thing to watch.** Five plants came out with winter watering EQUAL to
+summer (011-HOL, 012-HOL, 013-OXA, 017-PTH, 018-PTH), all carrying the same
+boilerplate reason — the only repeated reason in 228 rows. **013-OXA is the one
+that matters**: the same file's own `season` field says "reduce or stop watering
+until new growth returns" while its interval says water weekly through winter.
+The owner applied everything, so this stands in the record. It is corrected by
+editing the field, which writes a superseding Edit event.
+
 #### The AI round-trip, and the three documents that drive it
 
 The owner has their own GPT project ("plant bot") doing the review. Claude Code
@@ -376,8 +431,11 @@ app for a while before the web interface is discussed at all.
 2. **A final summary for the next conversation**, written when the owner goes
    off to use the app rather than build it.
 
-3. **A file tidy.** Surveyed 2026-09-18 — there are only three, not the "many"
-   the owner remembered:
+3. **A file tidy.** Surveyed twice on 2026-09-18. **Claude Code deletes nothing
+   here.** The shape of the pass: list what would go, file by file, and the
+   owner says yes or no to each.
+
+   **The three main folders:**
 
    - `~/deez-plants` (132MB) — the repo. Most of it is `node_modules`.
    - `~/deez-plants-safety-copy-2026-09-14` (107MB) — the migration safety
@@ -386,12 +444,40 @@ app for a while before the web interface is discussed at all.
      else. Walk 4's transcript passed coverage, so by the owner's own rule that
      audio has done its job — but say so before it goes. **Theirs to delete,
      never ours.**
-   - `OneDrive\Deez Plants` (98MB) — of which 90MB is two "everything" backups
+   - `OneDrive/Deez Plants` (98MB) — of which 90MB is two "everything" backups
      holding photos and audio. That is the backups working, not clutter. One
      generation back is worth keeping; the 15 Sep one is the candidate.
-   - `archive6-09-17 2120 walk 5` (7.8MB) — walk 5's three recordings and
+   - `archive/2026-09-17 2120 walk 5` (7.8MB) — walk 5's three recordings and
      its zip, kept because coverage failed on the first pass. It passes now, so
      they are releasable once its transcript is attached in the app.
+
+   **The five older plant-bot folders**, all from before the app existed:
+
+   - `Desktop/GPT/Plant BOT` — the big one. Current-state V3, the 22-plant
+     list, a registry and care reference V1, plant notes, a catalogue PDF,
+     PHOTOS, a CODEX Plant BOT folder. (`Desktop/GPT` is 3.6GB overall, but
+     almost all of that is JARVIS, not plants.)
+   - `Desktop/CLAUDE/Plant BOT` — one folder, "TEMP from CLAUDE".
+   - `Downloads/CLAUDE TEMP/PLANT BOT` — the app icon rounds.
+   - `Downloads/GPT TEMP/PLANT BOT` — current-state V1 and V2, two Word master
+     references, PLANT PICS 01 COMPLETE, a Codex bundle.
+   - `Downloads/PLANT BOT` — a 17 Sep review package, a 10 Sep record export.
+
+   **Most of it is superseded** — the app now holds the registry, the reference
+   fields, the photos and the history. **Three things in there are not, and
+   must not go by accident:**
+
+   1. **The app icon source art** in `CLAUDE TEMP` — not regenerable, and only
+      one of them is in the repo.
+   2. **`PLANT PICS 01 COMPLETE Sep 2026`** — if those are originals of photos
+      that now exist only inside the app's storage, they are a second copy of
+      something with no other copy.
+   3. **`deez-plants-record-2026-09-10.json`** — the oldest record export, and
+      the only snapshot from before any of this.
+
+   The V1/V2/V3 state documents and the Word references are a fossil record of
+   how the project got here. Worth reading once before they go; not worth
+   keeping.
 
 #### Two standing instructions from this session
 

@@ -1,0 +1,244 @@
+===============================================================
+ DEEZ PLANTS - THE CHARTER
+ Who does what, where each fact lives, and what may never happen
+ Written 18 Sep 2026
+===============================================================
+
+This is the stable document. The app's screens change; this does
+not. Give it to the AI project alongside GPT-PROJECT-BRIEF.txt
+and gpt-prompt.txt.
+
+It exists because four parties touch this project and each keeps
+reaching for the others' job. Written down once, nobody has to
+re-derive it.
+
+
+===============================================================
+ 1. WHAT THE PROJECT IS FOR
+===============================================================
+
+The owner's own words, after using it for a week:
+
+  "What works ... this is really the whole point of the app, to
+  track what works and make it how I take care of it and see it
+  thrive. Together with AI and my observations and actions over
+  time I can use this app to remember all the things I can't."
+
+Everything below follows from that sentence. The app is a memory,
+not an adviser. It holds what happened so that a person - helped
+by an AI - can notice what they would otherwise forget.
+
+22 real houseplants. One phone. No server, no accounts, no sync.
+
+
+===============================================================
+ 2. THE FOUR ROLES
+===============================================================
+
+--- THE OWNER ------------------------------------------------
+
+THE ONLY ONE WHO CAN LOOK AT A PLANT. That is not a courtesy; it
+is the reason the other three exist in the shape they do.
+
+  Owns:     health ratings, notes_user, every approval, every
+            decision about what the plants need
+  Decides:  whether any proposed change is right
+  Never:    has to justify a rejection to anyone
+
+Health is a human judgement made by looking. No amount of care
+history implies it, and nothing else in this system may write it
+except a proposal the owner accepts.
+
+
+--- THE APP --------------------------------------------------
+
+DECIDES NOTHING AND REMEMBERS EVERYTHING.
+
+  Owns:     the append-only event log, and every number derived
+            from replaying it
+  Does:     record what happened; show it back; make care one tap
+  Never:    computes health. Never says a plant needs water.
+            Never edits an entry - a correction is a new entry.
+
+Everything it shows - adherence, due dates, needs-attention,
+calendars, history - is derived by replaying the log from the
+beginning. Nothing derived is stored as fact, so the record can
+never disagree with itself.
+
+
+--- THE AI (the "plant bot") ---------------------------------
+
+NOTICES AND RECALLS. DOES NOT DECIDE.
+
+  Owns:     nothing
+  Does:     species knowledge the owner has not got; contra-
+            dictions he has not spotted; what he said six months
+            ago that bears on today; a current care priority
+  May:      propose changes to the fields listed in gpt-prompt.txt
+  Never:    applies anything. Never proposes a derived value.
+            Never touches notes_user. Never infers health from a
+            watering calendar.
+
+Its most valuable output is often "there is not enough here to
+say". That is a real contribution and is never treated as failure.
+
+
+--- CLAUDE CODE ----------------------------------------------
+
+BUILDS, AND WRITES DOWN WHY.
+
+  Owns:     the code, the specification, the handoff
+  Does:     build, test, and record the reasoning behind every
+            decision
+  Never:    changes a rule without the owner's word, and never
+            quietly
+
+A conversation ends and takes everything unwritten with it. So a
+decision that is not in NEXT_SESSION_HANDOFF.md did not happen.
+
+
+===============================================================
+ 3. WHERE EACH FACT LIVES - ONE PLACE EACH
+===============================================================
+
+The single most useful rule here: WHEN TWO PLACES HOLD THE SAME
+FACT, THEY WILL DRIFT, AND NOBODY WILL KNOW WHICH IS RIGHT.
+
+  The plants themselves     the app, on the phone. Nowhere else.
+  Species knowledge         the app's six reference fields, and
+                            they travel in every manifest
+  What was said on a walk   the transcript, attached to the walk
+  What the app is FOR       this file
+  How the data is shaped    FIELD_DEFINITIONS.md
+  What the AI may propose   gpt-prompt.txt
+  How the AI should read
+    a package               GPT-PROJECT-BRIEF.txt
+  Why anything is the
+    way it is               NEXT_SESSION_HANDOFF.md
+  Progress and what is left the build log page
+  The code                  github.com/deez-plants/deez-plants.github.io
+
+WHAT THIS MEANS FOR THE AI PROJECT: do not load plant-specific
+reference material into it. The app already holds that, and the
+manifest carries current values every round - a copy frozen in
+project instructions goes stale the first time the owner edits a
+field. General material that is not about THESE plants - a
+propagation guide, a pest key - does not conflict and is welcome.
+
+
+===============================================================
+ 4. THE RULES THAT DO NOT BEND
+===============================================================
+
+Enforced in code. A file breaking one is rejected whole.
+
+ 1. THE APP NEVER COMPUTES HEALTH, and neither does the AI by
+    arithmetic. A health proposal must name what was SEEN -
+    colour, posture, rot, pests - and may never come from
+    watering history.
+
+ 2. ADHERENCE IS COUNTS AND DAYS, NEVER A SCORE OUT OF TEN.
+    "On time 14 of 18, average 2 days late." Never 7.8/10.
+
+ 3. notes_user AND collection_notes_user ARE THE OWNER'S ALONE.
+    An update file naming either is rejected outright.
+
+ 4. EVERY PROPOSED CHANGE IS SEEN AND INDIVIDUALLY REJECTABLE.
+    Batch selection is allowed - the argument happens in conver-
+    sation before the file exists - but rows arrive UNSELECTED
+    and any one can be unticked.
+
+ 5. ENTRIES ARE APPEND-ONLY. A mistake is taken back with a Void
+    entry naming it; both stay, neither counts. Never a deletion:
+    a deleted entry could return from a backup with no record of
+    the intent to remove it.
+
+ 6. AN INTERVAL PASSING IS NEVER PROOF A PLANT NEEDS WATER. It is
+    a fact about the calendar and a prompt to look. Nobody -
+    app, AI or document - may render it as an instruction.
+
+ 7. WHERE THE WORDS AND THE MARKERS DISAGREE, THE WORDS WIN. A
+    marker says which page was open, not what was discussed.
+
+ 8. THE AUDIO IS GROUND TRUTH; THE CLOCK IS AN ESTIMATE. Where
+    they disagree about how long a walk was, believe the audio.
+
+ 9. A WALK'S AUDIO IS DELETED once its transcript is attached AND
+    ITS COVERAGE PASSES - and not one moment before. That
+    condition has twice refused to delete a recording whose
+    transcript came back incomplete.
+
+10. DERIVED STATE IS REBUILT, NEVER PATCHED. It is 22 plants.
+
+
+===============================================================
+ 5. THE CYCLE
+===============================================================
+
+  1. The owner logs care as it happens. It counts immediately.
+  2. Now and then he records a walk, talking, naming plants.
+  3. The laptop transcribes it. The words come back to the app;
+     the audio goes.
+  4. He builds a review package and hands it to the AI.
+  5. They TALK. The AI reads, questions, is questioned.
+  6. Only once they agree does the AI produce an update file.
+  7. He reviews every row in the app and applies what he accepts.
+  8. Since last time shows what moved.
+
+Step 5 is the one that makes the rest work, and the one most
+easily skipped. AN UPDATE FILE PRODUCED BEFORE THE CONVERSATION
+HAS SETTLED IS THE WRONG SHAPE OF ARTEFACT.
+
+Roughly monthly while the baseline is young, less often later,
+with short targeted questions in between. A full 22-plant walk is
+not required to ask about one plant.
+
+
+===============================================================
+ 6. WHAT THIS SYSTEM CANNOT DO, AND WILL NOT PRETEND TO
+===============================================================
+
+TWENTY-TWO PLANTS AND A HANDFUL OF RATINGS A YEAR CANNOT SUPPORT
+STATISTICAL INFERENCE. There is no significance to find here. A
+confident wrong answer is worse than no answer, because the owner
+would end up learning the arithmetic instead of his plants.
+
+So on cause, the job is to HOLD THE EVIDENCE STILL: here is the
+change, here is the rating before, here is the rating after, here
+is how long between them, here are the photographs. Then stop.
+
+It also cannot know anything about soil. Not from a calendar, not
+from a photograph, not from a history. Only a finger in the pot
+knows that, and only the owner has one.
+
+And it cannot notify. A web app with no server cannot schedule a
+reminder for later; that is a platform limit, not a missing
+feature. A calendar file the phone subscribes to is the way
+round it, and is not built yet.
+
+
+===============================================================
+ 7. THE HABITS THAT KEEP IT HONEST
+===============================================================
+
+Learned the expensive way, each one more than once:
+
+  - WHEN A MECHANISM CHANGES, THE COPY DESCRIBING IT IS PART OF
+    THE CHANGE. Stale instructions have three times sent the
+    owner to do work the app already did.
+
+  - A NUMBER READ OFF A SCREEN BEATS A THEORY. Every recording
+    fault in this project was found by the owner reporting two
+    numbers that did not agree, and several confident diagnoses
+    were wrong first.
+
+  - ARITHMETIC THAT CANNOT BE TESTED WILL BE WRONG. One four-line
+    sum was wrong three times while it lived tangled in module
+    state. It is now its own file with its failures pinned.
+
+  - A GUARD THAT REFUSES SOMETHING IS THE GUARD WORKING. Coverage
+    failing and keeping the audio is not an error message.
+
+  - WRITE THE REASONING, NOT JUST THE DECISION. The reasoning is
+    what lets a later reader tell a deliberate choice from an
+    accident, and stops it being undone by someone helpful.
