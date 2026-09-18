@@ -207,6 +207,44 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### 2026-09-18 — the pending step is gone, and the clock bug that hid in the fix
+
+**Care logs count immediately.** `appendEvents` folds, in the one place every
+write already goes through. The two-step was removed because of what it
+actually was: **pending delayed the NUMBERS, never the RECORD** — the entry was
+written the instant Log was tapped, append-only, nothing able to remove it. It
+offered a safety that did not exist and charged stale figures on every screen.
+The owner's GPT found it in a review package (a plant "four days past its
+interval" carrying its own watering from three days earlier), but it had been
+lying to the owner on Home for just as long.
+
+**`Void` is the new safety, and it is narrow on purpose.** The round just
+logged, from the screen that logged it, until you leave. An entry, never a
+deletion — a deleted entry could walk back in from a backup with no record of
+the intent to remove it. Derived state skips both; history shows both. **Do not
+let it grow into a general correction mechanism.** The wrong 008-ALO watering of
+14 Sep stays in the record.
+
+**Snapshots moved.** Update used to take them; it no longer runs. One is taken
+when a review package is built — so "since last time" means "since the last AI
+round" — plus a *Mark this point* button on Since last time. Building a package
+also folds anything still waiting, so a manifest can never disagree with its
+own events file again.
+
+**FIELD_DEFINITIONS section 15 named this fallback in advance** ("an immediate
+write plus an undo toast, not a redesign") and is now struck through with the
+reason. The trigger it predicted — rounds of one or two plants — is not what
+happened; rounds of sixteen that never got committed is.
+
+**The walk clock reset to 4 seconds on every resume, and that was mine.**
+`elapsedAtLastChunk` was initialised, restored on resume, and never written when
+a chunk landed — so `capturedMs` returned a constant 4500ms and the interrupt
+path adopted it as the clock. Third wrong answer from the same four lines.
+**The sum now lives in `src/capture/clock.ts`, pure, with all three historical
+failures pinned in `check/clock.check.cjs`. Do not move it back into
+`recording.ts`** — being tangled up with module state is precisely why it was
+never tested.
+
 ### 2026-09-16 — the first real AI review, and six fixes from it
 
 The owner ran a walk, made a package, and had their GPT review it. The reply

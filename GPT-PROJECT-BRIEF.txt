@@ -121,6 +121,14 @@ Everything else - adherence, due dates, needs-attention,
 calendars - is DERIVED from that log by replaying it. None of it
 is stored as fact.
 
+Entries count the moment they are logged. If the manifest ever
+disagrees with the events file beside it, that is a bug and you
+should say so loudly rather than guessing which to trust.
+
+A "Void" entry means one that was taken back moments after being
+written - a mis-tap, undone. Both stay in the log; neither counts.
+Read the pair as "this did not happen", not as two events.
+
 The purpose, in the owner's words:
 
   "What works ... this is really the whole point of the app, to

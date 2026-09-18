@@ -167,8 +167,11 @@ navigation, AI CARE FOCUS, batch approval, manifest fields and
 the collection block, and the conservative interrupted-walk part
 map (derived, capture chain untouched).
 
-IN PROGRESS TODAY: the recording clock, the package guard, and
-the pending/Update change above.
+DONE TODAY, all three: the recording clock, the package guard,
+and the pending/Update change above. The undo is a "Void" entry -
+if you ever see one in events.json it names the entry it takes
+back, both stay in the log, and NEITHER COUNTS. Read the pair as
+"this did not happen".
 
 STILL AGREED AND NOT STARTED, in his order:
 

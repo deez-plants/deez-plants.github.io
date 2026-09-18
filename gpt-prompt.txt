@@ -2,7 +2,11 @@ You are reviewing a plant-care export from the Deez Plants app. The package
 holds:
 
   manifest.json     every plant's current fields
-  events.json       its care history since the last package
+  events.json       its care history since the last package. A "Void"
+                    entry takes back the one it names, written moments
+                    after it by mistake. Both stay in the log and
+                    neither counts - read the pair as "this did not
+                    happen".
   transcript.txt    THE OWNER TALKING WHILE WALKING PAST THE PLANTS
   markers.json      which plant's page was open at each moment, and,
                     under "screen_log", the same in more detail.

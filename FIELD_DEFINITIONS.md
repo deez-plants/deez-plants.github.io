@@ -357,13 +357,36 @@ it and when.
 watering. The app writes one event per plant with `source: round`, never a single
 grouped event. History stays per-plant and accurate.
 
-### Pending and folded in
+### Logged and counted
 
-Logging is instant and local. Events are marked pending until you tap **Update**,
-which recomputes adherence, due dates, needs-attention, calendars and history in
-one pass, and saves a snapshot of the state it replaced. Ratings are never
-touched by Update. The app keeps the last five snapshots; the **Since last time**
-page stacks them for comparison with a six-month chart at the top.
+Logging is instant, local, and **counts immediately**. Adherence, due dates,
+needs-attention, calendars and history are all rebuilt from the whole log
+(rule 10) before the screen redraws.
+
+**The pending/Update two-step was removed on 2026-09-16.** Section 15 listed it
+as a closed decision with this exact escape hatch — "an immediate write plus an
+undo toast, not a redesign" — and the trigger it named was not what happened.
+What happened is that Update was not being tapped, because it was never worth
+tapping: **pending delayed the numbers, never the record.** The entry was
+written the instant Log was tapped, append-only, with nothing able to remove
+it. So the step offered a safety that did not exist and charged stale figures
+on every screen for it. By 17 Sep the owner's Home screen and a review package
+were both calling plants overdue that he had watered three days earlier.
+
+**Undo is the safety it only looked like.** The round just logged, from the
+screen that logged it, until you leave it. It writes a `Void` event naming the
+entry it takes back — never a deletion, because a deleted entry could return
+from a backup with no record of the intent to remove it, while a `Void` merges
+like anything else. Derived state skips both; history shows both.
+
+It is not a correction mechanism and must not become one. An older mistake
+stays in the record.
+
+**Snapshots** now come from boundaries that mean something: one is taken
+automatically whenever a review package is built, so "since last time" means
+"since the last AI round", and the **Since last time** page has a *Mark this
+point* button for the rest. The app keeps the last five and stacks them for
+comparison with a six-month chart at the top. Ratings are never touched.
 
 ---
 
@@ -915,9 +938,12 @@ The app must be cheap in the common case and capable in the rare one.
 
 Recorded so they are not reopened.
 
-- **The pending/Update two-step stays.** Logging is instant, Update is the commit
-  point. Revisit only if real use shows most rounds are one or two plants — the
-  fallback is an immediate write plus an undo toast, not a redesign.
+- ~~**The pending/Update two-step stays.**~~ **Reversed 2026-09-16**, and the
+  fallback this entry itself named is what was built: an immediate write plus
+  an undo. The trigger it predicted (rounds of one or two plants) is not what
+  happened — his rounds are sixteen. What happened is that Update was not being
+  tapped, and the record silently did not count for three days. See section 5,
+  "Logged and counted".
 - **Both calendars stay.** Forward for what is due, backward for what happened.
 - **The empty state is deliberately not designed.** It fills itself in three
   weeks of weekly logging.
