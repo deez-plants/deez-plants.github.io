@@ -2,6 +2,17 @@ import JSZip from 'jszip';
 import type { DeezDB, PackageRecord, SessionRecord, TranscriptTier } from '../db/schema';
 import { mintDatedId } from '../db/counters';
 import { commitUpdate } from '../db/events';
+import { makeThumbnail } from '../capture/photos';
+import { clearFlags, liveFlags } from './reviewFlags';
+
+/**
+ * Longest edge of a photo travelling in a review package.
+ *
+ * Enough to judge leaf colour, leaf edges and soil surface — which is what
+ * the AI is being asked to look at. Not enough to be an archive, which is
+ * deliberate: the full image never leaves the phone.
+ */
+const REVIEW_MAX_EDGE = 1280;
 import { SCREEN_LOG_NOTE, sidecarFor } from '../capture/sessions';
 import { readScreenLog } from '../capture/screenLog';
 import { routeMarkerCount } from '../capture/liveSession';
@@ -73,6 +84,8 @@ export interface ReviewPackage {
   /** The finished zip, ready to save. */
   blob: Blob;
   filename: string;
+  /** Flagged photos that actually travelled, after dropping any since deleted. */
+  media_count: number;
   /**
    * Record that this package really left the device. **Call only after the
    * owner says the file saved.**
@@ -191,6 +204,8 @@ export interface PackagePreview {
   transcribed_count: number;
   tier: TranscriptTier | null;
   marker_count: number;
+  /** Photos flagged for review, ready to travel. */
+  media_count: number;
 }
 
 export async function previewReviewPackage(db: DeezDB, state: DerivedState): Promise<PackagePreview> {
@@ -205,6 +220,7 @@ export async function previewReviewPackage(db: DeezDB, state: DerivedState): Pro
     transcribed_count: sessions.filter((s) => s.transcript).length,
     tier: packageTier(sessions),
     marker_count: sessions.reduce((sum, s) => sum + routeMarkerCount(s.markers), 0),
+    media_count: (await liveFlags(db)).length,
   };
 }
 
@@ -265,6 +281,37 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
   zip.file('transcript.txt', await transcriptFile(sessions));
   zip.file('markers.json', JSON.stringify(await markersFile(sessions), null, 2));
 
+  /**
+   * Photos the owner flagged, under the name the record knows them by.
+   *
+   * **Identity is the whole point.** Attached to a chat by hand they arrive as
+   * IMG_5837.jpeg and the AI has to guess, or be told, which plant it is
+   * looking at — the reviewer said so in its first round and it was right. A
+   * `media/` entry named `004-MNY_2026-09-14_1837_01.jpg` needs no guessing and
+   * no explaining.
+   *
+   * Review quality, not archival: the full image stays on the phone. The
+   * thumbnail is too small to judge a leaf by, so these are made fresh at
+   * `REVIEW_MAX_EDGE` — around 150KB each, twenty of them about 3MB, which a
+   * chat upload takes without complaint.
+   *
+   * Flags naming a photo that has since been deleted are dropped rather than
+   * failing the package: see `liveFlags`.
+   */
+  const flagged = await liveFlags(db);
+  let media_count = 0;
+  for (const media_id of flagged) {
+    const record = await db.get('media', media_id);
+    if (!record) continue;
+    try {
+      zip.file(`media/${media_id}`, await makeThumbnail(record.blob, REVIEW_MAX_EDGE));
+      media_count += 1;
+    } catch {
+      // One unreadable image must not cost the whole package. It simply does
+      // not travel, and the manifest still names every plant.
+    }
+  }
+
   const blob = await zip.generateAsync({ type: 'blob' });
 
   const record: PackageRecord = {
@@ -287,7 +334,10 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
     plant_count: active.length,
     blob,
     filename: `${stamp()} review package.zip`,
-    confirmSent: () => db.put('packages', record).then(() => undefined),
+    media_count,
+    // Clearing the flags is part of "it saved", never part of "it was built".
+    // Answer no to "did it save?" and they are all still there for the retry.
+    confirmSent: () => db.put('packages', record).then(() => clearFlags(db)),
   };
 }
 

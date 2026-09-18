@@ -126,6 +126,17 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
                   : `${status.marker_count} marker${status.marker_count === 1 ? '' : 's'} across ${status.session_count} walk${status.session_count === 1 ? '' : 's'}, plus the screen log`}
             </span>
           </li>
+          {/* Only when there are some. An empty row here would read as a
+              missing feature rather than an unused one. */}
+          {status.kind === 'ready' && status.media_count > 0 && (
+            <li>
+              <span className="prep-file-name">media/</span>
+              <span className="prep-file-detail">
+                {status.media_count} flagged photo{status.media_count === 1 ? '' : 's'},
+                named so the AI knows which plant it is looking at
+              </span>
+            </li>
+          )}
         </ul>
       )}
 

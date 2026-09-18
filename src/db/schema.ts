@@ -202,6 +202,13 @@ export interface AppMeta {
   session_counter: Record<string, number>;
   last_state_export: ISODate | null;
   last_state_import: ISODate | null;
+  /**
+   * Photos marked to travel in the next review package.
+   *
+   * Bookkeeping, not record — see `package/reviewFlags.ts` for why a flag is
+   * deliberately not an event. Absent until the first one is set.
+   */
+  review_flags?: MediaId[];
 }
 
 export interface DeezPlantsDB extends DBSchema {

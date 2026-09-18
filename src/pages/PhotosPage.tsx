@@ -5,6 +5,7 @@ import type { DerivedPlant } from '../types/derived';
 import type { MediaLabel } from '../types/plant';
 import { formatDayMonthYear } from '../lib/dates';
 import { openDeezPlants } from '../db/schema';
+import { FLAG_CAP, flagSet, toggleFlag } from '../package/reviewFlags';
 import { ensureThumbs } from '../boot';
 import { editPlantFields } from '../care/editField';
 import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
@@ -66,6 +67,22 @@ export default function PhotosPage({
 }: PhotosPageProps) {
   const [busyHero, setBusyHero] = useState<MediaId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Photos going in the next review package. Not events — see
+   * `package/reviewFlags.ts` for why a flag is bookkeeping rather than record.
+   */
+  const [flags, setFlags] = useState<Set<MediaId>>(new Set());
+  useEffect(() => { void flagSet().then(setFlags); }, []);
+
+  const toggleReview = async (media_id: MediaId) => {
+    setError(null);
+    const db = await openDeezPlants();
+    const result = await toggleFlag(db, media_id);
+    setFlags(new Set(result.flags));
+    if (result.at_cap) {
+      setError(`${FLAG_CAP} photos is the most one package carries. Unflag one first.`);
+    }
+  };
 
   const entries = useMemo<Entry[]>(() => {
     const byMedia = new Map<MediaId, Entry>();
@@ -238,7 +255,7 @@ export default function PhotosPage({
               return (
                 <div
                   key={e.media_id}
-                  className={`photos-tile${isHero ? ' hero' : ''}${isCompare ? ' compare' : ''}`}
+                  className={`photos-tile${isHero ? ' hero' : ''}${isCompare ? ' compare' : ''}${flags.has(e.media_id) ? ' flagged' : ''}`}
                 >
                   {url
                     ? <img className="photos-tile-image" src={url} alt="" />
@@ -265,6 +282,16 @@ export default function PhotosPage({
                     >
                       {isCompare ? 'Comparing ✓' : 'Compare'}
                     </button>
+                    {/* Goes in the next package under this photo's own name, so
+                        the AI knows which plant it is looking at without being
+                        told. Clears once that package is confirmed sent. */}
+                    <button
+                      type="button"
+                      className={flags.has(e.media_id) ? 'photos-tile-review on' : 'photos-tile-review'}
+                      onClick={() => void toggleReview(e.media_id)}
+                    >
+                      {flags.has(e.media_id) ? 'For AI ✓' : 'For AI'}
+                    </button>
                   </div>
                 </div>
               );
@@ -279,6 +306,8 @@ export default function PhotosPage({
         good — it shows in lists and on the plant page.
         <strong> Compare</strong> picks the two What works puts side by side;
         leave them alone and it uses the last two whole-plant shots on its own.
+        <strong> For AI</strong> sends a photo with the next review package,
+        then clears.
       </p>
     </main>
   );

@@ -212,3 +212,26 @@
 
 /* A tile in the comparison reads as chosen without competing with the hero. */
 .photos-tile.compare { border-color: var(--accent); }
+
+/* "For AI" — flagged to travel in the next review package under this photo's
+   own semantic name. Amber rather than green: it is a pending intent, not a
+   setting, and it clears itself once the package is confirmed sent. */
+.photos-tile-review {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 8px 6px;
+  font: 600 18px/1 var(--sans);
+  color: var(--ink-60);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.photos-tile-review.on {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #1a1208;
+}
+
+.photos-tile.flagged { border-color: var(--amber); }
