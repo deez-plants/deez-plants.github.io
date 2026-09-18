@@ -73,6 +73,26 @@ export interface ReviewPackage {
   /** The finished zip, ready to save. */
   blob: Blob;
   filename: string;
+  /**
+   * Record that this package really left the device. **Call only after the
+   * owner says the file saved.**
+   *
+   * Until this runs, nothing in the package counts as sent, and every event
+   * and walk in it will be carried by the next one.
+   *
+   * **Why it is a separate step.** Marking used to happen the moment the zip
+   * was built, one line before the Share sheet opened — and nothing reports
+   * back from a Share sheet. A browser cannot see whether a download
+   * succeeded, and iOS tells the page nothing at all. So cancelling that sheet
+   * marked a walk and every event since the last package as sent, with no file
+   * anywhere: they would never appear in a future package, and the only way to
+   * notice would be an AI missing evidence it had no way to know it was owed.
+   *
+   * The app cannot know, so it asks. One tap a month, and a wrong answer costs
+   * nothing either way — say no to a package that saved and the next one
+   * repeats it; say yes to one that did not and `unsendPackage` puts it back.
+   */
+  confirmSent: () => Promise<void>;
 }
 
 /** Every event not already carried by a previous package — a union over
@@ -259,7 +279,6 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
     verified: sessions.length > 0 && sessions.every((s) => s.coverage?.passed === true),
     session_ids: sessions.map((s) => s.session_id),
   };
-  await db.put('packages', record);
 
   return {
     package_id,
@@ -268,7 +287,22 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
     plant_count: active.length,
     blob,
     filename: `${stamp()} review package.zip`,
+    confirmSent: () => db.put('packages', record).then(() => undefined),
   };
+}
+
+/**
+ * Forget that a package was ever sent.
+ *
+ * Its events and walks become unsent, so the next package carries them again.
+ * The safety net under `confirmSent`: that one asks a question the app cannot
+ * verify, and this is what makes the wrong answer cost nothing.
+ *
+ * The package's own files are not touched — this is only the record of what
+ * left the device.
+ */
+export async function unsendPackage(db: DeezDB, package_id: PackageId): Promise<void> {
+  await db.delete('packages', package_id);
 }
 
 /** Triggers the browser's own save flow. The one place this app downloads a

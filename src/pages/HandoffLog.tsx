@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { openDeezPlants, type AppliedUpdateRecord, type PackageRecord } from '../db/schema';
+import { unsendPackage } from '../package/export';
+import type { PackageId } from '../types/ids';
 import { Icon } from '../components/Icon';
 import { formatDayMonth } from '../lib/dates';
 import './HandoffLog.css';
@@ -32,6 +34,9 @@ interface Round {
 export default function HandoffLog({ backLabel, onBack }: HandoffLogProps) {
   const [rounds, setRounds] = useState<Round[] | null>(null);
   const [orphans, setOrphans] = useState<AppliedUpdateRecord[]>([]);
+  /** Which package is being asked about before it is un-sent. */
+  const [unsending, setUnsending] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let live = true;
@@ -58,7 +63,24 @@ export default function HandoffLog({ backLabel, onBack }: HandoffLogProps) {
       setOrphans(applied.filter((a) => !packages.some((p) => p.package_id === a.package_id)));
     })();
     return () => { live = false; };
-  }, []);
+  }, [reloadKey]);
+
+  /**
+   * Forget that a package left the device, so its entries and its walk are
+   * carried by the next one.
+   *
+   * The recovery for a package that never actually saved. Prepare asks "did it
+   * save?" because nothing reports back from a Share sheet, and this is what
+   * makes answering wrong cost nothing. Only offered on a round with no reply
+   * applied: once an update has been applied against a package, un-sending it
+   * would orphan that reply.
+   */
+  const unsend = async (package_id: string) => {
+    const db = await openDeezPlants();
+    await unsendPackage(db, package_id as PackageId);
+    setUnsending(null);
+    setReloadKey((k) => k + 1);
+  };
 
   const openCount = rounds?.filter((r) => !r.applied).length ?? 0;
 
@@ -126,10 +148,32 @@ export default function HandoffLog({ backLabel, onBack }: HandoffLogProps) {
                 <span className="hand-leg-date">{formatDayMonth(r.applied.applied)}</span>
               </div>
             ) : (
-              <p className="hand-pending">
-                No reply applied yet. The next package will not repeat what this
-                one carried, so nothing is lost by leaving it open.
-              </p>
+              <>
+                <p className="hand-pending">
+                  No reply applied yet. The next package will not repeat what this
+                  one carried, so nothing is lost by leaving it open.
+                </p>
+                {/* The recovery for a package that never saved. See `unsend`. */}
+                {unsending === r.package_id ? (
+                  <p className="hand-pending">
+                    Send its entries again next time?
+                    <button type="button" className="hand-unsend go" onClick={() => void unsend(r.package_id)}>
+                      Yes
+                    </button>
+                    <button type="button" className="hand-unsend" onClick={() => setUnsending(null)}>
+                      No
+                    </button>
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    className="hand-unsend"
+                    onClick={() => setUnsending(r.package_id)}
+                  >
+                    This one never saved
+                  </button>
+                )}
+              </>
             )}
           </section>
         ))}

@@ -148,3 +148,21 @@
   color: var(--ink-50);
   text-wrap: pretty;
 }
+
+/* "This one never saved" — the recovery under Prepare's "did it save?".
+   See `unsend` in HandoffLog.tsx. */
+.hand-unsend {
+  margin: 8px 8px 0 0;
+  min-height: 44px;
+  padding: 8px 16px;
+  font: 600 20px/1 var(--sans);
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.hand-unsend.go {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}

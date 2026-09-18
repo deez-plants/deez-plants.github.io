@@ -28,11 +28,24 @@ type Status =
   | { kind: 'loading' }
   | ({ kind: 'ready' } & PackagePreview)
   | { kind: 'building' }
+  /** The zip is made and the Share sheet has opened. Nothing is marked sent
+      yet — see `confirmSent`. */
+  | { kind: 'asking'; package_id: string; filename: string; confirmSent: () => Promise<void> }
   | { kind: 'done'; package_id: string; filename: string }
   | { kind: 'error'; message: string };
 
 export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }: PrepareReviewPackageProps) {
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
+
+  /** Recount what a package would carry. Nothing here writes. */
+  const loadPreview = async () => {
+    try {
+      const db = await openDeezPlants();
+      setStatus({ kind: 'ready', ...await previewReviewPackage(db, state) });
+    } catch (e: unknown) {
+      setStatus({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
+    }
+  };
 
   useEffect(() => {
     let live = true;
@@ -54,7 +67,14 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
       const db = await openDeezPlants();
       const pkg = await buildReviewPackage(db, state, as_of);
       saveBlob(pkg.blob, pkg.filename);
-      setStatus({ kind: 'done', package_id: pkg.package_id, filename: pkg.filename });
+      // Not `done`. The Share sheet reports nothing back, so whether this
+      // package left the device is a question only the owner can answer.
+      setStatus({
+        kind: 'asking',
+        package_id: pkg.package_id,
+        filename: pkg.filename,
+        confirmSent: pkg.confirmSent,
+      });
     } catch (e: unknown) {
       setStatus({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     }
@@ -131,6 +151,34 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
           All {status.session_count} walk{status.session_count === 1 ? '' : 's'} transcribed.
           The AI reads your own words, attributed to the plant whose page was open.
         </p>
+      )}
+
+      {/* The app cannot see whether a Share sheet succeeded, so it asks. Until
+          Yes, nothing here counts as sent and the next package carries it all
+          again. See `confirmSent`. */}
+      {status.kind === 'asking' && (
+        <div className="prep-done">
+          <p>Did <span className="prep-filename">{status.filename}</span> save?</p>
+          <div className="prep-confirm">
+            <button
+              type="button"
+              className="prep-confirm-yes"
+              onClick={() => void (async () => {
+                await status.confirmSent();
+                setStatus({ kind: 'done', package_id: status.package_id, filename: status.filename });
+              })()}
+            >
+              Yes, saved
+            </button>
+            <button
+              type="button"
+              className="prep-confirm-no"
+              onClick={() => void loadPreview()}
+            >
+              No
+            </button>
+          </div>
+        </div>
       )}
 
       {status.kind === 'done' && (

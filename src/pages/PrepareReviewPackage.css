@@ -128,3 +128,31 @@
   color: var(--ink-50);
   text-wrap: pretty;
 }
+
+/* "Did it save?" — the app cannot see a Share sheet's outcome, so it asks.
+   See `confirmSent` in package/export.ts. */
+.prep-confirm {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.prep-confirm-yes,
+.prep-confirm-no {
+  min-height: 44px;
+  padding: 10px 20px;
+  font: 600 20px/1 var(--sans);
+  border-radius: 10px;
+}
+
+.prep-confirm-yes {
+  color: #0d1410;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.prep-confirm-no {
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line-strong);
+}
