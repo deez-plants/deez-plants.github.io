@@ -4,7 +4,6 @@ import { useNav } from './nav/useNav';
 import type { PlantScopedKind, Screen } from './nav/types';
 import type { PlantId } from './types/ids';
 import { TabBar } from './nav/TabBar';
-import { WalkStrip } from './nav/WalkStrip';
 import { getPhase, subscribe as subscribeRecorder } from './capture/recording';
 import AllPages, { type AllPagesGroup } from './nav/AllPages';
 import PlantPicker from './nav/PlantPicker';
@@ -84,7 +83,6 @@ export default function App() {
   // nothing; opening a plant's page also places a `plant_open` marker when a
   // walk happens to be running.
   const recPhase = useSyncExternalStore(subscribeRecorder, getPhase, getPhase);
-  const walking = recPhase === 'recording' || recPhase === 'paused';
 
   const current = nav.current;
   const screenKind = current.kind;
@@ -590,19 +588,14 @@ export default function App() {
 
   return (
     <>
-      <div className={walking ? 'app-content walking' : 'app-content'}>{body}</div>
-      <div className="app-bottom">
-        {/* Pause and resume without losing your place — see `WalkStrip`. Not on
-            the Record screen, which says all of it larger. */}
-        <WalkStrip hidden={current.kind === 'record'} onOpen={openRecorder} />
-        <TabBar
-          active={nav.activeTab}
-          onTab={nav.goRoot}
-          onRecord={openRecorder}
-          onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
-          onMore={openAllPages}
-        />
-      </div>
+      <div className="app-content">{body}</div>
+      <TabBar
+        active={nav.activeTab}
+        onTab={nav.goRoot}
+        onRecord={openRecorder}
+        onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
+        onMore={openAllPages}
+      />
     </>
   );
 }

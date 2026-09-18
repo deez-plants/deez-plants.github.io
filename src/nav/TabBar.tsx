@@ -44,7 +44,17 @@ export interface TabBarProps {
  * app.** Do not restore tap-to-start from it.
  *
  * The button keeps its timer and red recording state, so a walk in progress
- * is visible from anywhere — the owner asked for that to stay.
+ * is visible from anywhere — the owner asked for that to stay. **That timer is
+ * the only place a running walk needs to be shown.** A second one was tried on
+ * 2026-09-16, as a pause/resume strip above this bar, and removed the next day:
+ * it repeated a number already eighteen pixels above it, and the owner was
+ * right that the fix underneath it — Record no longer clearing the navigation
+ * stack — is the whole value and is invisible. Do not add it back.
+ *
+ * Where the recorder lands in the stack is `App.tsx`'s business, not this
+ * file's: see `openRecorder`. This button's contract is unchanged — it opens
+ * the Record screen, and start, pause and stop stay there where you can see
+ * what you are doing.
  */
 
 /** The owner's picks, 2026-09-11, from the comparison page's Round 2. */

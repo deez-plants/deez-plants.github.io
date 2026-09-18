@@ -5,23 +5,6 @@
   padding-bottom: 104px;
 }
 
-/* While a walk is running the strip sits above the tab bar, so the last of a
-   screen would otherwise finish underneath it. */
-.app-content.walking {
-  padding-bottom: 164px;
-}
-
-/* The strip and the tab bar together. Fixing the pair rather than each one
-   means the strip's height is never a number copied out of the tab bar's
-   padding and left to go stale. */
-.app-bottom {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-}
-
 .shell {
   max-width: 720px;
   margin: 0 auto;
