@@ -352,6 +352,47 @@ they say plainly where the AI was wrong as well as where it was right.
 - two new plants to add
 - the AI round-trip's second half: approving rows from its update file
 
+#### Agreed for AFTER the app work settles — do not start these early
+
+The owner's sequence, agreed 2026-09-18: **photo flags, then the navigation
+changes, then the sticky Apply bar, then the GPT project instructions written
+FRESH, then a package to settle the format with their GPT.** Then they use the
+app for a while before the web interface is discussed at all.
+
+1. **Rewrite `GPT-PROJECT-BRIEF.txt` from scratch, not by amending it.** It was
+   written on 14 Sep against an app that has changed underneath it four times
+   and carries three rounds of stapled-on corrections. **Write it after the app
+   stops moving**, or it needs amending again.
+
+   **The split to keep clean:** the GPT project holds the CONTRACT — how to
+   read a package, what may be proposed, what never may, how to answer. The APP
+   holds the plants, and the manifest carries them every round. The AI has now
+   filled the six reference fields for all 21 plants, so **species knowledge
+   lives in the app**; loading plant-specific reference material into the
+   project as well creates two sources that will drift. General material — a
+   propagation guide, a pest key — is fine, because it is not about *these*
+   plants.
+
+2. **A final summary for the next conversation**, written when the owner goes
+   off to use the app rather than build it.
+
+3. **A file tidy.** Surveyed 2026-09-18 — there are only three, not the "many"
+   the owner remembered:
+
+   - `~/deez-plants` (132MB) — the repo. Most of it is `node_modules`.
+   - `~/deez-plants-safety-copy-2026-09-14` (107MB) — the migration safety
+     copy. **It holds walk 4's four original recordings, and it is now the only
+     copy of them anywhere**, since the golden rule released them everywhere
+     else. Walk 4's transcript passed coverage, so by the owner's own rule that
+     audio has done its job — but say so before it goes. **Theirs to delete,
+     never ours.**
+   - `OneDrive\Deez Plants` (98MB) — of which 90MB is two "everything" backups
+     holding photos and audio. That is the backups working, not clutter. One
+     generation back is worth keeping; the 15 Sep one is the candidate.
+   - `archive6-09-17 2120 walk 5` (7.8MB) — walk 5's three recordings and
+     its zip, kept because coverage failed on the first pass. It passes now, so
+     they are releasable once its transcript is attached in the app.
+
 #### Two standing instructions from this session
 
 - **In-app text stays short.** State the fact; the reasoning belongs in the code
