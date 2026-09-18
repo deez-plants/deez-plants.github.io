@@ -1,6 +1,7 @@
 import { openDeezPlants, type DeezDB, type SessionMarker, type SessionRecord } from '../db/schema';
 import { mintSessionId } from '../db/counters';
 import { registerLiveSession, routeMarkerCount } from './liveSession';
+import { capturedMsFrom } from './clock';
 import { nowLocalStamp } from '../lib/dates';
 import type { ISODate, PlantId, SessionId } from '../types/ids';
 
@@ -170,31 +171,24 @@ function elapsedSeconds(): number {
 /**
  * Elapsed time with any silent tail cut off.
  *
- * A marker's `offset_s` has to line up with a position in the audio, so time
- * that produced no audio is not merely cosmetic — it drags every later marker
- * out of alignment with the recording. When the microphone dies, the clock
- * keeps running and the audio does not, and this is what refuses to count it.
+ * The arithmetic itself lives in `capture/clock.ts`, pure and tested. It has
+ * been wrong three times while it lived in this file, tangled up with module
+ * state — read the note at the top of that file before changing anything
+ * here, and keep the sum over there.
  *
- * A chunk is due every `CHUNK_MS`; anything beyond one and a half intervals
- * since the last one is silence, not lateness.
+ * This function's only job is to hand it the module's three numbers, and the
+ * one that matters is `elapsedAtLastChunk`: it must be written every time a
+ * chunk lands (see `writeChunksTo`) and it must be on the WALK'S clock, not
+ * the wall clock. Failing to write it is what pinned every resumed walk to
+ * four seconds.
  */
 function capturedMs(): number {
-  const total = elapsedMs();
-  if (!lastChunkAt) return total;
-
-  // Measured on the WALK'S CLOCK, not the wall clock. That distinction is the
-  // whole fix: the clock freezes while the app is backgrounded, so wall time
-  // races ahead of it. Subtracting wall time drove a real walk's duration to
-  // ZERO — the owner's own trail recorded "385s since the last audio" and
-  // then "interrupted · 0s captured" on a walk that held six minutes of
-  // audio at that point.
-  //
-  // It can also never take away more than it counted since that chunk: what
-  // was captured stays captured. A silence cannot retrospectively un-record
-  // the audio in front of it.
-  const sinceChunk = total - elapsedAtLastChunk;
-  if (sinceChunk <= CHUNK_MS * 1.5) return total;
-  return Math.max(elapsedAtLastChunk, total - (sinceChunk - CHUNK_MS * 1.5));
+  return capturedMsFrom({
+    total_ms: elapsedMs(),
+    elapsed_at_last_chunk_ms: elapsedAtLastChunk,
+    had_chunk: lastChunkAt !== 0,
+    chunk_ms: CHUNK_MS,
+  });
 }
 
 function capturedSeconds(): number {
@@ -342,6 +336,12 @@ function writeChunksTo(rec: MediaRecorder, session_id: SessionId): void {
   rec.ondataavailable = (e: BlobEvent) => {
     if (!e.data || !e.data.size) return;
     lastChunkAt = Date.now();
+    // On the WALK'S clock as well as the wall clock, and this line is the one
+    // that was missing. Without it `capturedMs` measures every walk from zero
+    // and returns a constant four and a half seconds — which the interrupt
+    // path then adopts as the new clock, resetting every resumed walk to 4s
+    // however long it had been running. See `capture/clock.ts`.
+    elapsedAtLastChunk = elapsedMs();
     // Only while the walk is genuinely running: the last chunk of a walk
     // arrives during `stopRecorder`, and noting it there put "the microphone
     // came back" AFTER "ended" in a log meant to be read in order.

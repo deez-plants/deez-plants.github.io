@@ -26,6 +26,7 @@
     "../src/score/score.ts",
     "../src/score/whatWorks.ts",
     "../src/capture/coverage.ts",
-    "../src/capture/parts.ts"
+    "../src/capture/parts.ts",
+    "../src/capture/clock.ts"
   ]
 }
