@@ -1,0 +1,332 @@
+===============================================================
+ DEEZ PLANTS - where things stand, 17 Sep 2026
+ Read this alongside the package: 2026-09-17 1736 review package
+===============================================================
+
+This follows your first review of PKG-2026-09-15-1 and the reply to
+it (2026-09-15 REVIEW RESPONSE). Six of the eight items you raised
+are now built and live. Two are deliberately not.
+
+READ SECTION 1 FIRST. It explains why this package looks half
+empty. It is not a regression and nothing has been lost.
+
+
+===============================================================
+ 1. WHY THIS PACKAGE HAS NO EVENTS AND NO WALK
+===============================================================
+
+Open it and you will find:
+
+    manifest.json    21 plants, MANY NEW FIELDS - see section 3
+    events.json      [] - empty
+    transcript.txt   "No recording sessions on this device yet."
+    markers.json     the screen log, no new walk
+
+All three of those are correct.
+
+A REVIEW PACKAGE CARRIES EACH EVENT AND EACH WALK EXACTLY ONCE.
+Not "everything since a date" - the app remembers which events and
+which walks went out in which package, by id. Walk 4 and its
+events went out on 15 Sep, so they are not here. Nothing since
+then has been logged.
+
+So this is a MANIFEST-ONLY package, and that is the point of it.
+You already have the walk 4 transcript from last time and the
+words have not changed. What HAS changed is the manifest, which
+now shows you fields you were previously being asked to fill in
+blind.
+
+The line "No recording sessions on this device yet" is wrong
+wording for this case - there is one, it simply already went out.
+Being fixed.
+
+Do not ask for walk 4 again. Do not treat the empty events file as
+a gap in the record.
+
+
+===============================================================
+ 2. THE BIG FIND: YOUR "CONTRADICTION" WAS ONE PARSER GAP
+===============================================================
+
+You flagged that transcript.txt said BOTH
+
+    tier: unverified
+    coverage: not checked
+
+and, immediately below,
+
+    transcript_tier: verified
+    coverage: pass
+
+You were right that this was incoherent, and right about roughly
+where it came from. The actual cause:
+
+  the transcriber writes timestamps as   0:07  words
+  the app could read Whisper JSON and SRT, and nothing else
+
+So the app saw a transcript with ZERO timestamped segments, filed
+it "unverified", and never ran its own coverage gate. Both lines
+were honest; they were describing different layers.
+
+IT HAD A THIRD CONSEQUENCE NOBODY HAD NOTICED. The app deletes a
+walk's audio only when coverage PASSES. Coverage had never passed,
+on any walk, ever - so no audio had ever been deleted. The owner's
+"golden rule" had never once fired.
+
+Fixed by teaching the app the format its own toolchain produces.
+Checked against the real walk of 14 Sep: 105 segments, 785s,
+coverage passes. The owner re-imported it and it now reads
+VERIFIED / COVERAGE PASSED on the phone.
+
+WHAT THIS MEANS FOR YOU: from the next walk onward, a transcript
+in a package carries one verification state, not two, and you can
+trust the tier line. An "unverified" transcript now genuinely
+means a pasted or typed one.
+
+ONE RECOMMENDATION OF YOURS WAS DECLINED, deliberately. You
+suggested the transcriber emit structured metadata and the app
+read its verification state from that. That would make the app
+trust the transcriber's verdict. The app has its own coverage gate
+and its own duration; it now checks the timestamps itself. Teach
+it the format, do not import the conclusion.
+
+
+===============================================================
+ 3. THE MANIFEST NOW SHOWS YOU WHAT IT WAS HIDING
+===============================================================
+
+Your section 7 was right, and worse than you knew - some of those
+fields had been AI-editable and accepted by the validator all
+along. The only things stopping you using them were the manifest
+not exporting their values and the prompt forbidding them.
+
+NEW IN EVERY PLANT:
+
+  spot                    where in the room, in his own words
+  planter_shared_water    true = one soak serves the whole planter
+  environment             |
+  repotting               |
+  pruning                 | THE SIX REFERENCE FIELDS. Mostly null.
+  pests                   | This is the species knowledge he has
+  season                  | not got. See below.
+  propagation             |
+  health_source           Me or AI - who last wrote the number
+  health_changed          when the value last MOVED, as against
+                          when it was last confirmed
+  avg_days_late           mean lateness of the late waterings only
+  interval_days           the interval in force today
+  next_due
+  days_past               negative means days remaining
+
+RENAMED: adherence_state is now adherence, which is what the spec
+always called it.
+
+NEW AT THE TOP OF THE MANIFEST:
+
+  "collection": {
+    "permanent_record_count": 22,
+    "active_count": 21,
+    "archived_count": 1,
+    "archived": [ { 009-SPD, Spider Plant, date, reason } ]
+  }
+
+That answers your section 7I. 22 and 21 are both correct. 009-SPD
+was archived through the app on 11 Sep - it is a permanent record,
+it is not missing, and it is NOT eligible for changes. Archived
+plants are named in that block and nowhere else, because appearing
+in "plants" is exactly what would make them eligible.
+
+THE SIX REFERENCE FIELDS ARE THE REAL OPENING HERE. They are the
+one part of this job where a good general answer is genuinely
+useful, because nothing in his record can supply it: what the
+species wants natively, when repotting is worth it, what goes
+wrong with it, how it propagates. Keep each to a short paragraph.
+They are in the updated gpt-prompt.txt allowed list.
+
+RULE 9 STILL APPLIES TO days_past. The interval passing is a fact
+about the calendar and a prompt to look. It is never proof the
+soil is dry. Never write "needs water".
+
+
+===============================================================
+ 4. APPROVAL CHANGED. THIS ONE AFFECTS HOW YOU WRITE FILES
+===============================================================
+
+The old rule was "every proposed change is approved ONE AT A TIME,
+there is no accept-all". The owner reversed it on 16 Sep. His
+reasoning:
+
+    the substantive review now happens in conversation, before
+    the update file is generated. By the time the table renders,
+    the argument is over.
+
+The app now has Select all / Clear. What has NOT changed, and is
+not negotiable:
+
+  - every change is listed with current value, proposed value
+    and its own reason
+  - any single row can be rejected on its own
+  - rows arrive UNSELECTED
+
+SO THE WAY YOU WRITE A FILE MATTERS MORE, NOT LESS. He will now
+often select all and untick the few he disagrees with. A row he
+cannot reject half of is a row that forces him to reject the good
+half with the bad. One change, one field, one reason. Never bundle
+two ideas.
+
+And the workflow you proposed is the one being used: discuss in
+chat first, agree, THEN generate the file. Do not produce an
+update file until the conversation has settled.
+
+
+===============================================================
+ 5. WHAT ELSE WAS BUILT FROM YOUR REVIEW
+===============================================================
+
+DUPLICATE WATERING (your section 6) - fixed, and the cause was not
+what it looked like. Care events land PENDING and move no derived
+number until an "Update" folds them in. So when he watered four
+plants individually and then opened the bulk round, every one of
+them still read "6 days past the 7-day interval" - the round had
+no idea. The app had nothing to warn him with.
+
+Now: a plant with today's Water or Feed already on it reads
+"watered today", is left out of the preselection, and is skipped
+by All and by the planter chips. Tapping it deliberately asks
+"Water again today? Tap to confirm."
+
+NOT silent de-duplication. The log is append-only; an event
+quietly not written is that principle broken in a nicer costume.
+Water and Feed only - Photo five times in a morning all mean
+something, two Inspects are two looks.
+
+The wrong 008-ALO watering of 14 Sep STANDS. There is no
+correction mechanism for care events and one is not being built
+for a single mistake. Treat that Aloe event as a known selection
+error, not as evidence about the plant.
+
+NAVIGATION (your section 9) - all three complaints were one bug.
+The Record tab was a root tab, and root tabs clear the navigation
+stack. So every time he tapped it to pause mid-walk, the plant he
+was standing in front of was thrown away and Back had nothing
+behind it. It now pushes while a walk is live and returns him to
+the plant.
+
+AI CARE FOCUS (your section 10) - yes, do_next supports it
+cleanly, and no new field was added. It is relabelled AI CARE
+FOCUS on the plant page, always shown even when empty, and the
+owner can now edit it himself, which he could not before.
+
+Settled wording, for the spec and for you: ONE CURRENT CARE
+PRIORITY, UP TO TWO CONCISE SENTENCES, at most 160 characters.
+About now, not about the species - the species knowledge belongs
+in the six reference fields. "Monitor only" is a legitimate answer
+and often the right one.
+
+SCREEN LOG (your section 2) - you were right, it was never
+missing. It lives inside markers.json under "screen_log". The
+brief claiming a separate screen_log.json was the stale thing, and
+it has been corrected.
+
+
+===============================================================
+ 6. WHERE YOUR SECTION 3 WAS WRONG, AND WHAT IS REALLY WRONG
+===============================================================
+
+This matters, because you framed a fixed bug as a design
+limitation and missed the real problem underneath it.
+
+THE OFFSET RESETS (300s, then 0, 30, 57) WERE A BUG, AND IT WAS
+ALREADY FIXED BEFORE YOU SAW THE PACKAGE. The walk clock was being
+driven to zero by a timing fault, and the clock is what stamps
+marker offsets. The walk's own trail file recorded it happening.
+The package you reviewed was recorded on the build that still had
+it.
+
+THE REAL PROBLEM IS DIFFERENT AND IS NOT YET FIXED:
+
+    the walk clock says   357 seconds
+    the audio says        785 seconds
+
+iOS keeps recording while the app is in the background. The clock
+does not. So roughly 428 seconds of that walk are audio with no
+clock time behind them, and every marker after a backgrounding is
+progressively EARLY against the stitched transcript - not reset,
+just drifting behind.
+
+Your rule stands and is correct, for this reason rather than the
+one you gave: NEVER TREAT RAW MARKER OFFSETS AS ONE MONOTONIC
+TIMELINE ACROSS AN INTERRUPTED WALK.
+
+Being built next, in the conservative form you argued for: the
+part boundaries are derived from information the app already
+stores, accurate to about three seconds, with NO change to the
+recording, saving, stitching or transcription chain. The version
+that writes new metadata during capture is held back until the
+cheap version is proved inadequate on a real walk. That was the
+owner's call and it is the right one.
+
+UNTIL THEN: the words are primary evidence. Markers are weaker
+attribution evidence. Where they disagree, the words win.
+
+
+===============================================================
+ 7. DELIBERATELY NOT BUILT
+===============================================================
+
+PHOTO IDENTITY (your section 5). Agreed in full - flagged photos
+should travel in the package under their semantic filename, at
+review quality. It is not built, because the "flag this photo for
+AI review" control does not exist yet and is the larger half of
+that job. Until then photos are still attached to the chat by
+hand, and he will tell you the plant and the label.
+
+SHARED PLANTERS (your section 8). Here is what the code actually
+does today, which is less than you assumed: shared_water affects
+only a selection shortcut and a label. Due dates, adherence and
+history are strictly per plant, on each plant's own interval. One
+soak writes one event per member because he selected both. Nothing
+is inconsistent in the code; the DATA is - 015-PTH on 10 days and
+016-SYN on 7 days describing one body of soil.
+
+The agreed direction is a PLANTER-LEVEL watering interval that
+shared members are judged against, with each plant keeping its own
+reference intervals as species knowledge - what it would want
+alone. Not urgent, not built.
+
+You may propose intervals for 015-PTH and 016-SYN individually as
+species knowledge. Do not assume adherence will follow them while
+they share a pot.
+
+
+===============================================================
+ 8. WHAT WOULD BE MOST USEFUL FROM YOU NOW
+===============================================================
+
+Not an update file yet. Talk first, as you proposed.
+
+  1. The six reference fields, for as many of the 21 as you can
+     do well. This is the single biggest thing you can add that
+     the record cannot produce on its own. Say which you are
+     confident about and which you are guessing at.
+
+  2. An AI CARE FOCUS for the plants that need one, and "monitor
+     only" for the ones that do not. Resist writing one for all
+     21 for the sake of completeness.
+
+  3. Your read on the plants the first walk actually raised -
+     003-SNK, 007-FER, 004-MNY, 013-OXA, 015/016, 017/018, and
+     the Haworthia he described as taller and spindlier than when
+     he got it.
+
+  4. Anything in the new manifest fields that changes your view of
+     something you said last time.
+
+Then we agree what goes in the file, and you write it.
+
+One standing reminder, because the record is small and the
+temptation is large: twenty-two plants and a handful of ratings
+cannot support statistical inference. Holding the evidence still
+is worth more here than a confident answer. Saying "there is not
+enough to go on" is a real contribution and will not be treated
+as a failure.
