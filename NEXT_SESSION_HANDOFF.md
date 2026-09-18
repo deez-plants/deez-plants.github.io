@@ -247,11 +247,29 @@ prevention reading pending events, the manifest's missing fields plus a
 collection block, and AI CARE FOCUS — `do_next` relabelled, always shown, and
 editable by the owner.
 
-**Still owed, in the owner's order:** 3b-lite (part boundaries from
-`segment_starts`), then a real interrupted walk to test it, then 3b-full only
-if needed, then 3c (flag a photo for AI review, ship a resized copy in the
-package under its semantic name — the flag does not exist yet and is the
-larger half of that job).
+**3b-lite is built** (2026-09-17), in `src/capture/parts.ts` — pure, derived,
+and **the capture chain is untouched**. Both inputs were already on the
+record: `segment_starts` puts each recording in the stitched audio to within
+one 3s chunk, and the `gap` markers mark the seams in list order. A marker
+gets `stitched_at_least_s`, a floor, never a position — audio time only runs
+ahead of clock time, never behind, so elapsed clock is a true lower bound and
+the part's own end is the upper one. Each part reports `background_s` so a
+reader can see where the mapping is loose. Only interrupted walks carry any of
+it. **The version that writes new metadata during capture stays unbuilt until
+a real interrupted walk proves this one inadequate — that is the owner's call
+and it should not be pre-empted.**
+
+**The walk strip was removed on 2026-09-17, the day after it was built.** The
+owner: it repeats data already there. They were right — the tab bar's Rec
+button has carried the red dot and the timer since 11 Sep. **The nav fix
+underneath it stays and is the whole value**: Record no longer clears the
+stack while a walk is live. Do not add a second timer back; the reasoning is
+written into `TabBar.tsx`.
+
+**Still owed:** a real interrupted walk from the owner to test 3b-lite, then
+3b-full only if needed, then 3c (flag a photo for AI review, ship a resized
+copy in the package under its semantic name — the flag does not exist yet and
+is the larger half of that job).
 
 **Shared water: option B is the agreed architecture** — a planter-level
 watering interval that shared-soil members are judged against, with each
