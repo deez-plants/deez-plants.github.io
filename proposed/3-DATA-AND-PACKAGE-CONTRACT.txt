@@ -1,0 +1,446 @@
+===============================================================
+ PLANT BOT — DATA & PACKAGE CONTRACT
+ PROPOSED · DRAFT · NOT INSTALLED
+ Part 3 of 4 · what the data IS
+ Drafted 18 Sep 2026 from the current code
+===============================================================
+
+Status: DRAFT FOR AUDIT. Nothing has been installed, modified,
+retired or deleted.
+
+THIS DOCUMENT OWNS THE FIELD LIST. Part 4 describes what may be
+done with these fields and points here for what they are. The
+two must never both enumerate fields — that is how two sources
+come to disagree.
+
+This is a data contract, not a build specification. The app's
+own full specification stays in its code repository and is not a
+source for this project.
+
+
+===============================================================
+ 1. THE RECORD
+===============================================================
+
+TWO LAYERS
+
+  BASELINE  the plant as it entered the world. Written once at
+            registration and NEVER updated.
+  EVENTS    every later change, as an append-only log.
+
+A plant's current state is the baseline with every applicable
+event replayed over it in order. Nothing is stored twice, so
+nothing can disagree with itself.
+
+EVENT TYPES
+
+  care      Water · Feed · Repot · Photo · Inspect · Support ·
+            Pest treat · Top-dress · Soil flush · Took cuttings ·
+            Hard prune · Dead leaves · Trim back · Rotate ·
+            Wipe leaves · Mist · Other
+            plus RETIRED "Prune" — historical entries remain
+            readable; it can no longer be chosen
+  Rate      a health value
+  Edit      one field, from → to
+  Archive   retires a plant, carrying a reason
+  Void      takes back an entry written moments earlier
+
+ORDER is date, then time, then entry id. Deterministic, so two
+copies of the same entries derive identical state.
+
+READING A VOID: it names the entry it takes back. Derived state
+skips BOTH. History shows both. Read the pair as "this did not
+happen" — never as two events.
+
+CORRECTION, IN FULL
+
+  1. SUPERSEDING — a later Edit on the same field wins. Both
+     entries remain.
+  2. VOID — only for an entry written moments before, from the
+     screen that wrote it.
+  3. NOTHING ELSE. A mistaken entry older than that stays.
+
+ARCHIVED PLANTS
+An Archive event, never a flag. Archived plants are absent from
+the plant list in a package, named in its collection block with
+their reason, and NOT eligible for any proposed change. Their
+identifiers are permanent and never reused.
+
+ENTRIES COUNT IMMEDIATELY. Derived values are rebuilt from the
+whole log on every read. A package's derived values and its own
+event list therefore describe the same world; if they ever
+disagree, that is a defect worth reporting loudly.
+
+SNAPSHOTS are local comparison points, taken when a package is
+built or on demand. They never appear in a package.
+
+
+===============================================================
+ 2. THE FIELDS
+===============================================================
+
+Columns: what it means · type · limit · who may edit · whether
+it is live truth or reference knowledge.
+
+"AI-PROPOSABLE" means Part 4's rules may propose a change to it.
+It never means the AI can write it.
+
+--------------------------------------------------------------
+ 2.1 AI-PROPOSABLE — editable by the owner AND proposable here
+--------------------------------------------------------------
+
+species
+  Accepted botanical name.
+  string · NO LIMIT ENFORCED · owner + AI · reference
+
+water_interval_days
+  Summer reference interval in days. A REFERENCE, not a
+  schedule: condition overrides it always.
+  integer · 1–60 ENFORCED · owner + AI · reference
+
+water_interval_days_winter
+  Winter reference interval, or null for no seasonal change.
+  integer or null · 1–60 ENFORCED · owner + AI · reference
+
+feed
+  Feeding guidance in prose.
+  string or null · NO LIMIT · owner + AI · reference
+
+light
+  Light requirement in prose.
+  string or null · NO LIMIT · owner + AI · reference
+
+soil
+  Growing medium in prose.
+  string or null · NO LIMIT · owner + AI · reference
+
+environment
+repotting
+pruning
+pests
+season
+propagation
+  The six longer reference fields — species knowledge the owner
+  does not have and the record cannot produce. Native
+  conditions; when repotting is worth it; what goes wrong; how
+  it propagates; what it does seasonally.
+  string or null · NO LIMIT ENFORCED · owner + AI · reference
+
+health
+  Condition, as a human judgement. Applied as a Rate entry, not
+  an Edit.
+  integer 1–10 ENFORCED · owner + AI UNDER STRICT CONDITIONS
+  (Part 4) · LIVE TRUTH
+
+status_label
+  Stable · Improving · Declining · Needs attention
+  enum, matched EXACTLY including case · owner + AI · live truth
+
+do_next   — displayed in the app as AI CARE FOCUS
+  ONE current care priority. About now, not about the species.
+  "Monitor only" is a legitimate and often correct value.
+  string or null · DOCUMENTED ≤160 CHARS, **NOT ENFORCED BY THE
+  IMPORTER** [VERIFY] · owner + AI · live truth
+
+care_instructions
+  A list of standalone instruction items, each carrying its own
+  provenance. Each item stands alone; it is not a prose blob.
+  ≤200 chars per item ENFORCED · owner + AI · reference
+  Operations: "add", or "replace" naming an existing item on
+  that plant. THERE IS NO DELETE through a proposal.
+
+--------------------------------------------------------------
+ 2.2 OWNER ONLY — a proposal naming one is REJECTED WHOLE
+--------------------------------------------------------------
+
+name                the plant's name as the owner calls it
+acquired            when it arrived
+room                which room
+spot                where in the room, in the owner's words
+pot                 the container
+planter             which planter it belongs to, or none
+notes_user          the owner's own notes on this plant
+collection_notes_user   the owner's notes on the collection
+hero_media          which photograph represents the plant
+compare_media       which two photographs are compared
+
+THE TWO NOTE FIELDS ARE SINGLED OUT IN CODE: a file naming
+either is rejected before anything else is considered. Read them
+for context. Never propose against them.
+
+--------------------------------------------------------------
+ 2.3 DERIVED — never writable, never proposable
+--------------------------------------------------------------
+
+archived · archived_date · archived_reason
+  From the Archive entry.
+
+health_source       who last set the health value — owner or AI
+health_confirmed    when the rating was last confirmed
+health_changed      when the value last actually MOVED
+health_stale        the rating is old enough to be worth
+                    revisiting
+
+adherence           on · slip · behind
+on_time_count       completed intervals met
+care_count          completed intervals scored
+avg_days_late       mean lateness of the LATE ones only, or null
+interval_days       the interval in force today, season resolved
+next_due            date
+days_past           days past next_due; NEGATIVE means days
+                    remaining
+last_checked        date of the most recent entry on that plant
+
+planter_shared_water
+  True when the planter's registry entry says one soak serves
+  the group.
+
+Confirming a rating without changing it is a real action: it
+refreshes health_confirmed without moving health_changed. So
+"confirmed recently, unchanged since much earlier" is a
+meaningful and common state.
+
+ADHERENCE IS COUNTS AND DAYS. It is never expressed out of ten
+and never read as a statement about condition.
+
+--------------------------------------------------------------
+ 2.4 SHARED PLANTERS — what the flag does NOT do
+--------------------------------------------------------------
+
+planter_shared_water affects exactly two things in the app: a
+control that selects the whole group at once, and a label.
+
+IT AFFECTS NOTHING OPERATIONAL. Due dates, adherence, history
+and calendars are strictly per plant, on each plant's own
+interval. One soak writes one entry per member because both were
+selected.
+
+A planter-level interval was designed and then DROPPED by the
+owner: each plant keeps its own schedule even when sharing soil,
+and the resulting different due dates from a single soak are
+accepted rather than treated as a defect.
+
+CONSEQUENCE: intervals may be proposed for members individually,
+as species knowledge. Do not assume adherence will follow them
+while they share a pot, and do not propose making them equal
+unless the owner asks.
+
+
+===============================================================
+ 3. THE REVIEW PACKAGE
+===============================================================
+
+FILES
+
+  manifest.json    every ACTIVE plant's current fields, plus a
+                   collection block
+  events.json      every entry not carried by a previous package
+  transcript.txt   walks not carried by a previous package
+  markers.json     marker tracks AND the screen log
+  media/           flagged photos — present only when some are
+
+THERE IS NO SEPARATE SCREEN-LOG FILE. The screen log is inside
+markers.json. Documents claiming a fifth file are wrong.
+
+MANIFEST
+
+  package_id   identifies this package; an update must cite it
+  generated    date
+  collection   permanent_record_count · active_count ·
+               archived_count · archived[] with identifier,
+               name, date and reason
+  plants[]     one object per ACTIVE plant, carrying the fields
+               in section 2 that are not owner-private
+
+ALL DATES IN THE DATA ARE ISO. Any "MMM DD" in older documents
+describes what a screen renders, not what the data contains.
+
+THE COLLECTION BLOCK IS THE ROSTER. Active count and permanent
+record count differ whenever anything is archived, and both are
+correct. A difference is the archive working, never a missing
+plant.
+
+EVENTS
+
+A flat array. Each entry carries its identifier, the plant it
+belongs to (absent only for collection-scoped edits), type,
+date, time, source, and the device that wrote it — plus, where
+applicable, a note, media identifiers and labels, the walk it
+was logged during and the offset within it, the review it came
+from, and the type-specific fields.
+
+Purely local bookkeeping is stripped on the way out.
+
+TRANSCRIPT
+
+One block per walk: the walk's identifier, start and duration;
+its verification tier; its coverage result; then the words with
+timestamps and per-plant attribution headings.
+
+A walk with no transcript SAYS SO rather than being dropped — a
+recorded walk whose words are not being shown is a fact about
+the package, not an absence to hide.
+
+MARKERS AND SCREEN LOG
+
+markers.json carries the marker track for each walk, the screen
+log for the same period, and the note that travels with it:
+
+  EVIDENCE, NOT FACT. Each entry means this screen was open at
+  this time, for this long. It does not mean the plant was
+  discussed. Where it disagrees with the words, THE WORDS WIN.
+
+PHOTOS
+
+Photos travel only when the owner flags them, and arrive under
+the filename the record knows them by — identifier, date, time
+and sequence — so identity requires no guessing and no
+explaining.
+
+Review quality, not archival: the full image never leaves the
+phone. There is a per-package cap. Flags clear once a package is
+confirmed sent, so a flag always means "going in the next one".
+
+Photos may still be attached to a conversation by hand, in which
+case the owner will say which plant and which label.
+
+PACKAGE IDENTITY AND ONCE-ONLY DELIVERY
+
+  ONCE      entries, walks, transcripts, markers, flagged photos
+  REPEATED  the manifest, always current
+
+Carried once, by identifier rather than by date, so a backdated
+entry is never skipped. AN EMPTY EVENT LIST OR AN ABSENT WALK
+USUALLY MEANS "NOTHING NEW SINCE LAST TIME", NOT MISSING DATA.
+
+The app cannot detect whether a file actually saved, so it asks
+the owner. Nothing is marked as sent until they confirm, and a
+package can be un-sent afterwards if it never arrived — in which
+case its contents return to the queue for the next one.
+
+
+===============================================================
+ 4. TRANSCRIPTS, WALKS AND THE TWO TIMELINES
+===============================================================
+
+VERIFICATION
+
+  verified     the transcript carried real timestamps, so the
+               app ran its own coverage assertions against the
+               recording's measured length
+  unverified   typed or pasted; accepted whole, not gated
+
+  coverage: passed · FAILED (with the offsets that failed) ·
+            not checked
+
+ONE STATE PER WALK. Older packages could contain a contradiction
+— an outer "unverified / not checked" above an embedded report
+claiming "verified / pass" — because the app did not recognise
+the timestamp format its own transcriber produced. Fixed. If you
+ever see both again, report it.
+
+THE AUDIO DOES NOT EXIST. Once a transcript is attached and its
+coverage passes, every copy of the recording is deleted — phone,
+laptop and backups. Asking for audio is not a request the system
+can satisfy. Ask for a better transcript, or for the owner to
+say more next time.
+
+That deletion is gated on coverage PASSING, which has twice
+refused to delete a recording whose transcript came back
+incomplete. A verification failing is the system working.
+
+INTERRUPTED WALKS — THE IMPORTANT PART
+
+A walk interrupted by the phone becomes several recordings. Two
+clocks exist and THEY ARE NOT THE SAME TIMELINE:
+
+  - a marker's offset is on the WALK'S CLOCK, which stops while
+    the app is in the background;
+  - the transcript is on the STITCHED AUDIO, which does not.
+
+One real walk had a clock of 357 seconds against 785 seconds of
+audio. Reading a marker offset as a transcript position would
+have placed it in entirely the wrong part of the walk.
+
+So an interrupted walk carries, per recording: its clock range,
+its exact position in the stitched audio, and how much audio it
+holds with no clock time behind it. Each marker gains which
+recording it belongs to, and:
+
+  THE EARLIEST POINT IN THE TRANSCRIPT THAT MARKER CAN BE AT.
+
+READ THAT AS A FLOOR, NEVER A POSITION. Audio time only ever
+runs ahead of clock time, never behind, so elapsed clock is a
+true lower bound and the recording's own end is the upper one.
+Where a recording reports a lot of background audio, attribution
+inside it is loose and the words should carry more weight.
+
+A walk that ran start to finish carries none of this, because
+its two timelines agree.
+
+NEVER TREAT RAW MARKER OFFSETS AS ONE CONTINUOUS TIMELINE ACROSS
+AN INTERRUPTED WALK.
+
+
+===============================================================
+ 5. THE LIVE-TRUTH BOUNDARY
+===============================================================
+
+LIVE TRUTH — changes constantly, arrives in every package, must
+never be copied into a permanent source:
+
+  which plants exist, and how many
+  names, rooms, spots, pots, planters
+  health values, status labels, care focus text
+  watering state, due dates, adherence
+  event history
+  which photographs exist and which are flagged
+  what was said on any walk
+
+REFERENCE KNOWLEDGE — changes rarely, lives in the plant's own
+fields, still arrives in every package:
+
+  species, and the six longer reference fields
+  feed, light and soil guidance
+  reference watering intervals
+  care instruction items
+
+Reference knowledge lives IN THE APP, not in this project's
+sources. It travels in the manifest every round, so the current
+values are always visible. A copy frozen in an instruction file
+would go stale the first time the owner edited a field.
+
+THE TEST: if a statement would become wrong when the owner adds
+a plant, waters something, or edits a field, it belongs in the
+app and not in a document.
+
+
+===============================================================
+ VERIFY — OPEN AT TIME OF DRAFTING
+===============================================================
+
+[VERIFY] do_next HAS NO LENGTH LIMIT IN THE IMPORTER. The ≤160
+characters is documented and applied only by the app's own text
+box; a proposal carrying 500 characters would be accepted. Until
+this is settled — either documented as a convention or enforced
+in code — honour 160 as a convention and do not rely on it being
+refused.
+
+[VERIFY] THE SIX REFERENCE FIELDS HAVE NO LENGTH LIMIT AT ALL.
+Nothing prevents an extremely long value. Keep each to a short
+paragraph.
+
+[VERIFY] WITHIN-RECORDING ATTRIBUTION IS A BOUND, NOT A POINT.
+Boundaries between recordings are now exact; positions inside
+one are bounded, because the clock can still lag the audio
+there.
+
+[VERIFY] WHETHER THE PHONE KEEPS RECORDING WHILE BACKGROUNDED
+appears to depend on the kind of interruption. Untested. The
+per-recording background figure reports the resulting
+uncertainty, so it degrades visibly.
+
+[VERIFY] A PACKAGE CANNOT BE UN-SENT once an update has been
+applied against it — correct, since that would orphan the
+applied update, but it means a package answered and then lost
+cannot be recovered that way.

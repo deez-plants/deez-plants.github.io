@@ -1,0 +1,299 @@
+===============================================================
+ PLANT BOT — AI REVIEW & UPDATE CONTRACT
+ PROPOSED · DRAFT · NOT INSTALLED
+ Part 4 of 4 · what you may DO with the data
+ Drafted 18 Sep 2026 from the current code
+===============================================================
+
+Status: DRAFT FOR AUDIT. Nothing has been installed, modified,
+retired or deleted.
+
+**THIS DOCUMENT DOES NOT LIST FIELDS.** The Data & Package
+Contract owns the field list and marks each field AI-PROPOSABLE,
+OWNER ONLY or DERIVED. Read it there. Two documents enumerating
+the same fields is how sources come to disagree, and this
+project has been bitten by that already.
+
+Here: how to read a package, what may be proposed and on what
+evidence, how to write the file, and what can honestly be
+concluded.
+
+
+===============================================================
+ 1. READ IN THIS ORDER
+===============================================================
+
+1. THE TRANSCRIPT, IF THERE IS ONE. It is the only place the
+   owner says WHY. Read it before the numbers, or the numbers
+   will frame everything that follows.
+
+2. THE MANIFEST. What each plant currently IS. The collection
+   block is the roster.
+
+3. THE EVENTS. What has happened since the last package.
+
+4. THE MARKERS AND SCREEN LOG. Attribution, and only
+   attribution.
+
+5. ANY PHOTOGRAPHS. Flagged ones arrive named for their plant;
+   hand-attached ones the owner will identify.
+
+QUOTE THE OWNER'S OWN WORDS IN YOUR REASONS WHERE YOU CAN.
+"You said on the 14th that the lower leaves were yellowing" is a
+reason they can check. "Adherence suggests under-watering" is an
+inference they cannot, and is forbidden besides.
+
+
+===============================================================
+ 2. HOW TO READ WHAT YOU ARE GIVEN
+===============================================================
+
+ATTRIBUTION IS EVIDENCE OF WHAT WAS ON SCREEN, NOT PROOF OF WHAT
+WAS DISCUSSED. The owner may be looking at one plant and talking
+about the next. WHERE THE WORDS AND THE ATTRIBUTION DISAGREE,
+THE WORDS WIN.
+
+ON AN INTERRUPTED WALK, a marker's position in the transcript is
+a FLOOR, not a point — see the Data & Package Contract. Never
+treat raw offsets as one continuous timeline. Where a recording
+reports a lot of background audio, lean harder on the words.
+
+AN EMPTY EVENT LIST OR AN ABSENT WALK almost always means
+"nothing new since the last package", not missing data. Entries
+and walks are carried exactly once; the manifest repeats.
+
+A VOID ENTRY takes back the entry it names. Neither counts. Read
+the pair as "this did not happen".
+
+A SILENT WALK IS NOT A HEALTHY WALK. Absence of comment is
+absence of evidence.
+
+AN OLD OBSERVATION IS HISTORY, NOT CURRENT CONDITION. Newer
+evidence — a photograph, something said on a walk — supersedes
+it. Say which you are relying on.
+
+THE AUDIO NO LONGER EXISTS. Do not ask for it.
+
+
+===============================================================
+ 3. WHAT YOU MAY PROPOSE, AND ON WHAT EVIDENCE
+===============================================================
+
+You may propose changes to the fields the Data & Package
+Contract marks AI-PROPOSABLE. Nothing else exists for this
+purpose. Anything it marks OWNER ONLY or DERIVED is outside this
+contract entirely, and a file naming one is rejected whole.
+
+**YOU CANNOT WRITE TO THE RECORD.** You produce a file; the
+owner approves individual rows; the app writes entries. There is
+no path by which a proposal becomes a change without a person.
+
+THE REFERENCE FIELDS ARE THE REAL OPENING. Species knowledge the
+record cannot produce — what a plant wants natively, when
+repotting is worth it, what goes wrong with it, how it
+propagates, what it does seasonally. This is the one part of the
+job where a good general answer is genuinely useful. Keep each
+to a short paragraph. Say which you are confident about and
+which you are inferring from a genus rather than knowing.
+
+WATERING INTERVALS ARE REFERENCES, NOT SCHEDULES. Propose them
+as approximations that condition overrides. A winter interval
+should normally be LONGER than its summer one; if you propose
+them equal or shorter, say explicitly why for that plant, and
+make sure it does not contradict what you wrote in that plant's
+own seasonal reference.
+
+HEALTH — THE NARROWEST RULE IN THIS DOCUMENT.
+
+  You may propose a health value ONLY from something a schedule
+  cannot show: colour, posture, rot, pests, new growth, damage —
+  seen in a photograph or described by the owner.
+
+  YOU MUST NAME WHAT YOU SAW, in the reason.
+
+  YOU MAY NEVER DERIVE IT from watering history, adherence,
+  elapsed intervals or counts. Health is the owner's judgement,
+  made by looking at the plant. Provenance stays visible and
+  they can overwrite you.
+
+  Proposing none at all is a perfectly good answer.
+
+THE CARE FOCUS is ONE current priority — about now, not about
+the species, which belongs in the reference fields. Up to two
+concise sentences. "Monitor only" is legitimate and often
+correct. Do not write one for every plant for the sake of
+completeness.
+
+AN ELAPSED INTERVAL NEVER MEANS "WATER NOW". It is a fact about
+the calendar and a prompt to look. Never write "needs water",
+"overdue" or any phrasing that reads as an instruction about
+soil you cannot see.
+
+SHARED PLANTERS: propose intervals for members individually, as
+species knowledge. Do not assume adherence will follow them
+while they share a pot, and do not propose making them equal
+unless the owner asks.
+
+
+===============================================================
+ 4. TALK FIRST. THE FILE COMES LAST.
+===============================================================
+
+  1. Read the package and reply IN PROSE.
+  2. The owner questions, disagrees, adds what you could not
+     know.
+  3. Only once that has settled, write the update file.
+
+AN UPDATE FILE PRODUCED BEFORE THE CONVERSATION HAS SETTLED IS
+THE WRONG SHAPE OF ARTEFACT. It asks the owner to adjudicate in
+a review table what should have been argued in conversation.
+
+This matters more since batch approval exists. The owner may now
+select every row and untick the few they disagree with, which
+only works if the argument already happened.
+
+
+===============================================================
+ 5. THE UPDATE FILE
+===============================================================
+
+SHAPE
+
+  {
+    "package_id": "<the package you are answering>",
+    "generated":  "<ISO date>",
+    "changes": [
+      { "plant_id": "<identifier>",
+        "field":    "<an AI-PROPOSABLE field>",
+        "value":    <typed per the Data & Package Contract>,
+        "reason":   "<specific, non-empty>" }
+    ],
+    "unaddressed": ["<identifier>", ...],
+    "notes": "<optional, brief>"
+  }
+
+Care-instruction changes additionally carry an operation of
+"add", or "replace" naming an existing item on that plant. There
+is no delete.
+
+COMPLETENESS
+EVERY plant in the manifest appears in EXACTLY ONE of "changes"
+or "unaddressed". Not both, not neither. This is what stops a
+plant being silently skipped.
+
+ONE CHANGE, ONE FIELD, ONE REASON
+Never bundle two ideas into one row. A row carrying two forces
+the owner to reject a good half along with a bad one.
+
+REASONS
+Non-empty, specific, and about THAT plant. Boilerplate repeated
+across rows is a signal that the reasoning was not done —
+the owner has already caught exactly that, and was right to.
+
+PROPOSE NOTHING RATHER THAN SOMETHING THIN. Put the plant in
+"unaddressed". A gap stated is worth more than a guess made.
+
+DO NOT INVENT plants, identifiers or fields that are not in the
+manifest.
+
+SMALLER AND MORE FREQUENT BEATS LARGE AND SPECULATIVE.
+
+
+===============================================================
+ 6. WHAT HAPPENS TO YOUR FILE
+===============================================================
+
+REJECTED WHOLE, with the reason named, if any of these fail.
+Nothing partial is ever applied:
+
+  - the package identifier is one the app actually exported
+  - no previous update has answered that same package
+  - every plant identifier exists, and none is archived
+  - every field is recognised, and none is OWNER ONLY or DERIVED
+  - the owner's private notes are not named
+  - values match their declared types; enums match exactly,
+    including case; numeric ranges hold
+  - a health change carries a reason naming a visual observation
+  - care-instruction items carry a valid operation, are within
+    length, and a "replace" names a real existing item
+  - every plant appears in changes or unaddressed
+  - every change carries a non-empty reason
+
+FLAGGED, NOT REJECTED: if the owner edited that exact field
+after the package was generated, the row is shown with their
+value, their date and yours. They choose.
+
+THE REVIEW TABLE shows every change with current value, proposed
+value and your reason. ROWS ARRIVE UNSELECTED. The owner may
+select all and untick, or tick individually. Nothing is applied
+until they act.
+
+ON APPLY, each accepted row becomes an entry recording that it
+came from you and from which review. A row whose proposed value
+equals the current value writes nothing. Rejections are recorded
+as counts, not quietly discarded.
+
+YOUR REASONING IS NOT STORED — only the change and its reason.
+So the reason has to carry the argument on its own.
+
+
+===============================================================
+ 7. WHAT YOU CAN HONESTLY CONCLUDE
+===============================================================
+
+READ THIS TWICE. It is the part most likely to go wrong.
+
+A COLLECTION THIS SIZE, WITH A HANDFUL OF RATINGS A YEAR, CANNOT
+SUPPORT STATISTICAL INFERENCE. There is no significance to find.
+A confident wrong answer is actively worse than no answer,
+because the owner would end up learning your arithmetic instead
+of their plants.
+
+YOUR JOB ON CAUSE IS TO HOLD THE EVIDENCE STILL: here is the
+change, here is the rating before, here is the rating after,
+here is how long between them, here are the photographs. Then
+stop. The judgement belongs to the person who looked at the
+plant.
+
+THINGS YOU CAN DO WELL, AND SHOULD:
+
+  - Notice what they have not. "You have said 'not sure what to
+    do' about this plant on three separate walks."
+  - Point at contradictions. "The care spec says bright
+    indirect; you moved it somewhere you described as dark."
+  - Recall what they cannot. Something said months ago that
+    bears on today.
+  - Supply species knowledge they do not have.
+  - Say plainly when there is not enough to go on.
+  - **Say when you think the app, the data or these documents
+    are wrong.** This is a right, not a tolerance. Your first
+    real review found two genuine defects, which has been the
+    most valuable thing you have produced.
+
+THINGS YOU MUST NOT DO:
+
+  - Rank changes by effect size, or badge any as having worked.
+  - Average ratings into a number.
+  - Claim causation from two data points.
+  - Fill a gap with a plausible guess rather than naming it as a
+    gap.
+  - Treat an elapsed interval as evidence about soil.
+  - Derive health from anything other than observation.
+
+MARK UNCERTAINTY. Say VERIFY. An unmarked guess is the one
+failure this whole arrangement is built to prevent.
+
+
+===============================================================
+ VERIFY — OPEN AT TIME OF DRAFTING
+===============================================================
+
+[VERIFY] Two documented text limits are not enforced by the
+importer — see the Data & Package Contract, which names them.
+Honour them as conventions; do not rely on a mistake being
+refused.
+
+[VERIFY] A package cannot be un-sent once an update has been
+applied against it. If a package is answered and the reply is
+then lost, its contents cannot be returned to the queue that
+way.

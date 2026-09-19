@@ -1,0 +1,148 @@
+===============================================================
+ 00 — PLANT BOT — CURRENT STATE
+ PROPOSED REPLACEMENT · DRAFT · NOT INSTALLED
+ Part 2 of 4 · orientation only
+ Drafted 18 Sep 2026 · replaces Current State V3 (11 Aug)
+===============================================================
+
+Status: DRAFT FOR AUDIT. Nothing has been installed, modified,
+retired or deleted.
+
+This is orientation. It says what the system is and how the
+cycle runs. IT CONTAINS NO PLANT DATA — no counts, no names, no
+identities, no condition, no care values. Those live in the app
+and arrive in every review package.
+
+If a sentence here would become wrong when the owner adds a
+plant, waters something or edits a field, it does not belong in
+this document. That test is why this version is short and the
+version it replaces was not.
+
+
+===============================================================
+ WHAT THE APP IS
+===============================================================
+
+A local-first web app, installed to an iPhone home screen. It
+logs plant care, holds health ratings the owner makes by
+looking, records spoken walks, and exchanges review files with
+this project.
+
+No server. No account. No sync. Storage is per web address, so
+the phone and any other device hold entirely separate records
+that never converge on their own. A file carried by hand is the
+only bridge.
+
+Routine operation costs nothing and depends on no paid API.
+
+
+===============================================================
+ WHERE THE DATA LIVES
+===============================================================
+
+One phone, in browser storage.
+
+There is no copy anywhere this project can reach. Everything the
+AI will ever see arrives in a review package the owner built and
+handed over deliberately.
+
+THE RECORD IS AN APPEND-ONLY EVENT LOG. Nothing is edited or
+deleted; a correction is a new entry and both remain. Everything
+else — adherence, due dates, what needs attention, calendars —
+is derived by replaying that log, and none of it is stored as
+fact.
+
+The manifest inside a package is the authoritative roster of
+what exists right now. Not this document, and not any list.
+
+
+===============================================================
+ THE CYCLE
+===============================================================
+
+  1. The owner logs care as it happens. It counts immediately.
+  2. Now and then they record a walk, talking, naming plants.
+  3. A laptop transcribes it; the words come back into the app
+     and the audio is deleted.
+  4. They build a review package and bring it here.
+  5. WE TALK. Read, question, be questioned.
+  6. Only once we agree does an update file get written.
+  7. They review every proposed change in the app and apply
+     what they accept.
+  8. The app shows them what moved.
+
+STEP 5 IS THE ONE THAT MAKES THE REST WORK, and the one most
+easily skipped. An update file produced before the conversation
+has settled is the wrong shape of artefact.
+
+Rhythm: roughly monthly while the record is young, less often
+later, with short targeted questions in between. A full walk of
+the whole collection is not required to ask about one plant.
+
+
+===============================================================
+ WHAT CHANGED RECENTLY, AND MATTERS HERE
+===============================================================
+
+Only the things that alter how this project should read a
+package. Mechanics belong in the Data & Package Contract.
+
+  - Care entries count the moment they are logged. A package's
+    derived values and its own event list now describe the same
+    world. **If they ever disagree, that is a bug and saying so
+    loudly is the correct response.**
+
+  - Events and walks are carried by exactly one package each.
+    The manifest is exempt and always states current values. An
+    empty event list usually means "nothing new", not missing
+    data.
+
+  - Photos can be flagged to travel inside a package under the
+    filename the record knows them by, so identity needs no
+    guessing.
+
+  - An interrupted walk is several recordings, and its markers
+    carry the translation between the walk's clock and the
+    transcript's timeline.
+
+  - Health remains the owner's judgement. The AI may propose a
+    value only from visible evidence, and must name what it saw.
+
+
+===============================================================
+ WHAT IS NOT BUILT
+===============================================================
+
+REMINDERS. Not built, and blocked by the platform rather than by
+effort: an app with no server cannot schedule a notification for
+later. The agreed direction is a catch-up summary when the app
+is opened, plus a calendar file the phone subscribes to so the
+operating system does the notifying. Neither exists yet.
+
+A DESK CONSOLE — a wide review table for a laptop. Deliberately
+last, and under question, because the record lives on the phone
+and a second device can only show what has been imported into
+it.
+
+A GENERAL CORRECTION TOOL. There is deliberately none beyond
+superseding a field and taking back an entry moments after
+writing it. An older mistake stays in the record and is
+discussed rather than edited away.
+
+
+===============================================================
+ VERIFY — OPEN AT TIME OF DRAFTING
+===============================================================
+
+[VERIFY] Whether iOS keeps recording while the app is
+backgrounded appears to depend on the kind of interruption — one
+walk kept recording through it, another stopped within two
+seconds. The difference is probably a phone call versus an app
+switch. Untested. The package reports the width of this
+uncertainty per recording, so attribution degrades visibly
+rather than silently.
+
+[VERIFY] Two documented text-length limits are not enforced by
+the importer. See the Data & Package Contract, which names them
+precisely. Until that is settled, treat them as conventions to
+honour rather than limits that will stop a mistake.
