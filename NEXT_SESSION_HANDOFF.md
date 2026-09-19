@@ -207,6 +207,101 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### 2026-09-18 (night) — what writing the AI contract found in the app
+
+Drafting the GPT project sources meant reading the code as a stranger would.
+**That found four things a feature-building pass had not.** None is built;
+the owner has approved no app changes yet. All four are in priority order.
+
+**1. THE REASON IS THROWN AWAY. One line, biggest return in the codebase.**
+
+`applyUpdateFile` writes each accepted row as an entry carrying the value,
+`source: 'ai'` and the `package_id` — and **never writes the reason.**
+`EventCommon` has an unused `note` field sitting right there.
+
+So a year from now a change reads "interval 10 → 7, by AI, from
+PKG-2026-09-17-1" and **why is gone.** The whole argument for append-only is
+that a change made in 2026 still reads in 2031; right now the number survives
+and the argument evaporates.
+
+Fix: `note: row.reason` on the `common` object in `src/package/import.ts`.
+Everything downstream already renders notes.
+
+**This also means the drafted contracts had to say so** — an earlier draft
+claimed the reason was stored, which was false. Both final sources now state
+it accurately.
+
+**2. The six reference fields have NO owner-facing editor.**
+
+`MoreAboutPlant` renders them read-only with "Nothing recorded. Ask the AI for
+this in your next review." So the AI is their only writer. **If it writes
+something wrong, the owner cannot fix it without another whole review round.**
+
+That inverts the ownership the app is built on — every other field they own
+outright. Fix: make them editable in place, same pattern as AI CARE FOCUS on
+Plant Detail. Roughly half a day. It also makes the proposed length limits
+safe, because there would finally be a way to trim something.
+
+**3. `Void` is artificially restricted by the UI, not by the data model.**
+
+The event type works, is tested, merges safely, and derive already skips both
+entries. The restriction to "the round you just logged, before you leave the
+screen" is a button placement. **The wrong 008-ALO watering of 14 Sep stands
+forever because of it.**
+
+Void-from-history with a reason would cost very little. **The earlier argument
+against a correction mechanism was made when none existed; it now does.**
+
+**4. No import length limits.** The only length the importer enforces is the
+200-character care-instruction item. `do_next` is LIVE TRUTH and unbounded.
+Agreed contract targets: species/light/soil 80, feed 120, the six 200,
+do_next 160. Smallest change: one field→length map beside the check that
+already exists in `validate.ts`, about five lines. **Verified against the real
+17 Sep data: nothing applied exceeds any target**, longest is `do_next` at 127
+of 160 — so building them cannot retroactively invalidate stored values.
+
+Three smaller ones, noted and not pursued: an older package can still be
+answered (only same-package re-answering is blocked); archived plants' entries
+still export while the plant is absent from the manifest; `species` has no
+shape validation, which is how a botanical placeholder became a common name.
+
+#### The GPT contract work itself
+
+Settled with the owner and their GPT across three rounds. **Their GPT owns
+governance and writes the Project Instructions; Claude Code is the
+implementation authority.** Final shape is THREE installed sources, not four:
+
+  00 — Current State V4 · Data & Package Contract V1 ·
+  AI Review & Update Contract V1
+
+`proposed/` in the repo holds every draft; `6-FINAL-THREE-SOURCES-2026-09-18`
+is the current one, also in `3 ai`. **Nothing installed or retired yet.**
+
+**Decisions made in that process, which are now contract:**
+
+- **The complete `NNN-XXX` identifier is immutable, suffix included.** Current
+  State V3 said the suffix could change on re-identification; that is
+  superseded. Re-identification changes name and species.
+- **`species` is "the most specific supported identification without
+  pretending greater certainty."** Flagged: the only species change ever
+  applied replaced `Cactaceae — confirm` with `Golden-Spined Cactus
+  (Cactaceae)`, which arguably pretends MORE certainty than what it replaced.
+- **A package cannot be un-sent once answered** — deliberate, not a gap.
+- **The statistical rule was too broad and was narrowed.** "Hold the evidence
+  still, then stop" could be read as forbidding ranked hypotheses, which would
+  make the reviewer useless for diagnosis. Now: no effect sizes, no declaring
+  an intervention proven, no causation from tiny samples — and explicitly NOT
+  a ban on ranking plausible causes.
+- **PROJECT-CHARTER.txt is design input, not an installed source.** Their GPT
+  owns that layer.
+
+**One governance seam raised and not resolved:** the new assessment sequence
+tells the AI to "recommend the smallest useful immediate action", which widens
+its role from noticing and recalling toward advising. The role description
+lives in the Project Instructions, which their GPT writes. Flagged to them
+rather than silently widened.
+
+
 ### 2026-09-18 (evening) — the attribution test passed, and what it cost to get there
 
 **3b is closed. 3b-full stays unbuilt.** The owner recorded a deliberately
@@ -322,10 +417,14 @@ undo:**
   turn those screens are a branch that no longer exists, and offering them
   would be inventing a history.
 
-**Next, agreed and not started:**
+**Next, agreed and not started. NO APP CHANGES ARE APPROVED** — the owner's
+own words in the new 00: no new feature work before the next full real review
+cycle, though bug fixes, validator alignment and contract corrections are not
+blocked. The four findings above are candidates, not a queue.
 
-1. **Rewrite `GPT-PROJECT-BRIEF.txt` from scratch** — see the block above for
-   why, and for the split that must stay clean.
+1. The GPT sources are drafted and awaiting their audit — see the night
+   section above. `GPT-PROJECT-BRIEF.txt` and `gpt-prompt.txt` are superseded
+   by the three proposed sources but **not yet retired.**
 2. A package to settle the format with the owner's GPT.
 3. Then the owner uses the app for a while before the web interface is
    discussed at all.

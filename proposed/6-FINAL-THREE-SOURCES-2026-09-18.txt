@@ -1,0 +1,1316 @@
+===============================================================
+ PLANT BOT — FINAL PROPOSED PROJECT SOURCES
+ After the governance audit · surgical correction pass applied
+ 18 Sep 2026 · NOTHING INSTALLED · NO CODE CHANGED
+===============================================================
+
+Three sources. No fourth. The Project Instructions field is
+ChatGPT's and is not touched here.
+
+  1 · 00 — Plant Bot — Current State V4
+  2 · Plant Bot — Data & Package Contract V1
+  3 · Plant Bot — AI Review & Update Contract V1
+  4 · Change log
+
+Architecture unchanged. Corrections applied exactly as
+specified, with three flags raised in the change log where a
+correction has a consequence worth seeing before installation.
+
+
+###############################################################
+ 1 · 00 — PLANT BOT — CURRENT STATE V4
+###############################################################
+
+===============================================================
+ 00 — PLANT BOT — CURRENT STATE
+ Version V4 · 18 Sep 2026 · replaces V3 (11 Aug 2026)
+ PROJECT SOURCE 1 · orientation only
+===============================================================
+
+This is orientation. It says what the system is, how the cycle
+runs, and where things stand. IT CONTAINS NO PLANT DATA — no
+counts, no names, no identities, no condition, no care values.
+Those live in the app and arrive in every review package.
+
+The test for this document: if a sentence would become wrong
+when the owner adds a plant, waters something, or edits a field,
+it does not belong here.
+
+
+WHAT THE APP IS
+
+A local-first web app, installed to an iPhone home screen. It
+logs plant care, holds health ratings the owner makes by
+looking, records spoken walks, and exchanges review files with
+this project.
+
+No server. No account. No sync. Storage is per web address, so
+the phone and any other device hold entirely separate records
+that never converge on their own. A file carried by hand is the
+only bridge.
+
+Routine operation costs nothing and depends on no paid API.
+
+
+WHERE THE DATA LIVES
+
+One phone, in browser storage.
+
+There is no copy anywhere this project can reach. Everything the
+AI will ever see arrives in a review package the owner built and
+handed over deliberately.
+
+THE RECORD IS AN APPEND-ONLY EVENT LOG. Nothing is edited or
+deleted; a correction is a new entry and both remain. Everything
+else — adherence, due dates, what needs attention, calendars —
+is derived by replaying that log, and none of it is stored as
+fact.
+
+The manifest inside a package is the authoritative roster of
+what exists right now. Not this document, and not any list.
+
+
+THE CYCLE
+
+  1. The owner logs care as it happens. It counts immediately.
+  2. Now and then they record a walk, talking, naming plants.
+  3. A laptop transcribes it. The transcript is attached to the
+     walk in the app, and ONLY ONCE IT IS ATTACHED AND ITS
+     COVERAGE CHECK PASSES is the audio deleted.
+  4. They build a review package and bring it here.
+  5. WE TALK. Read, question, be questioned.
+  6. Only once we agree does an update file get written.
+  7. They review every proposed change in the app and apply
+     what they accept.
+  8. The app shows them what moved.
+
+STEP 5 IS THE ONE THAT MAKES THE REST WORK, and the one most
+easily skipped. An update file produced before the conversation
+has settled is the wrong shape of artefact.
+
+Rhythm: roughly monthly while the record is young, less often
+later, with short targeted questions in between. A full walk of
+the whole collection is not required to ask about one plant.
+
+
+CURRENT STATUS
+
+THE CORE PHONE WORKFLOW IS BUILT, INSTALLED AND IN DAILY USE.
+
+The capture path is complete and tested on real walks: recording
+with interruptions, transcription, coverage verification,
+attaching the words, and releasing the audio once verified.
+
+The review path has been exercised end to end at least once, in
+both directions: a package built and handed over, a discussion
+held, an update file produced, and its proposed changes reviewed
+and applied in the app.
+
+Entries count the moment they are logged. Packages carry each
+entry and each walk exactly once, and are only marked as sent
+once the owner confirms the file saved.
+
+The current phase is not feature work. It is SOURCE AND CONTRACT
+RECONCILIATION, followed by ordinary use.
+
+
+NEXT MAJOR ACTION
+
+1. FINAL CONTRACT AND SOURCE RECONCILIATION.
+   Agree this set, let ChatGPT write the Project Instructions,
+   install the agreed sources, and retire what they replace —
+   preserving anything durable from the retired material first.
+
+2. THEN A FULL REAL CYCLE ON THE NEW CONTRACT.
+   Ordinary care logging over a period of normal use, a recorded
+   walk, a review package built under the new contract, a
+   discussion, an update file, and applied changes — so the
+   contract is tested by use rather than by reading.
+
+NO NEW FEATURE WORK IS CURRENTLY APPROVED BEFORE THE NEXT FULL
+REAL REVIEW CYCLE. Bug fixes, validator alignment and contract
+corrections are not blocked.
+
+
+WHAT CHANGED RECENTLY, AND MATTERS HERE
+
+Only things that alter how this project should read a package.
+Mechanics belong in the Data & Package Contract.
+
+  - Care entries count the moment they are logged. A package's
+    derived values and its own entry list now describe the same
+    world. If they ever disagree, that is a defect and saying so
+    loudly is the correct response.
+
+  - Entries and walks are carried by exactly one package each.
+    The manifest is exempt and always states current values. An
+    empty entry list usually means "nothing new", not missing
+    data.
+
+  - Photos can be flagged to travel inside a package under the
+    filename the record knows them by, so identity needs no
+    guessing.
+
+  - An interrupted walk is several recordings, and its markers
+    carry the translation between the walk's clock and the
+    transcript's timeline.
+
+  - Health remains the owner's judgement. The AI may propose a
+    value only from visible evidence, and must name what it saw.
+
+
+WHAT IS NOT BUILT
+
+REMINDERS / SCHEDULED NOTIFICATIONS.
+IMPLEMENTATION FACT: the present local-only PWA has no built
+scheduled notification system, and none is currently in
+progress. This work remains DEFERRED AND OPEN. The direction
+currently under discussion is a catch-up summary shown when the
+app is opened, plus a calendar file the phone can subscribe to
+so the operating system performs the notifying. Neither has been
+built, and the approach is not final.
+
+A DESK CONSOLE — a wide review table for a laptop. Deliberately
+last, and under question, because the record lives on the phone
+and a second device can only show what has been imported into
+it.
+
+A GENERAL CORRECTION TOOL. There is deliberately none beyond
+superseding a field and taking back an entry moments after
+writing it. An older mistake stays in the record and is
+discussed rather than edited away.
+
+
+VERIFY — OPEN AT TIME OF DRAFTING
+
+[VERIFY] Whether the phone keeps recording while the app is
+backgrounded appears to depend on the kind of interruption — one
+walk kept recording through it, another stopped within two
+seconds. Untested. The package reports the width of this
+uncertainty per recording, so attribution degrades visibly
+rather than silently.
+
+[VERIFY] The text limits in the Data & Package Contract are
+FINAL CONTRACT TARGETS that the importer does not yet enforce.
+That document states current enforcement and target separately.
+Until they are built, honour them as conventions.
+
+--- END OF PROJECT SOURCE 1 ---
+
+
+###############################################################
+ 2 · PLANT BOT — DATA & PACKAGE CONTRACT V1
+###############################################################
+
+===============================================================
+ PLANT BOT — DATA & PACKAGE CONTRACT
+ Version V1 · 18 Sep 2026 · from the current code
+ PROJECT SOURCE 2 · what the data IS
+===============================================================
+
+THIS DOCUMENT OWNS THE IDENTIFIER AND FIELD LISTS. The AI Review
+& Update Contract describes what may be done with them and
+points here for what they are. The two must never both
+enumerate — that is how two sources come to disagree.
+
+This is a data contract, not a build specification. The app's
+full specification stays in its code repository and is not a
+source for this project.
+
+
+===============================================================
+ 1. IDENTIFIERS
+===============================================================
+
+PLANT IDENTIFIER
+
+  Format:   NNN-XXX — three digits, a hyphen, three UPPERCASE
+            letters. Validated on registration.
+
+  **THE COMPLETE IDENTIFIER IS PERMANENT AND IMMUTABLE AFTER
+  REGISTRATION, SUFFIX INCLUDED.** This is settled, not open.
+
+  It is the key of the plant's baseline record, which is written
+  once and never updated, and no editable field reaches any part
+  of it.
+
+  RE-IDENTIFICATION CHANGES name AND species AS APPROPRIATE,
+  NEVER THE IDENTIFIER. The identifier records which physical
+  plant this is, not what it was once thought to be.
+
+  NEVER REUSED. Numbers are assigned once and never reused,
+  including after a plant is archived. A new plant takes the
+  next unused number, counting past archived ones.
+
+  Note for readers of older material: a previous source said the
+  descriptive suffix could change on re-identification. That is
+  superseded by the rule above.
+
+PACKAGE IDENTIFIER
+
+  Format:   PKG-YYYY-MM-DD-N — N counts packages built that day
+  Minted:   when a package is built
+  Used:     an update file must cite the package it answers;
+            one package can be answered only once
+
+WALK IDENTIFIER
+
+  Format:   SES-YYYY-MM-DD-N — N counts walks started that day
+  Minted:   when the walk STARTS, not when it is saved, so every
+            entry logged during it carries the walk it belongs to
+
+ENTRY IDENTIFIER
+
+  Format:   EV-YYYY-MM-DD-HHMM-DEVICE-RANDOM
+  Semantics:
+    - unique across devices without coordination, which is what
+      makes two records safe to merge by union;
+    - roughly chronological when sorted, but ORDER IS NEVER
+      TAKEN FROM THE IDENTIFIER — the fold sorts by date, then
+      time, then identifier as a deterministic tiebreak;
+    - never reused; an entry is never rewritten.
+
+INSTRUCTION ITEM IDENTIFIER
+
+  Format:   INS-YYYY-MM-DD-N
+  Used:     to name the item a "replace" operation supersedes.
+
+MEDIA IDENTIFIER
+
+  Format:   NNN-XXX_YYYY-MM-DD_HHMM_NN.jpg
+  Both the identifier and the filename a flagged photo travels
+  under, which is what makes identity require no guessing.
+
+
+===============================================================
+ 2. THE RECORD
+===============================================================
+
+TWO LAYERS
+
+  BASELINE  the plant as it entered the world. Written once at
+            registration and NEVER updated.
+  ENTRIES   every later change, as an append-only log.
+
+A plant's current state is the baseline with every applicable
+entry replayed over it in order. Nothing is stored twice, so
+nothing can disagree with itself.
+
+ENTRY TYPES
+
+  care      Water · Feed · Repot · Photo · Inspect · Support ·
+            Pest treat · Top-dress · Soil flush · Took cuttings ·
+            Hard prune · Dead leaves · Trim back · Rotate ·
+            Wipe leaves · Mist · Other
+            plus RETIRED "Prune" — historical entries remain
+            readable; it can no longer be chosen
+  Rate      a health value
+  Edit      one field, from → to
+  Archive   retires a plant, carrying a reason
+  Void      takes back an entry written moments earlier
+
+ORDER is date, then time, then entry identifier.
+
+READING A VOID: it names the entry it takes back. Derived state
+skips BOTH. History shows both. Read the pair as "the entry it
+names did not happen" — never as two events.
+
+CORRECTION, IN FULL
+
+  1. SUPERSEDING — a later Edit on the same field wins. Both
+     entries remain.
+  2. VOID — only for an entry written moments before, from the
+     screen that wrote it.
+  3. NOTHING ELSE. A mistaken entry older than that stays.
+
+ARCHIVED PLANTS
+An Archive entry, never a flag. Archived plants are absent from
+the plant list in a package, named in its collection block with
+their reason, and NOT eligible for any proposed change. Their
+identifiers are permanent and never reused.
+
+ENTRIES COUNT IMMEDIATELY. Derived values are rebuilt from the
+whole log on every read. A package's derived values and its own
+entry list therefore describe the same world; if they ever
+disagree, that is a defect worth reporting loudly.
+
+SNAPSHOTS are local comparison points, taken when a package is
+built or on demand. They never appear in a package.
+
+
+===============================================================
+ 3. THE FIELDS
+===============================================================
+
+Columns: meaning · type · limit · who may edit · live truth or
+reference knowledge.
+
+"AI-PROPOSABLE" means the AI Review & Update Contract's rules
+may propose a change. It never means the AI can write it.
+
+--------------------------------------------------------------
+ 3.1 AI-PROPOSABLE — editable by the owner AND proposable
+--------------------------------------------------------------
+
+species
+  ACCEPTED PLANT IDENTIFICATION. Use the botanical species when
+  confirmed; otherwise use the most specific supported
+  identification without pretending greater certainty.
+  string · see 3.5 · owner + AI · reference
+
+water_interval_days
+  Summer reference interval in days. A REFERENCE, not a
+  schedule: condition overrides it always.
+  integer · 1–60 ENFORCED · owner + AI · reference
+
+water_interval_days_winter
+  Winter reference interval, or null for no seasonal change.
+  integer or null · 1–60 ENFORCED · owner + AI · reference
+
+light
+  TERSE SPECIES LIGHT TARGET. What this plant wants.
+  e.g. "Bright indirect light"
+  NOT where it currently sits — that is room and spot, which are
+  owner-only.
+  string or null · see 3.5 · owner + AI · reference
+
+soil
+  TERSE SUBSTRATE TARGET. What it should be potted in.
+  e.g. "Free-draining, bark and perlite"
+  string or null · see 3.5 · owner + AI · reference
+
+feed
+  COMPACT USABLE INSTRUCTION. Enough to act on without reading
+  a paragraph. e.g. "Balanced feed at half strength, monthly in
+  active growth"
+  string or null · see 3.5 · owner + AI · reference
+
+environment
+  THE NATIVE HABITAT OR CLIMATE BEING APPROXIMATED. Concise.
+  What this species evolved in, so the owner can judge how far
+  their home is from it.
+  **NOT THE CURRENT PLACEMENT.** Do not describe the flat, the
+  room, the window or the light it actually gets. Placement is
+  room and spot, which are owner-only and never duplicated here.
+  string or null · see 3.5 · owner + AI · reference
+
+repotting
+pruning
+pests
+season
+propagation
+  CONCISE SPECIES REFERENCE INFORMATION. When repotting is worth
+  it and what it likes to sit in; what and when to cut; what
+  goes wrong with this species and what it looks like; what it
+  does seasonally, including dormancy; how it propagates.
+  string or null · see 3.5 · owner + AI · reference
+
+health
+  Condition, as a human judgement. Applied as a Rate entry, not
+  an Edit.
+  integer 1–10 ENFORCED · owner + AI UNDER STRICT CONDITIONS
+  (see the AI Review & Update Contract) · LIVE TRUTH
+
+status_label
+  Stable · Improving · Declining · Needs attention
+  enum, matched EXACTLY including case · owner + AI · live truth
+
+do_next   — displayed in the app as AI CARE FOCUS
+  ONE CURRENT PRIORITY, UP TO TWO CONCISE SENTENCES. About now,
+  not about the species. "Monitor only" is legitimate and often
+  correct.
+  string or null · see 3.5 · owner + AI · live truth
+
+care_instructions
+  A LIST of standalone instruction items, each carrying its own
+  provenance and identifier. Not a prose blob and not a single
+  editable string.
+
+  HOW IT WORKS, PRECISELY:
+    - its CURRENT VALUE is DERIVED — the list is folded from the
+      entries that added or replaced items, so it is rebuilt
+      from the log like everything else;
+    - it is nonetheless AI-PROPOSABLE, through its own
+      operations rather than by supplying a new whole value;
+    - operations are "add", or "replace" naming an existing
+      item's identifier on that plant;
+    - THERE IS NO DELETE through a proposal. Removal is the
+      owner's alone.
+
+  So: derived in how it is READ, proposable in how it is
+  CHANGED. It is never set as a scalar.
+  see 3.5 · owner + AI · reference
+
+--------------------------------------------------------------
+ 3.2 OWNER ONLY — a proposal naming one is REJECTED WHOLE
+--------------------------------------------------------------
+
+name                    what the owner calls it
+acquired                when it arrived
+room                    which room — PLACEMENT
+spot                    where in the room, in their words —
+                        PLACEMENT
+pot                     the container
+planter                 which planter, or none
+notes_user              their own notes on this plant
+collection_notes_user   their notes on the collection
+hero_media              which photograph represents the plant
+compare_media           which two photographs are compared
+
+THE TWO NOTE FIELDS ARE SINGLED OUT IN CODE: a file naming
+either is rejected before anything else is considered. Read them
+for context; never propose against them.
+
+ROOM AND SPOT ARE THE PLACEMENT RECORD. Never restate placement
+inside environment or light.
+
+--------------------------------------------------------------
+ 3.3 DERIVED — never writable, never proposable
+--------------------------------------------------------------
+
+archived · archived_date · archived_reason
+  From the Archive entry.
+
+health_source       who last set the value — owner or AI
+health_confirmed    when the rating was last confirmed
+health_changed      when the value last actually MOVED
+health_stale        the rating is old enough to revisit
+
+adherence           on · slip · behind
+on_time_count       completed intervals met
+care_count          completed intervals scored
+avg_days_late       mean lateness of the LATE ones only, or null
+interval_days       the interval in force today, season resolved
+next_due            date
+days_past           days past next_due; NEGATIVE = days remaining
+last_checked        date of the most recent entry on that plant
+
+planter_shared_water
+  True when the planter's registry entry says one soak serves
+  the group.
+
+Confirming a rating without changing it is a real action: it
+refreshes health_confirmed without moving health_changed. So
+"confirmed recently, unchanged since much earlier" is a
+meaningful and common state.
+
+ADHERENCE IS COUNTS AND DAYS. Never out of ten, never read as a
+statement about condition.
+
+--------------------------------------------------------------
+ 3.4 SHARED PLANTERS — what the flag does NOT do
+--------------------------------------------------------------
+
+planter_shared_water affects exactly two things: a control that
+selects the whole group at once, and a label.
+
+IT AFFECTS NOTHING OPERATIONAL. Due dates, adherence, history
+and calendars are strictly per plant, on each plant's own
+interval. One soak writes one entry per member because both were
+selected.
+
+A planter-level interval was designed and then DROPPED by the
+owner: each plant keeps its own schedule even sharing soil, and
+the differing due dates from a single soak are accepted rather
+than treated as a defect.
+
+CONSEQUENCE: intervals may be proposed for members individually,
+as species knowledge. Do not assume adherence will follow them
+while they share a pot, and do not propose making them equal
+unless the owner asks.
+
+--------------------------------------------------------------
+ 3.5 TEXT LENGTHS
+--------------------------------------------------------------
+
+TWO COLUMNS, AND THEY ARE NOT THE SAME THING. The right-hand
+column is the agreed contract target. The left is what the
+importer actually refuses today. **THIS DOCUMENT DOES NOT CLAIM
+THE TARGETS ARE ENFORCED.**
+
+  field                CURRENT IMPORTER      FINAL CONTRACT
+                       ENFORCEMENT           TARGET
+  ------------------   ------------------    --------------
+  species              none                  80
+  light                none                  80
+  soil                 none                  80
+  feed                 none                  120
+  environment          none                  200
+  repotting            none                  200
+  pruning              none                  200
+  pests                none                  200
+  season               none                  200
+  propagation          none                  200
+  do_next              none                  160
+  care instruction     200 per item          200 per item
+                       ENFORCED              (unchanged)
+
+  THE ONLY LENGTH THE IMPORTER ENFORCES TODAY IS THE
+  200-CHARACTER CARE-INSTRUCTION ITEM. Everything else is
+  unbounded on the way in.
+
+UNTIL THE TARGETS ARE BUILT, THEY ARE CONVENTIONS TO HONOUR, NOT
+LIMITS THAT WILL REFUSE A MISTAKE. A proposal exceeding one will
+currently be accepted.
+
+THE TARGETS DESCRIBE BEHAVIOUR ALREADY OBSERVED. In the first
+real review every applied value fell inside them, with the
+longest running to roughly two thirds of its target. They
+formalise existing practice rather than constraining it.
+
+NOTE ON FIELD EDITING: the six reference fields have no
+owner-facing editor in the app today. In practice the AI is
+their only writer, which raises the value of keeping them terse.
+
+
+===============================================================
+ 4. THE REVIEW PACKAGE
+===============================================================
+
+FILES
+
+  manifest.json    every ACTIVE plant's current fields, plus a
+                   collection block
+  events.json      every entry not carried by a previous package
+  transcript.txt   walks not carried by a previous package
+  markers.json     marker tracks AND the screen log
+  media/           flagged photos — present only when some are
+
+THERE IS NO SEPARATE SCREEN-LOG FILE. The screen log is inside
+markers.json. Documents claiming a fifth file are wrong.
+
+MANIFEST
+
+  package_id   identifies this package; an update must cite it
+  generated    date
+  collection   permanent_record_count · active_count ·
+               archived_count · archived[] with identifier,
+               name, date and reason
+  plants[]     one object per ACTIVE plant, carrying the fields
+               in section 3 that are not owner-private
+
+ALL DATES IN THE DATA ARE ISO. Any "MMM DD" in older documents
+describes what a screen renders, not what the data contains.
+
+THE COLLECTION BLOCK IS THE ROSTER. Active count and permanent
+record count differ whenever anything is archived, and both are
+correct. A difference is the archive working, never a missing
+plant.
+
+ENTRIES
+
+A flat array. Each carries its identifier, the plant it belongs
+to (absent only for collection-scoped edits), type, date, time,
+source, and the device that wrote it — plus, where applicable, a
+note, media identifiers and labels, the walk it was logged
+during and the offset within it, the review it came from, and
+the type-specific fields.
+
+Purely local bookkeeping is stripped on the way out.
+
+TRANSCRIPT
+
+One block per walk: identifier, start and duration; verification
+tier; coverage result; then the words with timestamps and
+per-plant attribution headings.
+
+A walk with no transcript SAYS SO rather than being dropped — a
+recorded walk whose words are not being shown is a fact about
+the package, not an absence to hide.
+
+MARKERS AND SCREEN LOG
+
+markers.json carries the marker track for each walk, the screen
+log for the same period, and the note that travels with it:
+
+  EVIDENCE, NOT FACT. Each entry means this screen was open at
+  this time, for this long. It does not mean the plant was
+  discussed. Where it disagrees with the words, THE WORDS WIN.
+
+PHOTOS
+
+Photos travel only when the owner flags them, and arrive under
+the media identifier described in section 1 — so identity
+requires no guessing and no explaining.
+
+Review quality, not archival: the full image never leaves the
+phone. There is a per-package cap. Flags clear once a package is
+confirmed sent, so a flag always means "going in the next one".
+
+Photos may still be attached to a conversation by hand, in which
+case the owner will say which plant and which label.
+
+ONCE-ONLY DELIVERY
+
+  ONCE      entries, walks, transcripts, markers, flagged photos
+  REPEATED  the manifest, always current
+
+Carried once, by identifier rather than by date, so a backdated
+entry is never skipped. AN EMPTY ENTRY LIST OR AN ABSENT WALK
+USUALLY MEANS "NOTHING NEW SINCE LAST TIME", NOT MISSING DATA.
+
+The app cannot detect whether a file actually saved, so it asks
+the owner. Nothing is marked as sent until they confirm.
+
+UN-SENDING — DELIBERATE BEHAVIOUR
+
+A package that never arrived can be un-sent, which returns its
+entries and walks to the queue for the next one.
+
+**A PACKAGE CANNOT BE UN-SENT ONCE AN UPDATE HAS BEEN APPLIED
+AGAINST IT.** This is intended, not a limitation to be fixed:
+un-sending then would orphan the applied update, leaving changes
+in the record whose originating package had been returned to the
+queue. The consequence is accepted — a package that has been
+answered is closed.
+
+
+===============================================================
+ 5. TRANSCRIPTS, WALKS AND THE TWO TIMELINES
+===============================================================
+
+VERIFICATION
+
+  verified     the transcript carried real timestamps, so the
+               app ran its own coverage assertions against the
+               recording's measured length
+  unverified   typed or pasted; accepted whole, not gated
+
+  coverage: passed · FAILED (with the offsets that failed) ·
+            not checked
+
+ONE STATE PER WALK. Older packages could contain a contradiction
+— an outer "unverified / not checked" above an embedded report
+claiming "verified / pass" — because the app did not recognise
+the timestamp format its own transcriber produced. Fixed. If you
+ever see both again, report it.
+
+THE AUDIO IS DELETED ONLY AFTER THE TRANSCRIPT IS ATTACHED AND
+ITS COVERAGE CHECK PASSES. Both conditions, in that order. Until
+then every copy is kept.
+
+Once both hold, the recording is removed from the phone, the
+laptop and the backups, and asking for it is not a request the
+system can satisfy. Ask for a better transcript, or for the
+owner to say more next time.
+
+That gate has twice refused to delete a recording whose
+transcript came back incomplete. A verification failing is the
+system working.
+
+INTERRUPTED WALKS
+
+A walk interrupted by the phone becomes several recordings. Two
+clocks exist and THEY ARE NOT THE SAME TIMELINE:
+
+  - a marker's offset is on the WALK'S CLOCK, which stops while
+    the app is in the background;
+  - the transcript is on the STITCHED AUDIO, which does not.
+
+One real walk had a clock of 357 seconds against 785 seconds of
+audio. Reading a marker offset as a transcript position would
+have placed it in entirely the wrong part of the walk.
+
+So an interrupted walk carries, per recording: its clock range,
+its exact position in the stitched audio, and how much audio it
+holds with no clock time behind it. Each marker gains which
+recording it belongs to, and THE EARLIEST POINT IN THE
+TRANSCRIPT THAT MARKER CAN BE AT.
+
+READ THAT AS A FLOOR, NEVER A POSITION. Audio time only ever
+runs ahead of clock time, never behind, so elapsed clock is a
+true lower bound and the recording's own end is the upper one.
+Where a recording reports a lot of background audio, attribution
+inside it is loose and the words should carry more weight.
+
+A walk that ran start to finish carries none of this, because
+its two timelines agree.
+
+NEVER TREAT RAW MARKER OFFSETS AS ONE CONTINUOUS TIMELINE ACROSS
+AN INTERRUPTED WALK.
+
+
+===============================================================
+ 6. THE LIVE-TRUTH BOUNDARY
+===============================================================
+
+LIVE TRUTH — changes constantly, arrives in every package, must
+never be copied into a permanent source:
+
+  which plants exist, and how many
+  names, rooms, spots, pots, planters
+  health values, status labels, care focus text
+  watering state, due dates, adherence
+  entry history
+  which photographs exist and which are flagged
+  what was said on any walk
+
+REFERENCE KNOWLEDGE — changes rarely, lives in the plant's own
+fields, still arrives in every package:
+
+  species, and the six longer reference fields
+  feed, light and soil targets
+  reference watering intervals
+  care instruction items
+
+Reference knowledge lives IN THE APP, not in this project's
+sources. It travels in the manifest every round, so current
+values are always visible. A copy frozen in an instruction file
+would go stale the first time the owner edited a field.
+
+THE TEST: if a statement would become wrong when the owner adds
+a plant, waters something, or edits a field, it belongs in the
+app and not in a document.
+
+
+VERIFY — OPEN AT TIME OF DRAFTING
+
+[VERIFY] The FINAL CONTRACT TARGETS in section 3.5 are not
+enforced by the importer. Section 3.5 states current enforcement
+and target separately for exactly this reason.
+
+[VERIFY] The six reference fields have no owner-facing editor.
+In practice the AI is their only writer; if the owner wants to
+correct one by hand today, they cannot without an update file.
+Whether to add an editor is an open product decision.
+
+[VERIFY] Whether the phone keeps recording while backgrounded
+depends on the kind of interruption. Untested.
+
+[VERIFY] A PROPOSED CHANGE'S REASON IS NOT STORED WITH THE
+RESULTING ENTRY. The entry records the value, that it came from
+the AI, and which package it came from — but not why. Confirmed
+by reading the importer. Until that changes, the argument for a
+change survives only in the update file and the conversation,
+not in the record.
+
+--- END OF PROJECT SOURCE 2 ---
+
+
+###############################################################
+ 3 · PLANT BOT — AI REVIEW & UPDATE CONTRACT V1
+###############################################################
+
+===============================================================
+ PLANT BOT — AI REVIEW & UPDATE CONTRACT
+ Version V1 · 18 Sep 2026 · from the current code
+ PROJECT SOURCE 3 · what may be DONE with the data
+===============================================================
+
+**THIS DOCUMENT DOES NOT LIST FIELDS OR IDENTIFIERS.** The Data
+& Package Contract owns both, and marks each field
+AI-PROPOSABLE, OWNER ONLY or DERIVED. Read it there.
+
+
+===============================================================
+ 1. THE EVIDENCE WORKFLOW
+===============================================================
+
+ESTABLISH IDENTITY AND CURRENT STATE FIRST, FROM THE MANIFEST.
+Then review ALL the relevant evidence. Only then draw
+conclusions. Do not begin forming a view from the first
+interesting thing you read.
+
+  1. THE MANIFEST — identity and current state. Which plants
+     exist; what each one currently IS; the collection block as
+     the roster. Nothing else in the package overrides it about
+     what a field currently holds.
+
+  2. THE TRANSCRIPT, if there is one. The only place the owner
+     says WHY. Read it in full before concluding anything.
+
+  3. THE ENTRIES — what has happened since the last package.
+
+  4. THE MARKERS AND SCREEN LOG — attribution, and only
+     attribution.
+
+  5. THE PHOTOGRAPHS — flagged ones arrive named for their
+     plant; hand-attached ones the owner will identify.
+
+  6. ONLY NOW, CONCLUDE — per plant, having read everything that
+     bears on it.
+
+
+===============================================================
+ 2. HOW TO READ WHAT YOU ARE GIVEN
+===============================================================
+
+ATTRIBUTION IS EVIDENCE OF WHAT WAS ON SCREEN, NOT PROOF OF WHAT
+WAS DISCUSSED. The owner may be looking at one plant and talking
+about the next. WHERE THE WORDS AND THE ATTRIBUTION DISAGREE,
+THE WORDS WIN.
+
+MARKERS ARE EVIDENCE, NOT FACT. The note saying so travels with
+them in every package.
+
+ON AN INTERRUPTED WALK, a marker's position in the transcript is
+a FLOOR, not a point — see the Data & Package Contract. Never
+treat raw offsets as one continuous timeline. Where a recording
+reports a lot of background audio, lean harder on the words.
+
+AN EMPTY ENTRY LIST OR AN ABSENT WALK almost always means
+"nothing new since the last package", NOT missing data.
+
+A VOID ENTRY MEANS THE ENTRY IT NAMES DID NOT HAPPEN. Neither
+counts. Read the pair together, never as two events.
+
+A SILENT WALK IS NOT A HEALTHY WALK. Absence of comment is
+absence of evidence.
+
+AN OLD OBSERVATION IS HISTORY, NOT CURRENT CONDITION. Newer
+evidence supersedes it. Say which you are relying on.
+
+THE AUDIO IS UNAVAILABLE once a transcript has been attached and
+verified. Do not ask for it.
+
+
+===============================================================
+ 3. THE ASSESSMENT SEQUENCE
+===============================================================
+
+FOR EACH PLANT, IN THIS ORDER:
+
+  1. ASSESS CURRENT VISIBLE OR REPORTED CONDITION. What is
+     actually observable right now, from a photograph or from
+     what the owner said. Not what the calendar implies.
+
+  2. SEPARATE EVIDENCE FROM POSSIBLE EXPLANATIONS. State what
+     you can see, then state what might account for it. Keep the
+     two apart in the writing, not merely in your head.
+
+  3. WHERE SEVERAL CAUSES ARE PLAUSIBLE, RANK THEM BY
+     PLAUSIBILITY AND SAY WHY. This is wanted. A ranked list of
+     candidate explanations, each with its grounds, is far more
+     useful than a single confident answer or a shrug.
+
+  4. RECOMMEND THE SMALLEST USEFUL IMMEDIATE ACTION. The least
+     intervention that would help or would distinguish between
+     your candidates. Often that is "look at this specific thing
+     before changing anything".
+
+  5. STATE WHAT TO MONITOR, and what would indicate improvement
+     or deterioration. Name the observable, so the next round
+     has something to check against.
+
+HOW THIS SITS WITH SECTION 8. Section 8 forbids claiming an
+intervention WORKED from a handful of before-and-after ratings.
+It does not forbid reasoning about cause. THESE ARE DIFFERENT
+ACTS: ranking plausible explanations for what is visible now is
+diagnosis, and is the job. Declaring that a past change caused a
+later rating to move is a statistical claim the record cannot
+support. Do the first freely. Never do the second.
+
+WHERE HORTICULTURAL KNOWLEDGE MATERIALLY AFFECTS A CARE OR
+SAFETY DECISION — especially toxicity, pests, mould, chemicals
+or treatment — USE CURRENT RELIABLE SOURCES. Prefer extension
+services, universities, botanical gardens, recognised
+horticultural institutions and relevant manufacturers. Say what
+you relied on when it matters to the decision.
+
+
+===============================================================
+ 4. WHAT YOU MAY PROPOSE, AND ON WHAT EVIDENCE
+===============================================================
+
+You may propose changes to the fields the Data & Package
+Contract marks AI-PROPOSABLE. Nothing else exists for this
+purpose. Anything it marks OWNER ONLY or DERIVED is outside this
+contract, and a file naming one is rejected whole.
+
+**YOU CANNOT WRITE TO THE RECORD.** You produce a file; the
+owner approves individual rows; the app writes entries. There is
+no path by which a proposal becomes a change without a person.
+
+THE REFERENCE FIELDS ARE THE REAL OPENING — species knowledge
+the record cannot produce. Observe the compact field semantics
+in the Data & Package Contract: targets and species knowledge,
+terse, and NEVER a restatement of where the plant currently
+sits. Say which you are confident about and which you are
+inferring from a genus rather than knowing.
+
+IDENTIFICATION. Use the botanical species when confirmed;
+otherwise the most specific supported identification, without
+pretending greater certainty. A family or genus stated plainly
+is better than a descriptive name that implies more than is
+known.
+
+WATERING INTERVALS ARE REFERENCES, NOT SCHEDULES. Propose them
+as approximations that condition overrides.
+
+  A WINTER INTERVAL SHOULD NORMALLY BE LONGER THAN ITS SUMMER
+  ONE. If you propose them EQUAL OR SHORTER, that row REQUIRES A
+  SPECIFIC, PLANT-LEVEL REASON explaining why this plant does
+  not slow down — and it must not contradict what you have
+  written in that plant's own seasonal reference.
+
+HEALTH — THE NARROWEST RULE IN THIS DOCUMENT.
+
+  Propose a value ONLY from something a schedule cannot show:
+  colour, posture, rot, pests, new growth, damage — seen in a
+  photograph or described by the owner.
+
+  NAME WHAT YOU SAW, in the reason.
+
+  NEVER DERIVE IT from watering history, adherence, elapsed
+  intervals or counts. Health is the owner's judgement, made by
+  looking at the plant. Provenance stays visible and they can
+  overwrite you.
+
+  Proposing none at all is a perfectly good answer.
+
+THE CARE FOCUS is ONE current priority, up to two concise
+sentences — about now, not about the species. "Monitor only" is
+legitimate and often correct. Do not write one for every plant
+for the sake of completeness.
+
+AN ELAPSED INTERVAL NEVER MEANS "WATER NOW". It is a fact about
+the calendar and a prompt to look. Never write "needs water",
+"overdue" or any phrasing that reads as an instruction about
+soil you cannot see.
+
+SHARED PLANTERS: propose intervals for members individually.
+Do not assume adherence follows them while they share a pot, and
+do not propose making them equal unless the owner asks.
+
+
+===============================================================
+ 5. TALK FIRST. THE FILE COMES LAST.
+===============================================================
+
+  1. Read the package and reply IN PROSE.
+  2. The owner questions, disagrees, adds what you could not
+     know.
+  3. Only once that has settled, write the update file.
+
+AN UPDATE FILE PRODUCED BEFORE THE CONVERSATION HAS SETTLED IS
+THE WRONG SHAPE OF ARTEFACT. It asks the owner to adjudicate in
+a review table what should have been argued in conversation.
+
+This matters more since batch approval exists: the owner may
+select every row and untick the few they disagree with, which
+only works if the argument already happened.
+
+
+===============================================================
+ 6. THE PRE-FILE CONSISTENCY CHECK — MANDATORY
+===============================================================
+
+BEFORE GENERATING ANY JSON, TAKE EACH PLANT IN TURN AND READ
+EVERY CHANGE YOU ARE PROPOSING FOR IT TOGETHER, ALONGSIDE THAT
+PLANT'S CURRENT VALUES FOR THE FIELDS YOU ARE NOT CHANGING.
+
+A proposal must be coherent as a whole, not merely correct field
+by field.
+
+CHECK AT LEAST THESE AGAINST EACH OTHER:
+
+  summer interval  vs  winter interval
+  winter interval  vs  season
+  season           vs  care focus
+  environment      vs  light, soil and the intervals
+  care focus       vs  care instructions
+  any new value    vs  the current values you are leaving alone
+
+WORKED EXAMPLE OF THE FAILURE THIS PREVENTS — A REAL ONE:
+
+  In the first real review, one plant received a winter interval
+  of seven days — water weekly through winter — while the SAME
+  FILE gave that plant a seasonal reference reading "may enter
+  dormancy; reduce or stop watering until new growth returns".
+
+  Both rows were individually defensible. Together they
+  instructed the owner to do the opposite of what the file's own
+  reference said. **DO NOT PRODUCE A FILE THAT CONTRADICTS
+  ITSELF.**
+
+IF TWO PROPOSALS CONFLICT, resolve it before writing the file —
+change one, drop one, or put the plant in "unaddressed" and
+raise the tension in conversation instead.
+
+
+===============================================================
+ 7. THE UPDATE FILE
+===============================================================
+
+SHAPE
+
+  {
+    "package_id": "<the package you are answering>",
+    "generated":  "<ISO date>",
+    "changes": [
+      { "plant_id": "<identifier>",
+        "field":    "<an AI-PROPOSABLE field>",
+        "value":    <typed per the Data & Package Contract>,
+        "reason":   "<specific, non-empty, about this plant>" }
+    ],
+    "unaddressed": ["<identifier>", ...],
+    "notes": "<optional, brief>"
+  }
+
+Care-instruction changes additionally carry an operation of
+"add", or "replace" naming an existing item on that plant. There
+is no delete.
+
+COMPLETENESS
+EVERY plant in the manifest appears in EXACTLY ONE of "changes"
+or "unaddressed". Not both, not neither. This is what stops a
+plant being silently skipped.
+
+ONE CHANGE, ONE FIELD, ONE REASON
+Never bundle two ideas into one row. A row carrying two forces
+the owner to reject a good half along with a bad one.
+
+REASONS
+Reference a specific owner observation or date when useful.
+Paraphrase concisely unless exact wording matters. A reason
+exists so the owner can check your thinking, not to demonstrate
+that you read the transcript.
+
+**BOILERPLATE REPEATED ACROSS ROWS IS A WARNING SIGN, NOT
+ADEQUATE INDIVIDUALISED REASONING.** If the same sentence would
+serve several plants, it is not a reason about any of them — it
+is a description of what you did. The owner has already caught
+exactly this, in the only place a file carried a repeated
+reason, and was right to.
+
+PROPOSE NOTHING RATHER THAN SOMETHING THIN. Put the plant in
+"unaddressed". A gap stated is worth more than a guess made.
+
+DO NOT INVENT plants, identifiers or fields not in the manifest.
+
+SMALLER AND MORE FREQUENT BEATS LARGE AND SPECULATIVE.
+
+
+===============================================================
+ 8. WHAT HAPPENS TO YOUR FILE
+===============================================================
+
+REJECTED WHOLE, with the reason named, if any of these fail.
+Nothing partial is ever applied:
+
+  - the package identifier is one the app actually exported
+  - no previous update has answered that same package
+  - every plant identifier exists, and none is archived
+  - every field is recognised, and none is OWNER ONLY or DERIVED
+  - the owner's private notes are not named
+  - values match their declared types; enums match exactly,
+    including case; numeric ranges hold
+  - a health change carries a reason naming a visual observation
+  - care-instruction items carry a valid operation, are within
+    length, and a "replace" names a real existing item
+  - every plant appears in changes or unaddressed
+  - every change carries a non-empty reason
+
+FLAGGED, NOT REJECTED: if the owner edited that exact field
+after the package was generated, the row is shown with their
+value, their date and yours. They choose.
+
+THE REVIEW TABLE shows every change with current value, proposed
+value and your reason. ROWS ARRIVE UNSELECTED. The owner may
+select all and untick, or tick individually. Nothing is applied
+until they act.
+
+ON APPLY, each accepted row becomes an entry recording the new
+value, that it came from you, and which package it came from. A
+row whose proposed value equals the current value writes
+nothing. Rejections are recorded as counts, not quietly
+discarded.
+
+**THE REASON IS NOT STORED WITH THE ENTRY.** The record keeps
+what changed and where it came from, not why. So the argument
+survives in the update file and in the conversation, not in the
+record — which is a reason to keep both, and a reason to make
+the reason good.
+
+
+===============================================================
+ 9. WHAT YOU CAN HONESTLY CONCLUDE
+===============================================================
+
+READ THIS TWICE. It is the part most likely to go wrong.
+
+DO NOT CALCULATE TREATMENT EFFECT SIZES, DECLARE AN INTERVENTION
+PROVEN EFFECTIVE, OR INFER CAUSATION FROM TINY BEFORE-AND-AFTER
+SAMPLES.
+
+That is the whole of the prohibition, and it is narrow on
+purpose. It does NOT forbid:
+
+  - ranking plausible causes for something visible now;
+  - saying which explanation you find most likely, and why;
+  - recommending the smallest action that would help or would
+    distinguish between candidates;
+  - naming what to watch for next.
+
+Those are section 3, and they are the job.
+
+WHAT IT FORBIDS is the arithmetic of proof. A collection this
+size, with a handful of ratings a year, cannot support it. A
+confident causal claim is worse than none, because the owner
+would end up learning your arithmetic instead of their plants.
+
+WHERE YOU ARE HOLDING PAST EVIDENCE, HOLD IT STILL: here is the
+change, here is the rating before, here is the rating after,
+here is how long between them, here are the photographs. Present
+it; do not resolve it. The judgement about what it means belongs
+to the person who looked at the plant.
+
+THINGS YOU CAN DO WELL, AND SHOULD:
+
+  - Notice what they have not. "You have said 'not sure what to
+    do' about this plant on three separate walks."
+  - Point at contradictions between what a plant needs and how
+    it is being kept.
+  - Recall what they cannot. Something said months ago that
+    bears on today.
+  - Supply species knowledge they do not have.
+  - Say plainly when there is not enough to go on.
+  - **Say when you think the app, the data or these documents
+    are wrong.** This is a right, not a tolerance. Your first
+    real review found two genuine defects, which has been the
+    most valuable thing you have produced.
+
+THINGS YOU MUST NOT DO:
+
+  - Badge a change as having worked.
+  - Average ratings into a number.
+  - Fill a gap with a plausible guess rather than naming it.
+  - Treat an elapsed interval as evidence about soil.
+  - Derive health from anything other than observation.
+  - Ship a file whose rows contradict each other.
+
+MARK UNCERTAINTY. Say VERIFY. An unmarked guess is the one
+failure this whole arrangement exists to prevent.
+
+
+VERIFY — OPEN AT TIME OF DRAFTING
+
+[VERIFY] The text limits in the Data & Package Contract are
+contract targets the importer does not yet enforce. Honour them;
+do not rely on a mistake being refused.
+
+[VERIFY] The reason accompanying a change is not stored with the
+resulting entry — see section 8.
+
+--- END OF PROJECT SOURCE 3 ---
+
+
+###############################################################
+ 4 · CHANGE LOG
+###############################################################
+
+00 — CURRENT STATE
+
+ 1. "All planned screens exist" REPLACED with "The core phone
+    workflow is built, installed and in daily use." DONE.
+    Note: the old phrasing was also inaccurate — Reminders is a
+    planned screen that does not exist.
+
+ 2. "Nothing further should be built" REPLACED with "No new
+    feature work is currently approved before the next full real
+    review cycle. Bug fixes, validator alignment and contract
+    corrections are not blocked." DONE.
+
+ 3. Remainder kept concise; no other content changes.
+
+DATA & PACKAGE CONTRACT
+
+ 4. IDENTIFIER MUTABILITY RESOLVED. The complete NNN-XXX is
+    permanent and immutable after registration, suffix included.
+    Re-identification changes name and species. REMOVED FROM
+    VERIFY and stated as settled. A one-line note tells readers
+    of older material that the "suffix may change" rule is
+    superseded. DONE.
+
+ 5. SPECIES SEMANTICS REPLACED with the agreed wording:
+    accepted plant identification; botanical species when
+    confirmed; otherwise the most specific supported
+    identification without pretending greater certainty. DONE.
+
+ 6. TEXT LIMITS SET to the agreed figures, in a two-column table
+    that states CURRENT IMPORTER ENFORCEMENT separately from
+    FINAL CONTRACT TARGET. The document states plainly that the
+    only length enforced today is the 200-character
+    care-instruction item, and that targets are conventions
+    until built. NOT IMPLEMENTED IN CODE. DONE.
+
+ 7. UN-SENDING AFTER AN APPLIED UPDATE MOVED OUT OF VERIFY and
+    documented as deliberate package behaviour, with the reason:
+    un-sending would orphan the applied update. DONE.
+
+ 8. All other implementation-grounded material preserved.
+
+AI REVIEW & UPDATE CONTRACT
+
+ 9. ASSESSMENT SEQUENCE ADDED as section 3, in the five steps
+    specified. DONE.
+
+10. EXTERNAL SOURCES CLAUSE ADDED, with the named preference for
+    extension services, universities, botanical gardens,
+    recognised horticultural institutions and manufacturers.
+    DONE.
+
+11. REASONS WORDING REPLACED: reference a specific observation
+    or date when useful, paraphrase concisely unless exact
+    wording matters. The previous encouragement to quote has
+    been removed. DONE.
+
+12. STATISTICAL RULE REPLACED with the precise prohibition —
+    no effect sizes, no declaring an intervention proven, no
+    causation from tiny samples — and explicitly stated NOT to
+    prohibit ranking plausible causes. DONE.
+
+13. PRE-FILE CONSISTENCY CHECK PRESERVED intact, including the
+    real worked example. DONE.
+
+14. No field list added. Section 1 still points at the Data &
+    Package Contract. DONE.
+
+--------------------------------------------------------------
+ THREE FLAGS — CONSEQUENCES WORTH SEEING BEFORE INSTALLATION
+--------------------------------------------------------------
+
+A. THE NEW SPECIES RULE MAY MAKE AN ALREADY-APPLIED VALUE
+   NON-CONFORMING. The only species change ever applied replaced
+   a family-level placeholder with a descriptive common name.
+   Under the new rule, a descriptive name arguably pretends more
+   certainty than the family name it replaced. Not a blocker,
+   and not resolved here — but a contract whose first example is
+   violated by live data is worth knowing about on day one.
+
+B. ONE FACTUAL CORRECTION WAS MADE THAT WAS NOT IN THE
+   CORRECTION LIST. The previous draft said the record stores
+   "the change and its reason". THAT WAS WRONG, confirmed by
+   reading the importer: the entry stores the new value, that it
+   came from the AI, and which package — and discards the
+   reason. Both contracts now state this accurately. Preserving
+   the earlier sentence would have preserved a falsehood.
+
+C. THE ASSESSMENT SEQUENCE WIDENS THE AI'S ROLE. "Recommend the
+   smallest useful immediate action" moves the reviewer from
+   noticing and recalling toward advising. Still not deciding —
+   the owner acts — but the role description in the Project
+   Instructions, which ChatGPT owns, should match. Raised rather
+   than silently widened here.
+
+--------------------------------------------------------------
+ VERIFICATION OF THE LIMITS AGAINST REAL DATA
+--------------------------------------------------------------
+
+Every value applied in the first real review falls inside the
+final targets. Longest observed, against target:
+
+  do_next 127/160 · environment 123/200 · season 113/200 ·
+  pests 105/200 · feed 101/120 · repotting 97/200 ·
+  propagation 94/200 · pruning 93/200 · soil 45/80 ·
+  light 44/80 · species 32/80
+
+NOTHING EXCEEDS. The targets formalise observed behaviour rather
+than constraining it, and building them later will not
+retroactively invalidate stored data.
+
+
+###############################################################
+ NOTHING INSTALLED. NO CODE CHANGED. NO FOURTH SOURCE.
+ THE PROJECT INSTRUCTIONS REMAIN ENTIRELY CHATGPT'S.
+###############################################################
