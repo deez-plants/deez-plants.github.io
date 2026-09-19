@@ -1,0 +1,261 @@
+===============================================================
+ PLANT BOT — CODE CHANGES AGAINST THE FINAL CONTRACT
+ 18 Sep 2026 · for ChatGPT · three VERIFY items now CLOSED
+===============================================================
+
+The final contract set was read in full — Project Instructions,
+00 V4, both contracts, the install checklist and the manifest.
+Three code changes followed. All are built, tested and pushed.
+
+Each is either explicitly requested by the checklist or falls
+under "bug fixes, validator alignment and contract corrections
+are not blocked". NO NEW FEATURE WORK WAS DONE. No plant data
+was touched — the 013-OXA and 022-CAC corrections remain for an
+ordinary review cycle, as the checklist directs.
+
+**THIS MEANS THREE [VERIFY] ITEMS IN THE DATA & PACKAGE CONTRACT
+ARE NOW STALE.** The exact replacement wording is in section 4
+below, for approval before anything is edited.
+
+
+===============================================================
+ 1. CHECKLIST STEP 7 — IMPORTER VALIDATION. DONE.
+===============================================================
+
+Requested by name: "Ask Claude Code to add importer validation
+for the agreed contract targets. This is validator alignment,
+not new feature work."
+
+BUILT, at exactly the agreed figures:
+
+  species 80 · light 80 · soil 80 · feed 120
+  environment 200 · repotting 200 · pruning 200
+  pests 200 · season 200 · propagation 200
+  do_next 160
+  care instruction 200 per item (already enforced, unchanged)
+
+BEHAVIOUR: a proposal exceeding a limit is REJECTED WHOLE, with
+the field, the plant and the limit named. Nothing is truncated
+and nothing partial is applied — consistent with every other
+validation rule.
+
+WHY do_next MATTERED MOST: it is the only one of these that is
+LIVE TRUTH rather than reference, it renders prominently on the
+plant page, and it was documented at 160 while the importer
+accepted any length at all. That gap is what this closes.
+
+IMPACT ON PRACTICE: none expected. Across the 228 changes of the
+first real review every value fell inside its limit, the longest
+at roughly two thirds. These formalise what already happens.
+
+
+===============================================================
+ 2. CONTRACT CORRECTION — THE REASON IS NOW KEPT
+===============================================================
+
+THE PROBLEM. When a row was applied, the resulting entry
+recorded the new value, that it came from the AI, and which
+package — AND DISCARDED THE REASON. A year later a change read
+
+  "interval 10 → 7, by AI, from PKG-2026-09-17-1"
+
+and why was gone, recoverable only from an update file nobody
+keeps.
+
+WHY THIS WAS A CONTRACT VIOLATION, not merely a gap. The
+installed Project Instructions require "Preserve provenance and
+append-only history". The whole argument for never deleting
+anything is that a change made in 2026 and the rating that
+followed it read identically in 2031. The number survived; the
+reasoning evaporated.
+
+FIXED. The reason is now written to the entry's note field. It
+travels in every future package, appears in history, and
+survives a backup and restore like any other entry content.
+
+AN OVER-LONG REASON IS NOW REFUSED, not truncated, at 400
+characters — the documented cap for a note. Half a reason is
+worse than a rejected file, because nobody can tell it is half.
+
+**CONSEQUENCE FOR REVIEW WRITING: a reason is now permanent
+record rather than transient justification.** It is worth
+writing as something a stranger will read in five years. This
+strengthens, rather than changes, the existing rule against
+boilerplate: a repeated sentence was already inadequate
+reasoning, and is now inadequate reasoning written into the
+record 21 times.
+
+NOT RETROSPECTIVE. Changes applied before today have no stored
+reason and cannot acquire one. The 228 changes of the first real
+review keep their values and their provenance, but their
+reasoning survives only in the update file and the conversation.
+
+
+===============================================================
+ 3. THE SIX REFERENCE FIELDS ARE NOW OWNER-EDITABLE
+===============================================================
+
+THE PROBLEM. environment, repotting, pruning, pests, season and
+propagation are documented `editable_by: both`, and the app
+provided a way for only one of the two. They rendered read-only
+with "Ask the AI for this in your next review."
+
+So THE AI WAS THEIR SOLE WRITER. A value the owner disagreed
+with required a package, a conversation and an import to
+correct — to fix a typo. Every other field on every other screen
+they own outright.
+
+FIXED. Each is editable in place on "More about this plant",
+with the same 200-character limit the importer now enforces, so
+the owner's editor and a proposal are held to one standard.
+
+WHY THIS MATTERS TO REVIEW BEHAVIOUR, and it does:
+
+  An owner edit is an ordinary Edit entry. So if they correct one
+  of these fields AFTER a package is generated, the conflict rule
+  fires on the next update naming that field — the row is shown
+  with their value, their date and the AI's, and they choose.
+
+  **PREVIOUSLY THAT COULD NOT HAPPEN**, because they could not
+  edit these fields at all. A proposal now has a real chance of
+  meeting a human correction, and should be written expecting
+  that rather than assuming a blank slate.
+
+CLASSIFICATION: a defect against the documented field
+permissions, not new capability. Flagged to the owner as a
+judgement call before building; they approved it explicitly.
+
+
+===============================================================
+ 4. PROPOSED WORDING CHANGES — FOR YOUR APPROVAL
+===============================================================
+
+Three VERIFY items in the Data & Package Contract are now stale,
+and one section of the AI Review & Update Contract states
+behaviour that has changed. NOTHING HAS BEEN EDITED. Proposed
+replacements:
+
+--- DATA & PACKAGE CONTRACT, section 3.5 -------------------
+
+REPLACE the two-column table's left-hand column and the sentence
+beneath it. Current importer enforcement now EQUALS the final
+contract target for every row. Suggested replacement for the
+paragraph that follows the table:
+
+  "EVERY TARGET ABOVE IS ENFORCED BY THE IMPORTER as of
+  2026-09-18. A proposal exceeding one is rejected whole, with
+  the field, the plant and the limit named. Values already
+  stored that predate the limits are untouched: the check
+  applies to what is proposed, not to what exists."
+
+DELETE the sentence beginning "UNTIL THE TARGETS ARE BUILT, THEY
+ARE CONVENTIONS TO HONOUR".
+
+REPLACE the note at the end of 3.5 about field editing with:
+
+  "NOTE ON FIELD EDITING: the six reference fields are editable
+  by the owner in the app, to the same limit. An owner edit
+  after a package is generated will raise the conflict rule on
+  a later proposal naming that field."
+
+--- DATA & PACKAGE CONTRACT, VERIFY block ------------------
+
+DELETE these three items, all now resolved:
+
+  [VERIFY] The FINAL CONTRACT TARGETS in section 3.5 are not
+           enforced by the importer.
+  [VERIFY] The six reference fields have no owner-facing editor.
+  [VERIFY] A PROPOSED CHANGE'S REASON IS NOT STORED WITH THE
+           RESULTING ENTRY.
+
+RETAIN the background-recording VERIFY, which is unchanged and
+still untested.
+
+--- AI REVIEW & UPDATE CONTRACT, section 8 -----------------
+
+REPLACE the closing paragraph. Current text says the reason is
+not stored. Suggested replacement:
+
+  "ON APPLY, each accepted row becomes an entry recording the
+  new value, YOUR REASON, that it came from you, and which
+  package it came from. A row whose proposed value equals the
+  current value writes nothing. Rejections are recorded as
+  counts, not quietly discarded.
+
+  YOUR REASON IS PERMANENT RECORD. It travels in every future
+  package and is read back years later. Write it for a stranger:
+  what you saw, and why it led here."
+
+--- AI REVIEW & UPDATE CONTRACT, VERIFY block --------------
+
+DELETE both items — the limits are enforced, and the reason is
+stored. The block can be removed entirely or replaced with a
+line saying no open items remain.
+
+--- 00 — CURRENT STATE, VERIFY block -----------------------
+
+DELETE the second item, which points at the unenforced limits.
+RETAIN the first, on background recording.
+
+
+===============================================================
+ 5. WHAT WAS DELIBERATELY NOT DONE
+===============================================================
+
+PLANT-DATA CORRECTIONS. 013-OXA's winter interval and 022-CAC's
+species are untouched, per the checklist: "Do not mix this
+governance migration with plant-data corrections. Those belong
+in a later ordinary app update." They go through the next normal
+review cycle, discussed first.
+
+VOID FROM HISTORY. A fourth finding — the ability to take back a
+care entry older than the screen that wrote it — was identified
+and NOT built. The entry type and the machinery already exist
+and are tested; only the interface restricts it. But it is new
+capability by any reading, and the current 00 says no new
+feature work before the next full real review cycle. It waits
+for explicit approval.
+
+  Consequence for review: the mistaken 14 Sep Aloe watering
+  remains in the record and remains a selection error rather
+  than evidence about the plant.
+
+ANY CHANGE TO PROJECT INSTRUCTIONS OR SOURCES. Those are yours.
+This document proposes wording and edits nothing.
+
+
+===============================================================
+ 6. VERIFICATION
+===============================================================
+
+  Checks:  124 · 72 · 54 · 25 · 14 · 27 · 47 · 169  — all pass.
+
+  THE 47 ARE NEW. The validator — the boundary every proposed
+  change crosses — had no automated checks at all until today.
+  They cover every limit at its exact edge, one character over,
+  the rejection wording, the reason cap at 400 and 401, and the
+  cases that must remain unaffected: intervals, nulls, and the
+  care-instruction rule that was already there.
+
+  The reference-field editor was verified on screen end to end:
+  written, saved, rendered, with the character count live.
+
+  A revert point exists at tag `known-good-2026-09-18`, taken
+  before this work.
+
+
+===============================================================
+ SUMMARY FOR THE INSTALL SEQUENCE
+===============================================================
+
+Checklist step 7 is COMPLETE and can be ticked.
+
+Steps 1–6 are yours and untouched. Step 8 — the real-world test
+cycle — is now the next thing, and it will exercise three
+behaviours that did not exist when the contracts were drafted:
+enforced limits, stored reasons, and owner-edited reference
+fields.
+
+If you approve the wording in section 4, the three sources can
+be installed with their VERIFY blocks already accurate rather
+than needing amendment in their first week.
