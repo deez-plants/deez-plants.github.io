@@ -207,6 +207,121 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### PHASE 03.2 — CONTRACT VALIDATION & REAL-WORLD REVIEW CYCLE
+
+**This is the current phase. NO NEW FEATURE WORK IS AUTHORISED.** Bug fixes,
+validator alignment and contract corrections remain permitted; anything that
+adds capability does not, until this cycle has run.
+
+Agreed with the owner and their GPT on 2026-09-18, in that project's close-out
+handoff. The whole architecture is built; the purpose now is to prove it by
+using it, and to correct live plant data through the normal path rather than
+through code.
+
+#### THE WEEKEND TEST — the owner's plan, in their own shape
+
+One short walkthrough, deliberately interrupted, logging care as they go.
+Then transcribe, then the AI round. **This is the final test before the web
+interface is discussed at all.**
+
+The sequence:
+
+1. **Start a walk.** Talk continuously; say each plant's name aloud as its page
+   opens. That is what makes attribution checkable against the transcript.
+2. **Log the watering and anything else AS THEY GO**, from each plant's page —
+   not afterwards. **This is new: walk 5 carried no care events at all**, so
+   the interaction between care logging and markers has never been tested on a
+   real walk.
+3. **Force an interruption.** Switch to another app for ~30 seconds, come back,
+   resume. Twice if convenient.
+4. **Stop and save.**
+5. **Export for Whisper** → `1 walks in`, run the watcher, **Add transcript**
+   from `2 transcripts`. Expect: verified, coverage pass, and the audio
+   released with a figure reported.
+6. **Build a review package**, answer "did it save?", hand it to the GPT.
+7. **Discuss first.** Update file only after agreement. Review rows, apply.
+8. **Correct the known plant data in that same round** — see below.
+
+#### WHAT THIS CYCLE ACTUALLY EXERCISES
+
+Every behaviour built since the last real walk, most of it never tested
+together:
+
+- **care logged during a walk** — `care_logged` markers, events carrying
+  `session_id` and `offset_s`, and immediate commit while a walk runs
+- **the duplicate guard**, if they water some plants individually and then run
+  a bulk round — the rows should read "watered today", sit out of the
+  preselection, and ask before taking a second
+- **Undo** on a round, if they mis-tap
+- **the navigation fix** — Rec no longer clearing the stack, Back naming the
+  right plant after browsing sideways, forward swipe
+- **the part map and exact seams**, now that `part_durations` lands in the
+  transcript header
+- **the coverage gate and the golden rule** — audio released only on a pass
+- **flagged photos**, if they flag any: they should travel in `media/` under
+  the semantic filename and the flags should clear on "yes, saved"
+- **the package confirm flow** and once-only delivery
+- **the enforced text limits** — first AI file to meet them
+- **stored reasons** — first AI file whose reasoning lands in the record
+
+#### WHAT TO LOOK AT WHEN THE PACKAGE ARRIVES
+
+If asked to analyse it, check specifically:
+
+- do the manifest's derived values agree with the events beside them? They
+  must now. A disagreement is a defect.
+- did every care event logged during the walk carry a session and an offset?
+- for the interrupted walk: does `parts` appear, do the seams match the
+  decoded durations, and does each plant's marker land near where its name is
+  spoken in the transcript?
+- after applying: does each AI-originated entry carry its reason as a note?
+  **That is the first time this can be verified on real data.**
+
+#### THE PLANT-DATA CORRECTIONS THAT BELONG IN THIS ROUND
+
+Deliberately NOT fixed in code, per the install checklist — "do not mix this
+governance migration with plant-data corrections":
+
+- **013-OXA winter interval.** Applied at 7 days, which contradicts that
+  plant's own `season` reference saying to reduce or stop watering until new
+  growth returns. Correctable by editing the field, or by the GPT proposing it
+  in this round.
+- **022-CAC species.** Currently `Golden-Spined Cactus (Cactaceae)`, which may
+  not satisfy the new rule — "the most specific supported identification
+  without pretending greater certainty". An owner decision.
+- **The mistaken 14 Sep Aloe watering.** **NOTE THE LIMIT HONESTLY: this one
+  CANNOT be corrected through the normal path.** Superseding reaches fields,
+  not care entries, and Void only reaches the round still on screen. It stays
+  in the record as a known selection error unless Void-from-history is
+  approved and built. Their close-out lists it under "corrections for the next
+  review cycle", which overstates what is possible.
+
+#### AFTER THE CYCLE
+
+Only then: the web interface conversation, and whatever the cycle surfaced.
+**Nothing is queued beyond that on purpose.**
+
+### A STANDING RULE, LEARNED 2026-09-18
+
+**Does the change alter what the record CONTAINS, or only what it REFUSES?**
+
+If it only refuses something — a validator limit, a guard, a check — it is
+reversible and sits inside "validator alignment".
+
+**If it changes what every future entry carries, propose the exact shape
+first and wait**, even when the work itself is one line and obviously right.
+
+This came from storing the AI's reason on the entry. The owner had approved
+the item, and it was a genuine contract correction — the installed governance
+requires provenance to be preserved and the code was discarding it. But it
+also changed what the record permanently holds, and their GPT was right to
+name that: it should have been proposed as a data-shape change and approved
+on that basis, not classified as a correction and built.
+
+The reasoning belongs here rather than in an apology, because the distinction
+is the useful part.
+
+
 #### Three of the four findings are BUILT (2026-09-18, late)
 
 The owner approved 1, 2 and 4 after their GPT's final contract set arrived
@@ -246,6 +361,12 @@ winter interval and 022-CAC's species. "Do not mix this governance migration
 with plant-data corrections." They go through the next ordinary review.
 
 #### The final GPT contract set is installed-ready and sits in `3 ai`
+
+**INSTALLED SOURCE VERSIONS, after their reconciliation on 2026-09-18:**
+00 — Current State **V4.1**, Data & Package Contract **V1.1**, AI Review &
+Update Contract **V1.1**, with the Project Instructions unchanged from the
+final 18 Sep version. The drafts in `proposed/` are what those were built
+from — **do not treat the repo drafts as the installed text.**
 
 `PLANT-BOT-FINAL-CONTRACT-2026-09-18.zip` — Project Instructions, 00 V4, both
 contracts, an install checklist and a SHA-256 manifest. **Their GPT owns
@@ -459,7 +580,12 @@ well as right.
 
 #### Built since the tag, still unbuilt, in order
 
-`known-good-2026-09-18` is the tag to revert to. Since it: the transcription
+**TWO tags exist. `known-good-2026-09-18b` is the current revert point** —
+taken after reasons, limits and the reference-field editor, with all eight
+suites passing. `known-good-2026-09-18` is the earlier one, before those three.
+Their close-out handoff names only the first; both are preserved.
+
+Since the first tag: the transcription
 parts bug, exact seam durations, the review-table verification, the last of the
 stale pending copy, **3c photo flags** (`src/package/reviewFlags.ts` — flags
 live outside the event log, clear on a confirmed send, cap 20), and the three
