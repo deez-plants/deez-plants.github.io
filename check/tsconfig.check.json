@@ -28,6 +28,7 @@
     "../src/capture/coverage.ts",
     "../src/capture/parts.ts",
     "../src/capture/clock.ts",
-    "../src/nav/stack.ts"
+    "../src/nav/stack.ts",
+    "../src/package/validate.ts"
   ]
 }

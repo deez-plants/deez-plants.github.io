@@ -5,6 +5,8 @@ import { formatDayMonthYear } from '../lib/dates';
 import { openDeezPlants } from '../db/schema';
 import { addCareInstruction, deleteCareInstruction } from '../notes/careInstructions';
 import { setNotesUser } from '../notes/notesUser';
+import { editPlantFields } from '../care/editField';
+import { REFERENCE_MAX } from '../types/plant';
 import { Icon } from '../components/Icon';
 import { PlantChrome } from '../components/PlantChrome';
 import './MoreAboutPlant.css';
@@ -67,6 +69,41 @@ export default function MoreAboutPlant({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newInstruction, setNewInstruction] = useState('');
+  /**
+   * Which reference field is being edited, and its draft. Null while none is.
+   *
+   * **Why this exists (2026-09-18).** These six were display-only, with the
+   * page inviting the owner to "ask the AI in your next review". So the AI was
+   * their ONLY writer: a value they disagreed with could not be corrected
+   * without building a package, holding a conversation and importing a file —
+   * to fix a typo. Every other field on every other screen they own outright,
+   * and these six they effectively rented from the review cycle.
+   *
+   * Written as an ordinary Edit entry, exactly like the care focus on Plant
+   * Detail, so provenance shows the owner set it and a later AI proposal shows
+   * as a conflict against their value rather than quietly overwriting it.
+   */
+  const [editing, setEditing] = useState<{ field: string; draft: string } | null>(null);
+
+  const saveReference = async () => {
+    if (!editing || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const db = await openDeezPlants();
+      await editPlantFields(db, plant.plant_id, [{
+        field: editing.field as 'environment',
+        from: (plant as unknown as Record<string, string | null>)[editing.field] ?? null,
+        to: editing.draft.trim() || null,
+      }], as_of);
+      await onChanged();
+      setEditing(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const notesDirty = notes !== notesBaseline;
 
@@ -148,9 +185,46 @@ export default function MoreAboutPlant({
             <span className="more-icon"><Icon name={icon} size={20} /></span>
             <span className="more-label">{label}</span>
           </div>
-          <p className={plant[field] ? 'more-line' : 'more-line empty'}>
-            {plant[field] ?? 'Nothing recorded. Ask the AI for this in your next review.'}
-          </p>
+          {editing?.field === field ? (
+            <>
+              <textarea
+                className="more-ref-input"
+                rows={3}
+                autoFocus
+                maxLength={REFERENCE_MAX}
+                value={editing.draft}
+                placeholder="Species knowledge — what this plant wants, not where it sits."
+                onChange={(e) => setEditing({ field, draft: e.target.value })}
+              />
+              <div className="more-ref-actions">
+                <span className="more-ref-count">{REFERENCE_MAX - editing.draft.length}</span>
+                <button type="button" className="more-ref-cancel" disabled={busy} onClick={() => setEditing(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="more-ref-save"
+                  disabled={busy || editing.draft.trim() === (plant[field] ?? '')}
+                  onClick={() => void saveReference()}
+                >
+                  Save
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className={plant[field] ? 'more-line' : 'more-line empty'}>
+                {plant[field] ?? 'Nothing recorded. Ask the AI for this in your next review.'}
+              </p>
+              <button
+                type="button"
+                className="more-ref-edit"
+                onClick={() => setEditing({ field, draft: plant[field] ?? '' })}
+              >
+                {plant[field] ? 'Edit' : 'Write one'}
+              </button>
+            </>
+          )}
         </section>
       ))}
 

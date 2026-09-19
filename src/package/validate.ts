@@ -21,6 +21,48 @@ import type { ReviewRow, UpdateChange, UpdateFile, ValidationResult } from '../t
  */
 
 const AI_FIELD_SET = new Set<string>(AI_EDITABLE_FIELDS);
+
+/**
+ * The agreed contract lengths for proposed text, enforced here.
+ *
+ * **Why these numbers.** They are the figures settled with the owner and the
+ * reviewing AI on 2026-09-18, and they formalise behaviour that was already
+ * happening rather than constraining it: across the 228 changes of the first
+ * real review, every value fell inside its limit, the longest running to about
+ * two thirds of it. A limit nobody has ever hit is cheap to agree to and cheap
+ * to keep.
+ *
+ * **Why they exist at all.** These fields are prose an AI writes, and prose
+ * expands to fill whatever it is given. `light` and `soil` are TARGETS —
+ * "Bright indirect light" is twenty-two characters — and a paragraph there is
+ * not a better answer, it is a different and worse kind of answer. The six
+ * reference fields are species knowledge, which stays useful only while it
+ * stays scannable.
+ *
+ * **Why `do_next` matters most.** It is the only one of these that is LIVE
+ * TRUTH rather than reference, it is rendered prominently on the plant page,
+ * and it was the single field documented at 160 characters while the importer
+ * accepted any length at all. That gap is what this whole map closes.
+ *
+ * `care_instructions` is absent on purpose: its own 200-per-item check already
+ * runs above, in the branch that handles its operations.
+ */
+const TEXT_MAX: Record<string, number> = {
+  species: 80,
+  light: 80,
+  soil: 80,
+  feed: 120,
+  environment: 200,
+  repotting: 200,
+  pruning: 200,
+  pests: 200,
+  season: 200,
+  propagation: 200,
+  do_next: 160,
+};
+
+/** A reason becomes an entry's note, and section 5 caps a note at 400. */
+const REASON_MAX = 400;
 const USER_FIELD_SET = new Set<string>(USER_ONLY_FIELDS);
 const DERIVED_FIELD_SET = new Set<string>(DERIVED_FIELDS);
 
@@ -96,6 +138,13 @@ function validateChange(c: UpdateChange, ctx: ValidateContext): string | null {
   if (typeof c.reason !== 'string' || !c.reason.trim()) {
     return `The change to ${c.field} on ${c.plant_id} has no reason.`; // rule 12
   }
+  // The reason becomes the entry's note when the row is applied, and section 5
+  // caps a note at 400. Checked here so an over-long reason is REFUSED rather
+  // than silently truncated on the way in — losing half of why a change was
+  // made is worse than rejecting the file and being told.
+  if (c.reason.length > REASON_MAX) {
+    return `The reason for ${c.field} on ${c.plant_id} is over ${REASON_MAX} characters.`;
+  }
 
   if (c.field === 'health') {
     if (typeof c.value !== 'number' || !Number.isInteger(c.value) || c.value < 1 || c.value > 10) {
@@ -126,6 +175,11 @@ function validateChange(c: UpdateChange, ctx: ValidateContext): string | null {
     if (decoded !== null && (typeof decoded !== 'number' || decoded < 1 || decoded > 60)) {
       return `${c.field} on ${c.plant_id} must be an integer from 1 to 60.`; // rule 9
     }
+  }
+
+  const max = TEXT_MAX[c.field];
+  if (max !== undefined && typeof decoded === 'string' && decoded.length > max) {
+    return `${c.field} on ${c.plant_id} is over ${max} characters.`;
   }
 
   return null;

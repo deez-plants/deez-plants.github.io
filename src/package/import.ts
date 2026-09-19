@@ -45,6 +45,25 @@ export async function applyUpdateFile(
       plant_id: row.plant_id,
       date: as_of,
       time,
+      /**
+       * **The AI's reason, kept.**
+       *
+       * Until 2026-09-18 this line did not exist, and the reason was
+       * discarded at the moment the change was applied. The entry recorded
+       * the new value, that it came from the AI, and which package — and not
+       * why. So a year later a change read "interval 10 → 7, by AI, from
+       * PKG-2026-09-17-1" and the argument behind it was gone, recoverable
+       * only from an update file nobody keeps.
+       *
+       * That quietly broke the promise the whole append-only design rests on:
+       * a change made in 2026 and the rating that followed it should read
+       * identically in 2031. The number survived; the reasoning evaporated.
+       *
+       * Refused rather than truncated if it runs past the note cap — see
+       * `REASON_MAX` in `validate.ts`. Half a reason is worse than a rejected
+       * file, because nobody can tell it is half.
+       */
+      note: row.reason,
       source: 'ai' as const,
       device_id,
       package_id: package_id as PackageId,

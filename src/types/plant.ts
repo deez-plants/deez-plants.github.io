@@ -102,6 +102,14 @@ export interface PhotoRecord {
 /* validate.ts (section 11 rules 5, 6, 6a) reads these; it does not re-list.   */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The agreed contract length for the six reference fields, applied to the
+ * owner's own editor so their limit matches the one the importer enforces on
+ * a proposal. See `TEXT_MAX` in `package/validate.ts` for the figures and the
+ * reasoning behind them.
+ */
+export const REFERENCE_MAX = 200;
+
 /** `editable_by: both`. The only fields an update file may name. */
 export const AI_EDITABLE_FIELDS = [
   'species',

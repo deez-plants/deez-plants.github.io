@@ -212,3 +212,64 @@
   color: var(--ink-45);
   font-style: italic;
 }
+
+/* Editing a reference field in place. Until 2026-09-18 these six were
+   display-only and the AI was their only writer — see MoreAboutPlant.tsx. */
+.more-ref-edit {
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 6px 14px;
+  font: 600 20px/1 var(--sans);
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent-line);
+  border-radius: 10px;
+}
+
+.more-ref-input {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  font: 400 22px/1.4 var(--sans);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.more-ref-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.more-ref-count {
+  flex: 1;
+  font: 400 19px/1 var(--mono);
+  color: var(--ink-45);
+}
+
+.more-ref-cancel,
+.more-ref-save {
+  min-height: 44px;
+  padding: 8px 18px;
+  font: 600 20px/1 var(--sans);
+  border-radius: 10px;
+}
+
+.more-ref-cancel {
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line-strong);
+}
+
+.more-ref-save {
+  color: #0d1410;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.more-ref-save:disabled { opacity: 0.4; }
