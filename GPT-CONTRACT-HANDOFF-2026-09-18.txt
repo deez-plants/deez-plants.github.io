@@ -1,0 +1,1174 @@
+===============================================================
+ PLANT BOT — IMPLEMENTATION HANDOFF FOR CONTRACT RECONCILIATION
+ Written 18 Sep 2026 against the working app and current code
+===============================================================
+
+THIS DOCUMENT IS SCAFFOLDING, NOT A SOURCE.
+
+It exists to be read once, reconciled against the GPT Operating
+System rules, and consumed while drafting the four permanent
+sources. DO NOT INSTALL IT AS A PROJECT SOURCE. If it is kept,
+it becomes a fifth document describing an app that keeps moving,
+which is the exact failure this exercise is fixing.
+
+Method: read from the current code and the live data, not from
+prior documentation. Where old documents disagree with the
+implementation, the implementation is reported and the conflict
+is named. Uncertainty is marked VERIFY rather than smoothed over.
+
+Nothing was modified to produce this.
+
+
+===============================================================
+ 1. CURRENT WORKING APP — IMPLEMENTATION TRUTH
+===============================================================
+
+--------------------------------------------------------------
+ A. DATA / SOURCE OF TRUTH
+--------------------------------------------------------------
+
+WHERE AUTHORITATIVE DATA LIVES
+
+One phone, one browser, IndexedDB. No server, no account, no
+sync. The laptop and the phone are SEPARATE DATABASES that never
+converge on their own — storage is per web origin, so
+deez-plants.github.io on the phone and a local dev build on the
+laptop hold unrelated records. A backup file carried by hand is
+the only bridge.
+
+CONSEQUENCE FOR GPT: there is no copy of the record anywhere the
+AI can reach. Everything it will ever see arrives in a review
+package the owner built and handed over.
+
+HOW PLANT RECORDS ARE STORED
+
+Two layers, and the distinction matters:
+
+  BASELINE  the plant as it entered the world. Written once at
+            registration, NEVER updated. Stores: plant_id, name,
+            species, acquired, room, spot, pot, planter, the two
+            water intervals, feed, light, soil, the six
+            reference fields, notes_user, status_label, do_next,
+            created, created_by, origin.
+
+  EVENTS    every later change, as an append-only log.
+
+A plant's current state is the baseline with every applicable
+event replayed over it, in order. Nothing is stored twice.
+
+EVENT / HISTORY MODEL
+
+Append-only. Nothing is edited in place and nothing is deleted.
+Event types:
+
+  care        Water, Feed, Repot, Photo, Inspect, Support,
+              Pest treat, Top-dress, Soil flush, Took cuttings,
+              Hard prune, Dead leaves, Trim back, Rotate,
+              Wipe leaves, Mist, Other — plus the RETIRED
+              "Prune", which still exists so historical entries
+              remain readable but can no longer be chosen.
+  Rate        a health value, 1–10
+  Edit        one field, from → to
+  Archive     retires a plant, carrying a reason
+  Void        takes back an entry written moments earlier
+
+Ordering is date, then time, then event_id — deterministic, so
+two devices holding the same events derive identical state.
+
+IMMEDIATE-COMMIT BEHAVIOUR  (CHANGED 16 Sep)
+
+Entries count the moment they are written. Adherence, due dates,
+needs-attention, calendars and history are rebuilt from the
+whole log before the screen redraws.
+
+There WAS a two-step: entries landed "pending" and moved no
+number until a separate Update was tapped. It was removed
+because it delayed the NUMBERS and never the RECORD — the entry
+was already written and nothing could remove it, so the step
+offered a safety that did not exist. In practice the button went
+untapped and the manifest of 17 Sep reported plants as four days
+past their interval while carrying their own watering from three
+days earlier.
+
+CONSEQUENCE FOR GPT: from the packages built after 18 Sep, the
+manifest's derived values and the events beside them describe the
+same world. **If they ever disagree again, that is a bug and
+saying so loudly is the correct response.**
+
+SNAPSHOTS / BASELINES
+
+A snapshot is a frozen copy of derived state, used by a "Since
+last time" comparison. The last five are kept. Taken:
+
+  - automatically whenever a review package is built;
+  - manually via "Mark this point" on Home or Since last time.
+
+They are LOCAL ONLY and never appear in a package. GPT will
+never see one.
+
+SENT-TO-AI / EXPORT TRACKING
+
+Each package records the event_ids and session_ids it carried.
+The next package carries every event and walk NOT in that record
+— by id, never by date, so a backdated entry is never skipped.
+
+  - EVENTS and WALKS go out exactly once.
+  - The MANIFEST is exempt and always states current values,
+    repeating fields sent before.
+
+The record is written only when the owner CONFIRMS the file
+saved. Building a package and cancelling the save marks nothing.
+A package can also be un-sent from the Handoff log, which
+returns its events and walks to the queue.
+
+CONSEQUENCE FOR GPT: an empty events.json or a package with no
+transcript usually means "nothing new since last time", NOT
+missing data.
+
+CORRECTION / UNDO / SUPERSEDING
+
+Three distinct mechanisms, and only one is an undo:
+
+  1. SUPERSEDING — the normal correction. A later Edit on the
+     same field wins. Both events remain in history.
+  2. VOID — takes back an entry written moments before, from the
+     screen that wrote it. Writes a Void event naming the target;
+     derived state skips BOTH, history shows both. Never a
+     deletion: a deleted entry could return from a backup with no
+     record of the intent to remove it.
+  3. NOTHING ELSE. There is no general correction tool. A
+     mistaken watering from last week stays in the record.
+
+CONSEQUENCE FOR GPT: if events.json contains a Void, read the
+pair as "this did not happen" — not as two events.
+
+ARCHIVED PLANTS
+
+An Archive event, never a flag. archived, archived_date and
+archived_reason are all derived from it. Archived plants:
+
+  - are NOT in the manifest's plants array;
+  - ARE named in the manifest's collection block, with reason;
+  - are NOT eligible for AI-proposed changes (the validator
+    rejects a file naming one);
+  - keep their ID forever. IDs are never reused.
+
+SHARED-PLANTER BEHAVIOUR
+
+shared_water is a property of the PLANTER, in a small registry.
+It affects exactly two things: a chip on the care screen that
+selects all members at once, and a label on the plant page.
+
+IT AFFECTS NOTHING OPERATIONAL. Due dates, adherence, history
+and calendars are strictly per plant, on each plant's own
+interval. One soak writes one event per member because both were
+selected.
+
+A planter-level interval was designed and then DROPPED by the
+owner on 18 Sep: each plant keeps its own schedule even sharing
+soil, and the resulting different due dates from one soak are
+accepted rather than treated as a defect.
+
+DERIVED VALUES
+
+Recomputed from the log on every read, never stored, never
+patched: adherence state and counters, average lateness, next
+due, days past, last checked, health current/source/confirmed/
+changed/stale, needs-attention reasons, calendars, the photo
+list, care_instructions.
+
+--------------------------------------------------------------
+ B. PLANT RECORD FIELDS
+--------------------------------------------------------------
+
+Source of truth for editability is AI_EDITABLE_FIELDS /
+USER_ONLY_FIELDS / DERIVED_FIELDS in src/types/plant.ts. The
+validator reads those lists rather than re-listing them, so this
+table cannot drift from enforcement without the code changing.
+
+Columns: name · meaning · type · limit · who may edit · live or
+reference.
+
+--- AI-PROPOSABLE (editable_by BOTH) --------------------------
+
+species
+  Accepted botanical name. string. NO LIMIT ENFORCED.
+  USER + AI. Reference.
+
+water_interval_days
+  Summer reference interval, in days. integer.
+  1–60, ENFORCED. USER + AI. Reference (see rule below).
+
+water_interval_days_winter
+  Winter reference interval. integer or null. 1–60, ENFORCED.
+  USER + AI. Reference.
+
+feed
+  Feeding guidance, free text. string or null. NO LIMIT.
+  USER + AI. Reference.
+
+light
+  Light requirement, free text. string or null. NO LIMIT.
+  USER + AI. Reference.
+
+soil
+  Growing medium. string or null. NO LIMIT.
+  USER + AI. Reference.
+
+environment / repotting / pruning / pests / season / propagation
+  The six longer reference fields — species knowledge the owner
+  does not have. string or null. NO LIMIT ENFORCED.
+  USER + AI. Reference.
+
+health
+  Human judgement of condition, 1–10. integer, 1–10 ENFORCED.
+  USER + AI-PROPOSABLE UNDER STRICT CONDITIONS (see §7).
+  Applied as a Rate event, not an Edit. Live truth.
+
+status_label
+  Stable | Improving | Declining | Needs attention. enum,
+  ENFORCED exactly. USER + AI. Live truth.
+
+do_next   (displayed as AI CARE FOCUS)
+  One current care priority. string or null.
+  SPEC SAYS ≤160 CHARS. **NOT ENFORCED IN THE IMPORTER** — see
+  §4. The 160 exists only as a maxLength on the app's own text
+  box. USER + AI. Live truth.
+
+care_instructions
+  A list of standalone instruction items, each with provenance.
+  ≤200 chars per item, ENFORCED. op must be "add" or "replace";
+  "replace" must name an existing instruction_id on that plant.
+  There is no delete via import. USER + AI. Reference.
+
+--- USER ONLY — an update file naming one is REJECTED WHOLE ----
+
+name, acquired, room, spot, pot, planter, notes_user,
+collection_notes_user, hero_media, compare_media
+
+notes_user and collection_notes_user are singled out in the
+validator with their own rule: a file naming either is rejected
+outright, before anything else is considered.
+
+--- APP-DERIVED — never writable, never proposable -------------
+
+archived, archived_date, archived_reason, health_source,
+health_confirmed, health_changed, health_stale, adherence,
+on_time_count, care_count, avg_days_late, last_checked
+
+Also derived and present in the manifest but not in the derived
+rejection list (they simply are not fields an update can name):
+interval_days, next_due, days_past, planter_shared_water,
+health (as reported), photos, care_instructions (as folded).
+
+--- SHARED-PLANTER FIELDS -------------------------------------
+
+planter                 USER ONLY. The planter's name, or null.
+planter_shared_water    DERIVED from the planter registry.
+                        True = one soak serves the group.
+                        See §1A for what it does NOT do.
+
+--- DERIVED ADHERENCE / DUE FIELDS ----------------------------
+
+adherence        on | slip | behind
+on_time_count    completed intervals met
+care_count       completed intervals scored
+avg_days_late    mean lateness of the LATE ones only, or null
+interval_days    the interval in force today, season resolved
+next_due         ISO date
+days_past        days past next_due; NEGATIVE = days remaining
+last_checked     date of the most recent event on that plant
+
+ADHERENCE IS COUNTS AND DAYS. It is never expressed out of ten
+and must never be read as a health signal.
+
+--------------------------------------------------------------
+ C. REVIEW PACKAGE
+--------------------------------------------------------------
+
+FILES
+
+  manifest.json    every ACTIVE plant's current fields, plus a
+                   collection block
+  events.json      every event not carried by a previous package
+  transcript.txt   walks not carried by a previous package
+  markers.json     marker tracks AND the screen log
+  media/           flagged photos — ONLY when some are flagged
+
+MANIFEST STRUCTURE
+
+  package_id   PKG-YYYY-MM-DD-N
+  generated    ISO date
+  collection   permanent_record_count, active_count,
+               archived_count, archived[] with id, name, date
+               and reason
+  plants[]     one object per ACTIVE plant, with every field in
+               §1B that is not user-only-private
+
+All dates in the data are ISO. "MMM DD" formats in older
+documents describe what the SCREEN renders, not the data.
+
+EVENTS STRUCTURE
+
+A flat array. Each event carries event_id, plant_id (null only
+for collection-scoped edits), type, date, time, source, device_id
+and, where applicable, note, media, media_labels, session_id,
+offset_s, package_id, and the type-specific fields (to for Rate,
+field/from/to for Edit, voids for Void).
+
+Local bookkeeping columns are stripped on the way out.
+
+TRANSCRIPT STRUCTURE
+
+One block per walk: a header line naming the session, its start
+and its duration; then the tier; then a coverage line; then the
+words with timestamps and per-plant attribution headings.
+
+Where a walk has no transcript the file SAYS SO for that walk
+rather than dropping it. Where no NEW walks exist it says "No
+new walks in this package" and explains that walks are carried
+exactly once.
+
+MARKERS / SCREEN LOG
+
+markers.json holds:
+
+  sessions[]        one entry per walk: session_id, started,
+                    duration_s, markers[], and for an INTERRUPTED
+                    walk also parts[] and parts_note
+  screen_log_note   the "evidence, not fact" wording
+  screen_log        entries for the walks in this package
+
+THERE IS NO SEPARATE screen_log.json AND NEVER HAS BEEN in the
+shipped app. Documents claiming a fifth file are wrong; a
+reviewer reasonably read that as missing data.
+
+PHOTO / MEDIA BEHAVIOUR
+
+Photos travel ONLY when the owner flags them ("For AI" on the
+Photos screen). A flagged photo is written to media/ under its
+own semantic filename —
+
+  004-MNY_2026-09-14_1837_01.jpg
+
+— so identity requires no guessing. Review quality: longest edge
+1280px, roughly 150KB. Cap of 20 per package. The full image
+never leaves the phone.
+
+Flags live OUTSIDE the event log (they are an intent about the
+next package, not history) and CLEAR when a package is confirmed
+sent. So "flagged" always means "going in the next one".
+
+PACKAGE ID
+
+PKG-YYYY-MM-DD-N, minted at build. The update file must cite it.
+An update citing a package this app never exported is rejected,
+and a package can only be answered once.
+
+EXPORTED ONCE VS REPEATED
+
+  ONCE      events, walks, transcripts, markers, flagged photos
+  REPEATED  the manifest, always current
+
+SUCCESS / FAILURE AND SENT TRACKING
+
+The app cannot see whether a Share sheet succeeded — no browser
+can, and iOS reports nothing. So it ASKS: "Did it save?" Nothing
+is marked sent until the owner answers yes. Answer no and the
+counts return untouched. A package can also be un-sent later.
+
+TRANSCRIPT VERIFICATION FIELDS
+
+  tier: verified     the transcript carried real timestamps, so
+                     the app ran its own four coverage assertions
+  tier: unverified   typed or pasted; accepted whole, not gated
+  coverage: passed | FAILED (with the failing offsets) | not
+                     checked
+
+One state per walk. Older packages contained a contradiction —
+"unverified / not checked" printed above an embedded report
+saying "verified / pass" — caused by the app not recognising the
+timestamp format its own toolchain produces. Fixed 18 Sep.
+
+INTERRUPTED / BACKGROUND RECORDING
+
+A walk interrupted by iOS becomes several recordings, kept as
+separate files. Two clocks exist and they are NOT the same
+timeline:
+
+  - marker offset_s is on the WALK'S CLOCK, which freezes while
+    the app is backgrounded;
+  - the transcript is on the STITCHED AUDIO, which does not.
+
+One real walk had a 357s clock against 785s of audio.
+
+So an interrupted walk's sidecar carries parts[] — each
+recording's clock range and its exact position in the stitched
+audio — and every marker gains:
+
+  part                  which recording it was written during
+  stitched_at_least_s   the EARLIEST point in the transcript
+                        that marker can be at
+
+READ THE SECOND AS A FLOOR, NEVER A POSITION. Audio time only
+ever runs ahead of clock time, so elapsed clock is a true lower
+bound and the part's end is the upper one. Each part reports
+background_s — audio with no clock behind it — so a reader can
+see where attribution is tight and where it is loose.
+
+A walk that ran start to finish carries none of this.
+
+VERIFIED ON A REAL WALK, 17 Sep: three recordings, two
+interruptions, six plants named aloud, all six attributed
+correctly including one sentence landing on the right plant
+across a seam.
+
+KNOWN LIMITATIONS
+
+  - ATTRIBUTION IS EVIDENCE OF WHAT WAS ON SCREEN, not proof of
+    what was discussed. Where words and markers disagree, the
+    words win.
+  - THE AUDIO NO LONGER EXISTS. Once a transcript is attached
+    AND its coverage passes, the recording is deleted from the
+    phone, the laptop and every backup. Asking for audio is not
+    a request the system can satisfy; ask for a better
+    transcript or for the owner to say more next walk.
+  - A package holds no snapshots and no per-viewer state.
+
+--------------------------------------------------------------
+ D. AI UPDATE IMPORT
+--------------------------------------------------------------
+
+REQUIRED JSON STRUCTURE
+
+  {
+    "package_id": "PKG-YYYY-MM-DD-N",
+    "generated":  "YYYY-MM-DD",
+    "changes": [
+      { "plant_id": "NNN-XXX",
+        "field": "...",
+        "value": ...,
+        "reason": "...",
+        "op": "add" | "replace",        // care_instructions only
+        "instruction_id": "...",        // care_instructions only
+        "replaces": "..." }             // replace only
+    ],
+    "unaddressed": ["NNN-XXX", ...],
+    "notes": "optional"
+  }
+
+ALLOWED FIELDS
+
+Exactly the AI-proposable list in §1B. Nothing else exists as
+far as an update file is concerned.
+
+FORBIDDEN FIELDS
+
+Every user-only field and every derived field. notes_user and
+collection_notes_user have their own rejection rule.
+
+PACKAGE_ID RULES
+
+  - must match a package this app actually exported;
+  - no previously applied update may cite the same package_id
+    (blocks double-apply);
+  - an archived plant may not be named at all.
+
+CHANGES / UNADDRESSED
+
+Every plant in the manifest must appear in EXACTLY ONE of
+changes or unaddressed. Not both, not neither. This is what
+stops a plant being silently skipped.
+
+ONE FIELD / ONE CHANGE / ONE REASON
+
+One change per field per plant, each with its own non-empty
+reason. This is enforced structurally (the row is the unit of
+approval) and matters more now that batch selection exists: a
+row carrying two ideas forces the owner to reject a good half
+with a bad one.
+
+VALIDATION
+
+The file is rejected WHOLE, with a named reason, if any of these
+fail. Nothing partial is ever applied.
+
+  package_id known · not already answered · every plant_id
+  exists · no archived plant · every field recognised · no
+  user-only or derived field · notes_user never named ·
+  care_instructions carries a valid op, ≤200 chars, and a real
+  instruction_id for replace · values match their type · enums
+  match exactly, including case · water intervals are integers
+  1–60 · a health change is an integer 1–10 carrying a reason
+  naming a visual observation · every plant appears in changes
+  or unaddressed · every change has a non-empty reason
+
+CONFLICT FLAGGING (does not reject the file)
+
+If the owner edited that exact field AFTER the package was
+generated, the row is flagged with their value, their date and
+the AI's value. They choose.
+
+REVIEW TABLE
+
+Every change is listed with plant, field, current value,
+proposed value and reason. Rows ARRIVE UNSELECTED. Select all
+and Clear exist; any row can be unticked; the Apply button is
+pinned and counts as you tick. Nothing is applied until Apply.
+
+ON APPLY
+
+Each approved row becomes an Edit event (or a Rate event for
+health) with source "ai" and the package_id attached, so
+provenance travels with the change forever. A row whose proposed
+value equals the current value writes nothing. Events count
+immediately.
+
+An applied-update record is written with the package_id and the
+accepted/rejected counts, which is what blocks a second apply
+and what the Handoff log reads.
+
+PROVENANCE / HISTORY
+
+health_source shows Me or AI, derived from who last wrote the
+number. Every AI-originated change is visibly an Edit event with
+source "ai" and its package_id. Rejections are recorded as
+counts, not netted away.
+
+FAILURE / INVALID FILE
+
+Rejected whole, with the reason named, before the review table
+renders. There is no partial or "mostly valid" state.
+
+
+===============================================================
+ 2. CURRENT UI / WORKFLOW BEHAVIOUR
+===============================================================
+
+NORMAL CARE LOGGING
+Log tab → pick an action → pick plants → log. Counts instantly.
+An "Undo" sits on the confirmation until the owner leaves the
+screen. A plant already watered or fed today reads "watered
+today", is left out of the preselection, is skipped by All and
+by planter chips, and asks before accepting a second.
+
+WEEKLY WALKTHROUGH
+Either the all-plants round, or a per-plant page with a
+Prev/Next strip for walking the collection logging as you go.
+
+RECORDING / TRANSCRIPTION
+Record on the phone, talking. iOS interruptions are normal and
+expected; each stretch becomes its own recording and the walk
+resumes. Export to a watched folder; a laptop script transcribes
+and returns a transcript; the owner attaches it in the app. On a
+coverage pass the audio is deleted everywhere.
+
+REVIEW PACKAGE
+Build → Share sheet → "Did it save?" → yes marks it sent, clears
+photo flags, and takes a snapshot.
+
+CHATGPT ANALYSIS → DISCUSSION → JSON
+Prose first, argument second, file third. AN UPDATE FILE
+PRODUCED BEFORE THE CONVERSATION HAS SETTLED IS THE WRONG SHAPE
+OF ARTEFACT.
+
+IMPORT → REVIEW → APPLY
+As §1D. Then "Since last time" shows what moved.
+
+AI CARE FOCUS
+do_next, relabelled. Always shown on the plant page even when
+empty, editable by the owner in place, and refreshed by review.
+
+HEALTH RATING
+Owner taps the score to re-rate. Confirming without changing is
+a real action: it writes a Rate event and refreshes
+health_confirmed without moving health_changed.
+
+ADHERENCE
+Counts and days only, from Water events.
+
+REMINDERS
+NOT BUILT, and blocked by the platform rather than by effort: a
+web app with no server cannot schedule a notification for later.
+The agreed direction is a catch-up banner on open, plus a
+calendar file the phone subscribes to so iOS notifies natively.
+
+SHARED PLANTER
+Selection chip and label only. See §1A.
+
+FLAGGED PHOTOS
+"For AI" per photo, cap 20, cleared on a confirmed send.
+
+STILL UNFINISHED
+The desk console (a wide laptop table) — deliberately last, and
+under question because the record lives on the phone.
+
+
+===============================================================
+ 3. VERIFIED FIXES / DESIGN CHANGES FROM OLD PLANS
+===============================================================
+
+Checked against "00 — Plant Bot — Current State V3" (11 Aug),
+"Plant Bot — Plant Registry and Care Reference V1" (6 Aug) and
+"Plant Bot — Complete 22-Plant List", all read for this report.
+
+PLANT IDS
+OLD:     PLT-001-MON … PLT-022-CAC
+CURRENT: 001-MON … 022-CAC. No prefix. The permanence rules
+         themselves survived intact — never renumber, never
+         reuse, suffix may change.
+STATUS:  VERIFIED
+
+COLLECTION COUNT
+OLD:     "Baseline living-plant count: 22"
+CURRENT: 22 permanent records, 21 active, 1 archived (009-SPD,
+         archived 11 Sep with the owner's reason). TWO MORE
+         PLANTS ARE PENDING ADDITION, which will make it 24/23.
+STATUS:  VERIFIED — and the reason no count belongs in a
+         permanent source.
+
+WHO OWNS THE COLLECTION
+OLD:     "Plant Bot is the primary system for managing the
+         user's actual plant collection."
+CURRENT: THE APP IS. Plant Bot is the reviewer.
+STATUS:  VERIFIED — governance-level change.
+
+THE /10 SCORE
+OLD:     "The /10 score is a Plant Bot assessment."
+CURRENT: HEALTH IS THE OWNER'S JUDGEMENT, MADE BY LOOKING AT THE
+         PLANT. The app never computes it and the AI may only
+         PROPOSE one from named visual evidence.
+STATUS:  VERIFIED — **the single most important contradiction in
+         the old sources.** It must not survive.
+
+BACKEND
+OLD:     "Cloudflare Worker/D1/R2 backend target prepared."
+CURRENT: No backend, and none planned. Local-first, per-origin
+         storage, manual file handoff. $0 running cost and no
+         paid API both survive unchanged.
+STATUS:  VERIFIED
+
+PENDING / UPDATE MODEL
+OLD:     entries wait for a commit step
+CURRENT: immediate commit; Void is the undo
+STATUS:  VERIFIED
+
+ONE-AT-A-TIME APPROVAL
+OLD:     "no apply-all button, ever"
+CURRENT: Select all / Clear exist. Rows still arrive unselected
+         and any row can be rejected alone. Reversed knowingly
+         on 16 Sep, because the substantive argument now happens
+         in conversation before the file exists.
+STATUS:  VERIFIED
+
+SCREEN LOG PACKAGING
+OLD:     a separate screen_log.json
+CURRENT: inside markers.json under "screen_log". There was never
+         a fifth file.
+STATUS:  VERIFIED
+
+TRANSCRIPT PARSER
+OLD:     n/a
+CURRENT: the app reads the timestamp format its own transcriber
+         produces. Before 18 Sep it did not, so every transcript
+         landed "unverified", coverage never ran, and no audio
+         was ever deleted.
+STATUS:  VERIFIED
+
+MARKER TIMING / BACKGROUND RECORDING
+OLD:     offsets assumed to be one timeline
+CURRENT: parts[] and stitched_at_least_s. Offsets that appeared
+         to "reset" were a clock bug, fixed 14 Sep; the real
+         issue is clock-versus-audio divergence.
+STATUS:  VERIFIED on one real three-part walk
+
+NAVIGATION
+OLD:     taskbar HOME | PLANTS | RECORD | MORE
+CURRENT: five items — Home, Plants, Rec, Log, More. Log care was
+         added after real use. Record no longer clears the
+         navigation stack; sideways browsing keeps the trail
+         honest; forward swipe added.
+STATUS:  VERIFIED
+
+DUPLICATE WATER / FEED
+OLD:     n/a
+CURRENT: prevented at the selection step, visibly, with an
+         explicit override. Never by silently dropping an event.
+STATUS:  VERIFIED
+
+MANIFEST / SCHEMA
+OLD:     small manifest
+CURRENT: spot, the six reference fields, planter_shared_water,
+         health_source, health_changed, avg_days_late,
+         interval_days, next_due, days_past, plus a collection
+         block.
+STATUS:  VERIFIED
+
+AI CARE FOCUS
+OLD:     "Do Next"
+CURRENT: same field, relabelled AI CARE FOCUS, always shown,
+         owner-editable.
+STATUS:  VERIFIED
+
+PACKAGE TRACKING
+OLD:     n/a
+CURRENT: once-only by id, marked on confirmation, reversible.
+STATUS:  VERIFIED
+
+SHARED PLANTER
+OLD:     "must not automatically be assumed to require identical
+         watering" — correct then and still correct
+CURRENT: each member keeps its own interval; shared_water drives
+         selection and a label only. A planter-level interval
+         was designed and dropped.
+STATUS:  VERIFIED
+
+PHOTO HANDLING
+OLD:     photos attached to chat by hand
+CURRENT: flagged photos travel in the package under semantic
+         filenames. Manual attachment still works.
+STATUS:  VERIFIED
+
+SNAPSHOT SEMANTICS
+OLD:     n/a
+CURRENT: taken on package build and on demand; never exported.
+STATUS:  VERIFIED
+
+WHAT SURVIVED FROM V3 UNCHANGED, and should be carried forward:
+permanent-ID rules; condition-based care over rigid schedules;
+reference interval as approximation; colour never the only
+signal; the 20px readability floor; Prev / All plants / Next;
+richer care categories behind a "More" screen; $0 operation; no
+paid API; manual review-package handoff.
+
+
+===============================================================
+ 4. KNOWN BUGS / OPEN VERIFY ITEMS
+===============================================================
+
+1. do_next HAS NO LENGTH LIMIT IN THE IMPORTER.
+   FIELD_DEFINITIONS says ≤160 characters. The validator does
+   not check it; the 160 exists only as a maxLength on the app's
+   own text box. An update file could set a 500-character care
+   focus and it would be accepted. **Do not write "≤160,
+   enforced" into a contract.** Either the contract says
+   "convention, not enforced", or the check is added.
+   STATUS: CONFIRMED BY READING THE VALIDATOR.
+
+2. THE SIX REFERENCE FIELDS HAVE NO LENGTH LIMIT AT ALL.
+   Nothing stops a 10,000-character environment field.
+   STATUS: CONFIRMED.
+
+3. BACKGROUND-RECORDING DIVERGENCE IS NOT FULLY CHARACTERISED.
+   On 14 Sep iOS kept recording while backgrounded (357s clock
+   vs 785s audio). On 17 Sep it stopped within 2 seconds
+   (170s vs 170.6s). The difference is probably a phone call
+   versus an app switch, but that is UNTESTED.
+   Mitigation is in place either way: background_s reports the
+   width of the uncertainty per part.
+   STATUS: VERIFY.
+
+4. WITHIN-PART ATTRIBUTION IS A BOUND, NOT A POSITION.
+   Seam positions are now exact. Positions inside a part are
+   bounded, because the clock can still lag the audio there.
+   STATUS: BY DESIGN, but the contract must not overstate it.
+
+5. NO CORRECTION MECHANISM BEYOND SUPERSEDING AND VOID.
+   A mistaken care event older than the screen that wrote it
+   stays. One such exists in the record: an Aloe watering of
+   14 Sep that was a selection error, not evidence.
+   STATUS: DELIBERATE. Do not build correction machinery
+   without a decision.
+
+6. SHARED-PLANTER OPERATIONAL INTERVAL NOT BUILT.
+   Members of a shared pot can report different due dates from
+   one soak. Accepted by the owner, not a defect.
+   STATUS: DELIBERATE.
+
+7. REMINDERS NOT BUILT, AND PLATFORM-BLOCKED.
+   STATUS: OPEN, with an agreed direction.
+
+8. FIVE WINTER INTERVALS APPLIED ON 17 Sep ARE QUESTIONABLE.
+   011-HOL, 012-HOL, 013-OXA, 017-PTH, 018-PTH came out with
+   winter EQUAL to summer, all carrying the same boilerplate
+   reason — the only repeated reason in 228 rows. 013-OXA is
+   self-contradictory: the same file's own season field says
+   "reduce or stop watering until new growth returns".
+   STATUS: IN THE RECORD, owner informed, correctable by editing
+   the field.
+
+9. PACKAGE UN-SEND IS NOT OFFERED ONCE A REPLY HAS BEEN APPLIED.
+   Correct — un-sending then would orphan the applied update —
+   but it means a package answered and then lost cannot be
+   recovered this way.
+   STATUS: BY DESIGN, worth stating.
+
+10. BACKUP DATE IS RECORDED ON THE TAP, NOT ON CONFIRMATION.
+    Deliberately asymmetric with packages: a wrong "sent" loses
+    evidence permanently, a wrong backup date only misleads
+    about recency.
+    STATUS: DELIBERATE.
+
+11. THE LIVE PLANT BOT PROJECT INSTRUCTIONS WERE NOT READ.
+    They live in the ChatGPT project field; no copy exists on
+    this machine. §6 classifies them from their described role
+    only.
+    STATUS: VERIFY — ChatGPT can see them; I cannot.
+
+12. RESTORE MERGES AND NEVER REMOVES.
+    A backup is protection against losing the device. It CANNOT
+    roll back an applied update. The protection there is
+    "Mark this point" before applying, then "Since last time".
+    STATUS: BY DESIGN, frequently misunderstood, worth stating.
+
+
+===============================================================
+ 5. PROPOSED PERMANENT PROJECT CONTRACT STRUCTURE
+===============================================================
+
+THE FOUR-PART STRUCTURE IS SUFFICIENT. I would not add a fifth.
+
+1. PROJECT INSTRUCTIONS — CONTRACT
+   Stable governance only: the four roles, what each owns, the
+   rules that do not bend, and the reasoning that makes them
+   stick. **PROJECT-CHARTER.txt in the repo already is this
+   document.** It should be installed as Part 1 rather than
+   rewritten.
+
+2. 00 — PLANT BOT — CURRENT STATE — CURRENT ORIENTATION
+   Short. What the app is, what it is for, where data lives,
+   what the cycle looks like, what is unfinished. NO PLANT DATA,
+   NO COUNTS, NO IDENTITIES. If a sentence would be wrong after
+   the owner adds a plant, it does not belong here.
+
+3. PLANT BOT — DATA & PACKAGE CONTRACT — CONTRACT
+   §1B, §1C and §1A of this report, cleaned up. The field table
+   WITH ITS EDITABILITY COLUMN, the event model, the package
+   schema, the live-truth boundary.
+
+   **THIS MUST NOT BE FIELD_DEFINITIONS.md.** That file is 900+
+   lines of build specification — validation internals, screen
+   behaviour, construction detail. Handing it over gives the AI
+   a construction manual where it needs a data contract. Part 3
+   is a derived subset, perhaps 200 lines, and
+   FIELD_DEFINITIONS stays in the repo as the app's own spec.
+
+4. PLANT BOT — AI REVIEW & UPDATE CONTRACT — CONTRACT
+   How to read a package, what may be proposed, what may never
+   be, the evidence and reasoning rules, the JSON contract, and
+   the conversation-before-file rule.
+
+   **IT MUST NOT RESTATE THE FIELD LIST.** Part 3 owns that,
+   with the editability column; Part 4 points at it. Two
+   documents both listing fields is the exact drift this whole
+   exercise is correcting.
+
+GENERAL REFERENCE (optional, and genuinely additive): material
+that is NOT about these particular plants — a propagation guide,
+a pest identification key. It cannot drift against the app
+because it makes no claim about the collection.
+
+
+===============================================================
+ 6. EXISTING SOURCES — KEEP / REPLACE / RETIRE
+===============================================================
+
+PLANT BOT PROJECT INSTRUCTIONS (live, in the project field)
+  Role:     governance
+  Problem:  NOT READ — see §4 item 11
+  Disposition: REPLACE with PROJECT-CHARTER.txt, after ChatGPT
+            has compared the two and reported anything in the
+            live instructions that the charter does not cover.
+  Preserve: any rule present there and absent from the charter.
+  STATUS:   VERIFY
+
+00 — PLANT BOT — CURRENT STATE V3  (11 Aug, read in full)
+  Role:     orientation + de facto spec
+  Problem:  materially obsolete. PLT- IDs; "22 living";
+            Cloudflare backend; four-item taskbar; "V0.1.1 in
+            progress"; and critically **"the /10 score is a
+            Plant Bot assessment"**, which contradicts the
+            governing rule that health is human judgement.
+            It also contains a great deal of UI specification
+            that belongs to the app, not to the AI.
+  Disposition: REPLACE with a short new 00.
+  Preserve: permanent-ID rules; condition-based care over rigid
+            schedules; reference interval as approximation;
+            colour never the only signal; 20px floor; $0 and no
+            paid API; manual handoff; "historical assessments
+            are history, not current condition".
+  STATUS:   VERIFIED
+
+PLANT BOT — PLANT REGISTRY AND CARE REFERENCE V1  (6 Aug, read)
+  Role:     per-plant historical baselines and care emphasis
+  Problem:  **THIS IS LIVE PLANT DATA FROZEN IN A PROJECT
+            SOURCE.** It is exactly what must not be permanent:
+            PLT- IDs, per-plant condition from August, care
+            emphasis now superseded by the six reference fields
+            the AI itself populated on 17 Sep. Kept installed,
+            it will contradict the manifest every round.
+  Disposition: RETIRE.
+  Preserve: **before retiring, diff its per-plant content
+            against the app's current reference fields and
+            notes.** Anything genuinely useful and absent should
+            be proposed INTO THE APP through a normal update
+            file, not carried in a document. Its historical
+            baselines are worth reading once for context.
+  STATUS:   VERIFIED
+
+PLANT BOT — COMPLETE 22-PLANT LIST  (read)
+  Role:     roster
+  Problem:  PLT- IDs; 22; derived from Registry V1
+  Disposition: RETIRE. The manifest is the roster.
+  Preserve: nothing.
+  STATUS:   VERIFIED
+
+GPT-PROJECT-BRIEF.txt  (repo)
+  Role:     how the AI reads a package
+  Problem:  written 14 Sep against an app that has changed four
+            times since, and amended three times. It works, but
+            it reads as a document with corrections stapled on.
+  Disposition: REPLACE — it becomes Part 4.
+  Preserve: its tone and its Part 6 ("what you can honestly
+            conclude"), which is the best thing in it.
+  STATUS:   VERIFIED
+
+FIELD_DEFINITIONS.md  (repo)
+  Role:     the app's build specification
+  Problem:  none as a repo document; wrong as a project source.
+  Disposition: KEEP IN THE REPO, DO NOT INSTALL. Part 3 is
+            derived from it.
+  Preserve: n/a — it stays where it is.
+  STATUS:   VERIFIED
+
+gpt-prompt.txt  (repo)
+  Role:     the output contract
+  Problem:  overlaps Part 4 almost entirely
+  Disposition: REPLACE — fold into Part 4.
+  Preserve: the allowed-field list and the rule wording.
+  STATUS:   VERIFIED
+
+NUMBERED 01 / 02 / 03 / 03.1 WORKSTREAM DOCUMENTS
+  Problem:  NOT FOUND ON THIS MACHINE under those names. What
+            exists is: Current State V1 and V2 (Downloads/GPT
+            TEMP), two Word master references, prototype bundles
+            (DS_Garden V0.1.4, CODEX V0.1.5, a "Claude clean
+            room handoff"), old review ZIPs PB-REVIEW-0001/0002,
+            and a Plant Catalog v1 draft PDF.
+  Disposition: WORKSTREAM HISTORY ONLY. None should be a source.
+  Preserve: nothing operational. They record how the project got
+            here, which is worth reading once.
+  STATUS:   VERIFY — if the 01/02/03 documents exist inside the
+            ChatGPT project rather than on disk, they were not
+            seen and are unclassified.
+
+GPT-UPDATE-2026-09-17 / -09-18, REVIEW-RESPONSE-2026-09-15
+  Role:     one-off notes for specific review rounds
+  Disposition: WORKSTREAM HISTORY ONLY. Never sources.
+  STATUS:   VERIFIED
+
+
+===============================================================
+ 7. RULES THAT MUST SURVIVE INTO THE FINAL CONTRACT
+===============================================================
+
+Classification key:
+  CE  critical enforcement reinforcement
+  FL  functional layering
+  FD  failure-derived reinforcement
+  UD  unnecessary duplication
+
+THE APP OWNS LIVE TRUTH. The AI reads a snapshot of it and
+proposes; it never holds it.                              [CE]
+
+HEALTH IS HUMAN JUDGEMENT, NEVER DERIVED FROM WATERING
+HISTORY. The AI may propose a value ONLY from visible evidence —
+colour, posture, rot, pests — and must name what it saw.
+Old sources say the opposite; this must win.          [CE + FD]
+
+ADHERENCE IS FACTUAL AND DERIVED, AND IS NOT A HEALTH SCORE.
+Counts and days. Never out of ten.                        [CE]
+
+AN ELAPSED INTERVAL NEVER MEANS "WATER NOW". It is a fact about
+the calendar and a prompt to look. No document, screen or reply
+may render it as an instruction.                      [CE + FD]
+
+CURRENT OBSERVED EVIDENCE OVERRIDES OLDER OBSERVATIONS, and a
+historical assessment is history, not current condition.
+(Carried forward from V3, where it was already right.)    [FL]
+
+WHERE TRANSCRIPT WORDS AND MARKER TIMING CONFLICT, THE WORDS
+WIN. Markers are evidence of what was on screen.      [CE + FD]
+
+USER NOTES ARE NEVER AI-EDITED. A file naming notes_user or
+collection_notes_user is rejected whole.                  [CE]
+
+DERIVED FIELDS ARE NEVER PROPOSED.                        [CE]
+
+THE AI CANNOT WRITE TO THE RECORD AT ALL. Not "normally
+proposes" — there is no path by which it writes. It produces a
+file; a person approves rows.                             [CE]
+
+ONE CHANGE / ONE FIELD / ONE REASON. More important since batch
+selection exists: a bundled row forces a good half to be
+rejected with a bad one.                              [CE + FD]
+
+UNCERTAINTY IS MARKED VERIFY. "There is not enough to go on" is
+a real contribution and is never treated as failure.      [FL]
+
+NO STATISTICAL CLAIMS FROM A TINY SAMPLE. 22 plants and a
+handful of ratings cannot support inference. Hold the evidence
+still and stop.                                       [CE + FL]
+
+PROVENANCE AND HISTORY ARE PRESERVED. Append-only; corrections
+supersede; a Void takes back without deleting; every AI change
+carries its package_id.                                   [CE]
+
+NO PAID API DEPENDENCY WITHOUT APPROVAL. $0 routine operation.
+Manual package handoff is the approved route. (Carried forward
+from V3 unchanged.)                                       [FL]
+
+A WORKING IMPLEMENTATION MAY INVALIDATE OLD DESIGN ASSUMPTIONS
+BUT DOES NOT SILENTLY OVERRIDE GOVERNANCE. Where the app and a
+rule disagree, that is a decision to be made explicitly and
+written down — not resolved by whichever was edited last. [CE]
+
+THE AI IS EXPECTED TO SAY WHEN IT THINKS THE APP OR THE
+DOCUMENTS ARE WRONG. Its first review found two real defects,
+which has been its single most valuable output to date. This is
+a right, not a tolerance.                             [FD]
+
+AUDIO DOES NOT EXIST AFTER TRANSCRIPTION. Once a transcript is
+attached and coverage passes, every copy is deleted. Ask for a
+better transcript, never for the recording.           [FL + FD]
+
+Rules classified UD: none. Each of the above appears once in the
+proposed structure — governance in Part 1, mechanics in Parts 3
+and 4, with Part 4 pointing at Part 3 rather than restating it.
+
+
+===============================================================
+ 8. WHAT SHOULD NOT BE IN PROJECT INSTRUCTIONS
+===============================================================
+
+STAYS IN THE APP AND THE MANIFEST — never in a permanent source:
+
+  current plant count (it is about to change)
+  plant identities and names
+  health values and status labels
+  rooms, spots, pots, planters
+  watering state, due dates, adherence
+  current AI Care Focus text
+  event history
+  current care values — intervals, feed, light, soil
+  the six reference fields
+  current photos
+  which photos are flagged
+  what was said on any walk
+
+THE TEST: if a sentence would become wrong when the owner adds a
+plant, waters something, or edits a field, it belongs in the app.
+
+STAYS IN THE CODE AND WORKSTREAM HISTORY — not governance:
+
+  screen layouts, navigation structure, tab bars
+  typography and colour tokens (the 20px floor is a governing
+    accessibility rule; the rest of the type scale is not)
+  IndexedDB schema, migrations, storage internals
+  validation implementation
+  recording, chunking, interruption and stitching mechanics
+  build, lint and test status
+  prototype bundles and version numbers
+  the reasoning behind individual fixes
+
+
+===============================================================
+ 9. EXACT RECOMMENDATION TO CHATGPT
+===============================================================
+
+A. PROJECT INSTRUCTIONS should govern ONLY: the four roles and
+   what each owns; the rules in §7; where each fact lives; what
+   the system cannot do. It should contain no plant data, no UI
+   specification and no implementation detail.
+   PROJECT-CHARTER.txt already is this. Compare it against the
+   live instructions and report anything it fails to cover.
+
+B. 00 — CURRENT STATE should be SHORT orientation: what the app
+   is, where data lives, the review cycle, what is unfinished,
+   and the pointer that the manifest is the roster. No counts,
+   no identities, no condition.
+
+C. THE DATA & PACKAGE CONTRACT should contain §1A, §1B and §1C
+   of this report: the event model, the field table with its
+   editability column, the package schema, the transcript and
+   marker semantics including the two-timeline rule, and the
+   live-truth boundary. It owns the field list. It is NOT
+   FIELD_DEFINITIONS.md.
+
+D. THE AI REVIEW & UPDATE CONTRACT should contain §1D and the
+   evidence rules: how to read a package, the JSON shape,
+   validation, what may never be proposed, one change / one
+   field / one reason, conversation before file, and what can
+   honestly be concluded from a record this small. It points at
+   C for fields and never restates them.
+
+E. RETIRE: Registry and Care Reference V1; the 22-Plant List;
+   gpt-prompt.txt (folded into D). REPLACE: 00 V3; the project
+   instructions; GPT-PROJECT-BRIEF. KEEP IN REPO ONLY:
+   FIELD_DEFINITIONS.md. HISTORY ONLY: every prototype bundle,
+   old review ZIP, Word master reference and dated update note.
+
+F. REMAINS VERIFY: the live project instructions (not readable
+   from this machine); the 01/02/03/03.1 documents if they exist
+   only inside the project; whether iOS background recording
+   behaves differently for a call than an app switch; the
+   unenforced do_next and reference-field length limits, which
+   are either documented as conventions or enforced in code.
+
+G. DO NOT WRITE INTO PERMANENT SOURCES: anything in §8. In
+   particular, DO NOT reinstall per-plant condition baselines.
+   The app holds that now and the manifest carries it every
+   round; a frozen copy would contradict it within a week.
+
+
+===============================================================
+ 10. COMPLETENESS CHECK
+===============================================================
+
+Reviewed current code and live data rather than relying on old
+documents.                                              CONFIRMED
+  — read src/types/plant.ts, types/event.ts, db/schema.ts,
+    db/derive.ts, db/events.ts, package/export.ts, validate.ts,
+    import.ts, reviewFlags.ts, capture/parts.ts, coverage.ts,
+    sessions.ts, nav/stack.ts, and the real 17 Sep manifest,
+    events, markers and transcript.
+
+Identified all material implementation-vs-document conflicts
+found.                                                  CONFIRMED
+  — §3, with the "/10 is a Plant Bot assessment" contradiction
+    called out as the most serious.
+
+Included all GPT-editable and protected fields.         CONFIRMED
+  — §1B, taken from the lists the validator itself reads.
+
+Included package / export / import behaviour.           CONFIRMED
+  — §1C and §1D.
+
+Included remaining VERIFY items.                        CONFIRMED
+  — §4, twelve items, including two unenforced limits found by
+    reading the validator rather than trusting the spec.
+
+Did not recommend copying live plant state into permanent
+sources.                                                CONFIRMED
+  — §8, and Registry V1 is retired for exactly that reason.
+
+Did not modify code or project files.                   CONFIRMED
+  — this document is the only thing written.
+
+Sufficient for ChatGPT to draft the final contract without
+guessing about implementation behaviour.            CONFIRMED,
+with three exceptions, all named in §4 and §6: the live project
+instructions were not readable from this machine; the
+01/02/03/03.1 documents were not found on disk; and the iOS
+background-recording difference is untested. Everything else in
+this report was read from code or from real exported data.
