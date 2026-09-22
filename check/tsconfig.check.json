@@ -29,6 +29,7 @@
     "../src/capture/parts.ts",
     "../src/capture/clock.ts",
     "../src/nav/stack.ts",
-    "../src/package/validate.ts"
+    "../src/package/validate.ts",
+    "../src/package/registry.ts"
   ]
 }

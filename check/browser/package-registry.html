@@ -1,0 +1,305 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>package registry</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  Built, confirmed sent, discarded — and recovered from a ZIP.
+
+  ## Why this harness is pinned to 127.0.0.1
+
+  `PKG-2026-09-21-1` was built on the phone, reviewed by the AI, answered, and
+  then refused by the app because the record was only ever written inside a
+  closure held in React state. The fix writes the record when the package is
+  BUILT. Testing that means actually calling `buildReviewPackage`, which folds
+  pending entries, mints a package id and takes a since-last-time snapshot —
+  all of which are writes to a real record.
+
+  `localhost:5173` holds the owner's record. IndexedDB is per-origin, so
+  `127.0.0.1:5173` is a different, empty database that seeds itself from
+  `SEED_PLANTS.json` on first open. This harness REFUSES TO RUN anywhere else,
+  because the one thing worse than not testing the fix is testing it on their
+  plants.
+
+    http://127.0.0.1:5173/check/browser/package-registry.html
+
+  Everything it writes is either in that throwaway database or, for the two
+  read-only assertions, nothing at all.
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+const ok = (name, cond) => check(name, !!cond, true);
+
+/* -- the guard, before anything is imported that could open a database ----- */
+
+if (location.hostname !== '127.0.0.1') {
+  out.textContent = 'REFUSED\n\n'
+    + `This harness calls buildReviewPackage, which writes. It runs only on\n`
+    + `127.0.0.1, whose database is a throwaway. You opened it on\n`
+    + `"${location.hostname}", which on this machine is where the owner's\n`
+    + `record lives. Open http://127.0.0.1:5173/check/browser/package-registry.html\n`
+    + `instead.`;
+  throw new Error('wrong origin');
+}
+
+const JSZip = (await import('jszip')).default;
+const { openDeezPlants, closeDeezPlants } = await import('/src/db/schema.ts');
+const { boot, refresh } = await import('/src/boot.ts');
+const { buildReviewPackage, confirmPackageSent, discardBuiltPackage, registerRecoveredPackage } =
+  await import('/src/package/export.ts');
+const { isConfirmedSent, consumedEventIds, consumedSessionIds, recoveryBlocker } =
+  await import('/src/package/registry.ts');
+const { readPackageZip } = await import('/src/package/recoverZip.ts');
+const { validateUpdateFile } = await import('/src/package/validate.ts');
+
+// `boot` seeds this throwaway database from SEED_PLANTS.json on first open, the
+// same path the app itself takes, and `refresh` is the app's own full recompute
+// — so the state handed to `buildReviewPackage` here is the state the screen
+// would hand it.
+const booted = await boot();
+const TODAY = booted.as_of;
+const freshState = async () => (await refresh()).state;
+
+let db = await openDeezPlants();
+
+// Start from a clean registry in this throwaway database, so a re-run of the
+// harness is not reading the previous run's rows.
+for (const p of await db.getAll('packages')) await db.delete('packages', p.package_id);
+for (const a of await db.getAll('applied_updates')) await db.delete('applied_updates', a.package_id);
+
+log(`\nseeded: ${(await db.getAll('plants')).length} plants, ${(await db.getAll('events')).length} events`);
+
+/* -- 1. building persists the record, unsent ------------------------------- */
+
+log('\n— built, not sent —');
+
+const built = await buildReviewPackage(db, await freshState(), TODAY);
+const afterBuild = await db.get('packages', built.package_id);
+
+// THE FIX. Before this, nothing was in the store until "Yes, saved" was
+// tapped, and losing the screen lost the package for good.
+ok('the record exists the moment the package is built', !!afterBuild);
+ok('and it is not confirmed sent', afterBuild && !isConfirmedSent(afterBuild));
+check('its id is the one the manifest carries', built.manifest.package_id, built.package_id);
+
+const carried = { events: afterBuild.event_ids.length, walks: (afterBuild.session_ids ?? []).length };
+ok('it carried some entries', carried.events > 0);
+
+// The old safety, intact: an unconfirmed package consumes nothing, so a
+// cancelled share sheet still costs nothing.
+const all1 = await db.getAll('packages');
+check('a built package consumes no entries', consumedEventIds(all1).size, 0);
+check('and no walks', consumedSessionIds(all1).size, 0);
+
+/* -- 2. it survives a reload ----------------------------------------------- */
+
+log('\n— across a reopen —');
+
+await closeDeezPlants();
+db = await openDeezPlants();
+const reopened = await db.get('packages', built.package_id);
+ok('the built package is still there after closing and reopening the database', !!reopened);
+ok('still unconfirmed', reopened && !isConfirmedSent(reopened));
+check('with the same entries', reopened.event_ids.length, carried.events);
+
+/* -- 3. an update against it is refused, and says how to fix it ------------ */
+
+log('\n— the validator —');
+
+const anyPlant = reopened.plant_ids[0];
+const state = await freshState();
+const updateFile = {
+  package_id: built.package_id,
+  generated: TODAY,
+  changes: [{ plant_id: anyPlant, field: 'light', value: 'Bright indirect light', reason: 'A specific reason about this plant.' }],
+  unaddressed: reopened.plant_ids.filter((id) => id !== anyPlant),
+};
+const ctx = async () => ({
+  state: await freshState(),
+  packages: await db.getAll('packages'),
+  appliedUpdates: await db.getAll('applied_updates'),
+  events: await db.getAll('events'),
+});
+
+{
+  const r = validateUpdateFile(updateFile, await ctx());
+  ok('an update citing a built-but-unconfirmed package is refused', !r.ok);
+  ok('and the reason points at Confirm sent', !r.ok && r.reason.includes('Confirm sent'));
+}
+
+{
+  const r = validateUpdateFile({ ...updateFile, package_id: 'PKG-1999-01-01-1' }, await ctx());
+  ok('an id this app never exported is still refused', !r.ok);
+  ok('and is refused for not existing, not for being unconfirmed',
+    !r.ok && !r.reason.includes('Confirm sent'));
+}
+
+/* -- 4. confirm sent ------------------------------------------------------- */
+
+log('\n— confirm sent —');
+
+await confirmPackageSent(db, built.package_id, TODAY);
+const confirmed = await db.get('packages', built.package_id);
+ok('the record is now confirmed sent', isConfirmedSent(confirmed));
+check('and carries the date it was confirmed on', confirmed.sent, TODAY);
+check('its entries are now consumed', consumedEventIds([confirmed]).size, carried.events);
+
+{
+  const r = validateUpdateFile(updateFile, await ctx());
+  ok('and the AI update validates', r.ok);
+}
+
+// Idempotent: a second tap must not re-date a settled record.
+await confirmPackageSent(db, built.package_id, '2026-12-25');
+check('confirming twice does not move the date', (await db.get('packages', built.package_id)).sent, TODAY);
+
+// Once-only delivery: a confirmed package's entries do not travel again.
+{
+  const second = await buildReviewPackage(db, await freshState(), TODAY);
+  const overlap = second.manifest && (await db.get('packages', second.package_id)).event_ids
+    .filter((id) => confirmed.event_ids.includes(id));
+  check('the next package repeats none of its entries', overlap, []);
+  await discardBuiltPackage(db, second.package_id);
+}
+
+/* -- 5. a package cannot be answered twice -------------------------------- */
+
+log('\n— one answer per package —');
+
+await db.put('applied_updates', { package_id: built.package_id, applied: TODAY, accepted_count: 1, rejected_count: 0 });
+{
+  const r = validateUpdateFile(updateFile, await ctx());
+  ok('the same package cannot be answered twice', !r.ok);
+  ok('and the reason says it was already applied', !r.ok && r.reason.includes('already been applied'));
+}
+await db.delete('applied_updates', built.package_id);
+
+// Discard must not be a back door to un-sending a settled round.
+{
+  let threw = false;
+  try { await discardBuiltPackage(db, built.package_id); } catch { threw = true; }
+  ok('Discard refuses a confirmed-sent package', threw);
+  ok('and it is still there', !!(await db.get('packages', built.package_id)));
+}
+
+/* -- 6. discard returns entries to eligibility ---------------------------- */
+
+log('\n— discard —');
+
+const third = await buildReviewPackage(db, await freshState(), TODAY);
+const thirdRecord = await db.get('packages', third.package_id);
+await discardBuiltPackage(db, third.package_id);
+ok('a discarded build is gone from the registry', !(await db.get('packages', third.package_id)));
+
+const fourth = await buildReviewPackage(db, await freshState(), TODAY);
+const fourthRecord = await db.get('packages', fourth.package_id);
+check('and its entries come back in the next package',
+  thirdRecord.event_ids.every((id) => fourthRecord.event_ids.includes(id)), true);
+await discardBuiltPackage(db, fourth.package_id);
+
+/* -- 7. recovery from the ZIP -------------------------------------------- */
+
+log('\n— recovery from a ZIP —');
+
+// A real ZIP, the same four files a package carries, standing in for the one
+// sitting in the AI's chat. Its id is deliberately not one this database ever
+// minted: recovery must work from the file alone.
+const LOST = 'PKG-2026-09-20-7';
+// Entry ids no package in this database carries. Using real ones here trips
+// the double-send precondition — which it did on the first run of this
+// harness, correctly: the first package had already been confirmed sent with
+// those entries in it. Kept as a note because that was the check working.
+const lostEvents = ['EV-LOST-1', 'EV-LOST-2', 'EV-LOST-3'].map((event_id) => ({ event_id }));
+const lostPlants = (await db.getAll('plants')).slice(0, 4).map((p) => ({ plant_id: p.plant_id, name: p.name }));
+
+const makeZip = async (over = {}) => {
+  const zip = new JSZip();
+  zip.file('manifest.json', JSON.stringify(over.manifest ?? {
+    package_id: LOST, generated: '2026-09-20', plants: lostPlants,
+  }));
+  if (over.events !== null) zip.file('events.json', JSON.stringify(over.events ?? lostEvents));
+  zip.file('transcript.txt', 'No new walks in this package.\n');
+  zip.file('markers.json', JSON.stringify({ sessions: [] }));
+  return zip.generateAsync({ type: 'blob' });
+};
+
+{
+  const read = await readPackageZip(db, await makeZip());
+  ok('the ZIP is read', read.ok);
+  const rec = read.value.record;
+  check('the original package_id is preserved', rec.package_id, LOST);
+  check('its generated date comes from the manifest', rec.generated, '2026-09-20');
+  check('its plants come from the manifest', rec.plant_ids, lostPlants.map((p) => p.plant_id));
+  check('its entries come from events.json', rec.event_ids, lostEvents.map((e) => e.event_id));
+  check('it lands unconfirmed', rec.sent, null);
+  check('and marked as recovered', rec.recovered, true);
+
+  await registerRecoveredPackage(db, rec);
+  const stored = await db.get('packages', LOST);
+  ok('it is in the registry', !!stored);
+  ok('as built, not sent', !isConfirmedSent(stored));
+
+  // Still consumes nothing until confirmed — recovery restores the record, not
+  // a claim about what the AI has seen.
+  check('a recovered package consumes nothing until confirmed',
+    [...consumedEventIds(await db.getAll('packages'))].filter((id) => rec.event_ids.includes(id)),
+    []);
+
+  await closeDeezPlants();
+  db = await openDeezPlants();
+  ok('and it survives a reopen', !!(await db.get('packages', LOST)));
+}
+
+/* -- 8. recovery cannot be used to double-send or to overwrite ------------ */
+
+{
+  const read = await readPackageZip(db, await makeZip());
+  ok('recovering the same package twice is refused',
+    recoveryBlocker(read.value.record, await db.getAll('packages')) !== null);
+}
+
+{
+  // The precondition the owner asked for, enforced: a confirmed-sent package
+  // already carrying one of these entries means stop.
+  const clash = await readPackageZip(db, await makeZip({
+    manifest: { package_id: 'PKG-2026-09-19-3', generated: '2026-09-19', plants: lostPlants },
+    events: confirmed.event_ids.slice(0, 2).map((event_id) => ({ event_id })),
+  }));
+  const blocker = recoveryBlocker(clash.value.record, await db.getAll('packages'));
+  ok('recovery is refused when a sent package already carried its entries', blocker !== null);
+  ok('and the refusal names the package that already carried them',
+    blocker && blocker.includes(confirmed.package_id));
+
+  let threw = false;
+  try { await registerRecoveredPackage(db, clash.value.record); } catch { threw = true; }
+  ok('registerRecoveredPackage enforces it too, not just the screen', threw);
+}
+
+ok('a ZIP with no manifest is refused', !(await readPackageZip(db, await (async () => {
+  const zip = new JSZip();
+  zip.file('events.json', '[]');
+  return zip.generateAsync({ type: 'blob' });
+})())).ok);
+
+ok('a file that is not a ZIP is refused',
+  !(await readPackageZip(db, new Blob(['not a zip at all']))).ok);
+
+/* -- 9. confirming a recovered package closes the loop ------------------- */
+
+log('\n— confirming a recovered package —');
+
+await confirmPackageSent(db, LOST, TODAY);
+ok('a recovered package can be confirmed sent', isConfirmedSent(await db.get('packages', LOST)));
+ok('and it keeps its recovered marking', (await db.get('packages', LOST)).recovered === true);
+
+log(`\nregistry now: ${(await db.getAll('packages')).map((p) => `${p.package_id}${isConfirmedSent(p) ? '' : ' (unsent)'}`).join(', ')}`);
+log(fails === 0 ? '\nALL PASSED' : `\n${fails} FAILED`);
+</script>
+</body></html>

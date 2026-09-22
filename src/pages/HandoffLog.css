@@ -166,3 +166,63 @@
   color: var(--ink);
   border-color: var(--line-strong);
 }
+
+.hand-state.unsent { color: var(--warn); }
+.hand-leg-icon.unsent { color: var(--warn); }
+
+/* The one thing on this screen that needs doing rather than reading. */
+.hand-alert {
+  margin: 0 0 16px;
+  padding: 13px 15px;
+  background: var(--panel);
+  border: 1px solid var(--warn);
+  border-radius: 12px;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.hand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.hand-actions .hand-unsend { margin: 0; }
+
+/* The picker itself is never seen; the button in front of it is. A bare file
+   input cannot be made to match anything else on these screens. */
+.hand-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hand-recover {
+  min-height: 48px;
+  padding: 11px 20px;
+  font: 600 21px/1 var(--sans);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+}
+
+.hand-refused {
+  margin: 14px 0 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--warn);
+  text-wrap: pretty;
+}
+
+.hand-recovered {
+  margin: 14px 0 0;
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink);
+  text-wrap: pretty;
+}

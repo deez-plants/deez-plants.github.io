@@ -569,7 +569,7 @@ export default function App() {
   } else if (screen.kind === 'how') {
     body = <HowItWorks backLabel={nav.backLabel ?? 'All pages'} onBack={nav.back} />;
   } else if (screen.kind === 'handoff') {
-    body = <HandoffLog backLabel={nav.backLabel ?? 'All pages'} onBack={nav.back} />;
+    body = <HandoffLog backLabel={nav.backLabel ?? 'All pages'} as_of={as_of} onBack={nav.back} />;
   } else if (screen.kind === 'all-pages') {
     body = (
       <AllPages

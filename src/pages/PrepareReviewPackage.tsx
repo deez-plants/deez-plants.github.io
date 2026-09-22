@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { DerivedState } from '../types/derived';
-import type { ISODate } from '../types/ids';
+import type { ISODate, PackageId } from '../types/ids';
 import { openDeezPlants } from '../db/schema';
-import { buildReviewPackage, previewReviewPackage, saveBlob, type PackagePreview } from '../package/export';
+import { buildReviewPackage, discardBuiltPackage, previewReviewPackage, saveBlob, type PackagePreview } from '../package/export';
 import './PrepareReviewPackage.css';
 
 /**
@@ -31,21 +31,13 @@ type Status =
   /** The zip is made and the Share sheet has opened. Nothing is marked sent
       yet — see `confirmSent`. */
   | { kind: 'asking'; package_id: string; filename: string; confirmSent: () => Promise<void> }
+  /** They answered no. The build is thrown away and nothing was used up. */
+  | { kind: 'not-saved' }
   | { kind: 'done'; package_id: string; filename: string }
   | { kind: 'error'; message: string };
 
 export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }: PrepareReviewPackageProps) {
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
-
-  /** Recount what a package would carry. Nothing here writes. */
-  const loadPreview = async () => {
-    try {
-      const db = await openDeezPlants();
-      setStatus({ kind: 'ready', ...await previewReviewPackage(db, state) });
-    } catch (e: unknown) {
-      setStatus({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
-    }
-  };
 
   useEffect(() => {
     let live = true;
@@ -184,7 +176,20 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
             <button
               type="button"
               className="prep-confirm-no"
-              onClick={() => void loadPreview()}
+              onClick={() => void (async () => {
+                // An explicit no is an answer, so the build it names is thrown
+                // away rather than left in the registry for the owner to tidy
+                // up later. Nothing is lost: an unconfirmed package consumes
+                // no entries and no walks, so Build package again is free.
+                try {
+                  const db = await openDeezPlants();
+                  await discardBuiltPackage(db, status.package_id as PackageId);
+                } catch {
+                  // A build that cannot be discarded is still visible on the
+                  // Handoff log as NOT CONFIRMED SENT, with Discard beside it.
+                }
+                setStatus({ kind: 'not-saved' });
+              })()}
             >
               No
             </button>
@@ -203,6 +208,16 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
         </div>
       )}
 
+      {status.kind === 'not-saved' && (
+        <div className="prep-done">
+          <p>
+            Nothing was marked as sent, and that build has been thrown away.
+            Every entry and every walk it held is still waiting — build again
+            when you're ready.
+          </p>
+        </div>
+      )}
+
       {status.kind === 'error' && <p className="prep-error">{status.message}</p>}
 
       <button
@@ -211,7 +226,9 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
         disabled={status.kind === 'loading' || status.kind === 'building'}
         onClick={() => void build()}
       >
-        {status.kind === 'building' ? 'Building…' : status.kind === 'done' ? 'Build again' : 'Build package'}
+        {status.kind === 'building' ? 'Building…'
+          : status.kind === 'done' || status.kind === 'not-saved' ? 'Build again'
+            : 'Build package'}
       </button>
     </main>
   );

@@ -151,5 +151,53 @@ const row = (field, value, reason = 'A specific reason about this plant.') =>
   ok('null clears a field without tripping a limit', check(row('light', null)).ok);
 }
 
+/* ------------------------------------------ package identity, rules 1 and 2 -- */
+
+/**
+ * Added 2026-09-21, after a real reviewed package was refused by rule 1.
+ *
+ * These were the "referential rules exercised through real use" this file's
+ * header said it was not re-testing. Real use exercised them by breaking, so
+ * they are pinned here: a package must be one the app confirmed as sent, and
+ * neither an unknown id nor a second answer may get through.
+ */
+
+{
+  const unknown = { ...file(row('light', 'Bright indirect light')), package_id: 'PKG-2026-01-01-9' };
+  const r = validateUpdateFile(unknown, ctx);
+  ok('an id this app never exported is refused', !r.ok);
+  ok('and the reason names the id', r.ok === false && r.reason.includes('PKG-2026-01-01-9'));
+}
+
+{
+  // A package built but never confirmed as sent is still not an export. The
+  // owner gets a different sentence, because this one is repairable in two
+  // taps and used to be indistinguishable from a fabricated id.
+  const unconfirmedCtx = { ...ctx, packages: [{ ...ctx.packages[0], sent: null }] };
+  const r = validateUpdateFile(file(row('light', 'Bright indirect light')), unconfirmedCtx);
+  ok('an update against a built-but-unconfirmed package is refused', !r.ok);
+  ok('and the reason says to confirm it rather than implying the id is fake',
+    r.ok === false && r.reason.includes('Confirm sent'));
+}
+
+{
+  // Absence of `sent` is a legacy record, written only ever on confirmation.
+  // If this ever flips, every past round unsends itself.
+  ok('a legacy package with no sent field still validates',
+    validateUpdateFile(file(row('light', 'Bright indirect light')), ctx).ok);
+  ok('and an explicitly confirmed one does too',
+    validateUpdateFile(file(row('light', 'Bright indirect light')),
+      { ...ctx, packages: [{ ...ctx.packages[0], sent: '2026-09-18' }] }).ok);
+}
+
+{
+  // Rule 2, unchanged and re-pinned: one package, one answer. The new build-
+  // time record must not have opened a second door to this.
+  const answered = { ...ctx, appliedUpdates: [{ package_id: PKG, applied: '2026-09-18', accepted_count: 3, rejected_count: 1 }] };
+  const r = validateUpdateFile(file(row('light', 'Bright indirect light')), answered);
+  ok('a package cannot be answered twice', !r.ok);
+  ok('and the reason says so', r.ok === false && r.reason.includes('already been applied'));
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

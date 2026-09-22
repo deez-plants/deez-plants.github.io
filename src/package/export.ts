@@ -4,6 +4,7 @@ import { mintDatedId } from '../db/counters';
 import { commitUpdate } from '../db/events';
 import { makeThumbnail } from '../capture/photos';
 import { clearFlags, liveFlags } from './reviewFlags';
+import { consumedEventIds, consumedSessionIds, isConfirmedSent, recoveryBlocker } from './registry';
 
 /**
  * Longest edge of a photo travelling in a review package.
@@ -110,12 +111,14 @@ export interface ReviewPackage {
 
 /** Every event not already carried by a previous package — a union over
     every `PackageRecord.event_ids`, not a date cutoff, so a backdated entry
-    (a walk logged after the fact) is never silently skipped. */
+    (a walk logged after the fact) is never silently skipped.
+
+    **Only confirmed-sent packages count.** A package sitting in the registry
+    built-but-unconfirmed has consumed nothing: the whole point of asking "did
+    it save?" is that a no costs nothing, and that stays true now the record is
+    written earlier. See `package/registry.ts`. */
 async function eventsSincePreviousPackages(db: DeezDB, allEventIds: string[]): Promise<Set<string>> {
-  const already = new Set<string>();
-  for (const record of await db.getAll('packages')) {
-    for (const id of record.event_ids) already.add(id);
-  }
+  const already = consumedEventIds(await db.getAll('packages'));
   return new Set(allEventIds.filter((id) => !already.has(id)));
 }
 
@@ -126,10 +129,7 @@ async function eventsSincePreviousPackages(db: DeezDB, allEventIds: string[]): P
 /** Same rule the events use: a walk goes out once, and which walks went out is
     remembered per package rather than inferred from a date. */
 async function sessionsSincePreviousPackages(db: DeezDB): Promise<SessionRecord[]> {
-  const already = new Set<string>();
-  for (const record of await db.getAll('packages')) {
-    for (const id of record.session_ids ?? []) already.add(id);
-  }
+  const already = consumedSessionIds(await db.getAll('packages'));
   const sessions = await db.getAll('sessions');
   return sessions
     .filter((s) => !already.has(s.session_id) && s.closed !== false)
@@ -325,7 +325,28 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
     // having verified something — so an audio-free package is not `verified`.
     verified: sessions.length > 0 && sessions.every((s) => s.coverage?.passed === true),
     session_ids: sessions.map((s) => s.session_id),
+    // Built, not sent. See the paragraph below.
+    sent: null,
   };
+
+  /**
+   * **Persist now, before the Share sheet opens.**
+   *
+   * This line is the fix for 2026-09-21. The record used to exist only inside
+   * the closure below, so a reload, an iOS tab eviction or a stray Back between
+   * building the zip and answering "did it save?" lost it — and with the id
+   * already minted and the events already folded, no code path in the app could
+   * ever register that package again. `PKG-2026-09-21-1` was reviewed, answered,
+   * and then refused by the app's own validator, correctly, because as far as
+   * the registry was concerned it had never been built.
+   *
+   * It consumes nothing while `sent` is null, so the old safety is intact: the
+   * next package still carries every one of these events and walks until the
+   * owner says the file saved. What changes is that the package is now *visible*
+   * — the Handoff log shows it as built and not confirmed, with Confirm sent and
+   * Discard beside it, instead of the whole round vanishing silently.
+   */
+  await db.put('packages', record);
 
   return {
     package_id,
@@ -337,8 +358,69 @@ export async function buildReviewPackage(db: DeezDB, state: DerivedState, as_of:
     media_count,
     // Clearing the flags is part of "it saved", never part of "it was built".
     // Answer no to "did it save?" and they are all still there for the retry.
-    confirmSent: () => db.put('packages', record).then(() => clearFlags(db)),
+    confirmSent: () => confirmPackageSent(db, package_id, as_of),
   };
+}
+
+/**
+ * The owner has said the file really saved. This is the moment the package
+ * consumes its events and walks, and the moment the review flags clear.
+ *
+ * Reachable from two places by design: the question Prepare asks right after
+ * building, and the Handoff log, for a package whose answer was never given.
+ * The second is what makes a lost confirmation a two-tap repair rather than an
+ * unrecoverable state.
+ *
+ * Idempotent, and it will not re-date a package already confirmed — tapping
+ * Confirm sent twice must not move a settled record.
+ */
+export async function confirmPackageSent(db: DeezDB, package_id: PackageId, on: ISODate): Promise<void> {
+  const record = await db.get('packages', package_id);
+  if (!record) throw new Error(`${package_id} is not in the package registry.`);
+  if (isConfirmedSent(record)) return;
+  await db.put('packages', { ...record, sent: on });
+  await clearFlags(db);
+}
+
+/**
+ * Throw away a package that was built and never sent.
+ *
+ * Deliberately the same operation as `unsendPackage` — deleting the row is
+ * what releases its events and walks back into the next package — but named
+ * for what the owner is doing, because the two cases are not the same
+ * decision. Un-sending withdraws a claim that a package went out; discarding
+ * abandons a file that never did.
+ *
+ * It refuses a confirmed-sent record, so Discard on the Handoff log cannot
+ * quietly un-send a settled round. Un-send is its own button, with its own
+ * confirmation.
+ */
+export async function discardBuiltPackage(db: DeezDB, package_id: PackageId): Promise<void> {
+  const record = await db.get('packages', package_id);
+  if (!record) return;
+  if (isConfirmedSent(record)) {
+    throw new Error(`${package_id} was confirmed sent — un-send it instead of discarding it.`);
+  }
+  await db.delete('packages', package_id);
+}
+
+/**
+ * Write back the record for a package whose build was lost, rebuilt from its
+ * own ZIP by `package/registry.ts`.
+ *
+ * Bookkeeping only: it writes one row in `packages` and touches nothing else.
+ * No event is created, edited or voided, no session is altered, no counter is
+ * minted — the id came out of the manifest and the counter that produced it was
+ * spent on the day.
+ *
+ * The precondition is checked here as well as in the screen, because "no
+ * confirmed package already carries these events" is the property that keeps
+ * once-only delivery true and it should not depend on a component asking.
+ */
+export async function registerRecoveredPackage(db: DeezDB, record: PackageRecord): Promise<void> {
+  const blocker = recoveryBlocker(record, await db.getAll('packages'));
+  if (blocker) throw new Error(blocker);
+  await db.put('packages', record);
 }
 
 /**

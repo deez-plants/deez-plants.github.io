@@ -6,6 +6,7 @@ import { AI_EDITABLE_FIELDS, DERIVED_FIELDS, USER_ONLY_FIELDS } from '../types/p
 import { FIELD_KINDS, STATUS_LABELS, type FieldKind } from '../db/fieldCodec';
 import { formatDayMonthYear } from '../lib/dates';
 import type { ReviewRow, UpdateChange, UpdateFile, ValidationResult } from '../types/package';
+import { isConfirmedSent } from './registry';
 
 /**
  * FIELD_DEFINITIONS.md section 11. "The app runs these before showing you
@@ -241,6 +242,21 @@ export function validateUpdateFile(raw: unknown, ctx: ValidateContext): Validati
 
   const pkg = ctx.packages.find((p) => p.package_id === raw.package_id);
   if (!pkg) return fail(`"${raw.package_id}" doesn't match any package this app exported.`); // rule 1
+
+  /**
+   * Rule 1 still requires a package that actually went out — a built-but-
+   * unconfirmed one is not an export. But the two failures are different
+   * problems for the owner, and until 2026-09-21 they read identically as "no
+   * such package", which is what made a lost confirmation look like a
+   * fabricated id. This one is repairable in two taps, so it says so.
+   */
+  if (!isConfirmedSent(pkg)) {
+    return fail(
+      `${raw.package_id} was built on ${pkg.generated} but never confirmed as sent, `
+      + 'so the app has no record of it leaving the device. Open Handoff log and '
+      + 'tap "Confirm sent" on it, then apply this file again.',
+    );
+  }
 
   if (ctx.appliedUpdates.some((a) => a.package_id === raw.package_id)) {
     return fail(`An update for ${raw.package_id} has already been applied — it cannot be applied twice.`); // rule 2

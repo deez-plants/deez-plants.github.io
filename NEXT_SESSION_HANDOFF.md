@@ -207,6 +207,87 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
+### THE FIRST THING: PKG-2026-09-21-1 IS NOT RECOVERED YET
+
+**Built 2026-09-21. The owner still has to run the recovery on the phone.**
+
+The owner's GPT reported a real blocker: a review package built on the phone,
+saved, handed over, reviewed and answered — and then refused on import with
+`"PKG-2026-09-21-1" doesn't match any package this app exported.` The Handoff
+log showed nothing at all for 21 Sep.
+
+**Root cause, confirmed in the code.** `buildReviewPackage` returned the
+`PackageRecord` inside a `confirmSent` closure, and that closure lived in React
+state on the Prepare screen. **The record was written only when "Yes, saved"
+was tapped.** A reload, an iOS tab eviction, a stray Back or tapping "No"
+dropped it — and since `mintDatedId` and `commitUpdate` had already run, the id
+was spent and the entries folded with nothing to show for it. **No code path in
+the app could register that package afterwards.** The validator was right to
+refuse; the registry was the thing that was wrong.
+
+**What the app does now.** A record is written when the package is **built**,
+carrying `sent: null`, and confirmation moves it to `sent: <date>`. Three
+states on the Handoff log: NOT CONFIRMED SENT · AWAITING REPLY · CLOSED.
+
+**The rules that did not move, and must not:**
+
+- **Only a confirmed-sent package consumes entries and walks.** This is what
+  kept a cancelled iOS share sheet harmless, and it survives the record being
+  written earlier. A built-but-unconfirmed package holds its contents without
+  using them up.
+- **An update file still validates only against a confirmed-sent package.** It
+  now gets a different sentence when the package exists but was never
+  confirmed — "tap Confirm sent, then apply this file again" — because that
+  case is repairable and used to be indistinguishable from a fabricated id.
+- Unknown ids are still refused. A package still cannot be answered twice.
+
+**Absence of `sent` means SENT.** Every record written before 21 Sep was
+written by `confirmSent` and by nothing else, so its existence was the
+confirmation. Flip that reading and the Sep 15 and Sep 17 rounds unsend
+themselves and can be answered a second time. `isConfirmedSent` in
+`package/registry.ts` is the only place that rule is written down — read it
+through that function, never by testing the field directly.
+
+#### WHAT THE OWNER HAS TO DO ON THE PHONE
+
+None of this can be done from here: the phone's IndexedDB is a different
+origin from the laptop's, and `PKG-2026-09-21-1` exists nowhere on this
+machine. The recovery is an in-app action, and it reads the real ZIP.
+
+1. Open the app on the phone, **More → Handoff log**.
+2. Scroll to **Recover a package from its ZIP** → Choose a package ZIP → pick
+   the 21 Sep review package out of Files.
+3. It appears as `PKG-2026-09-21-1`, **NOT CONFIRMED SENT**. Tap
+   **Confirm sent** — the file did go to the AI.
+4. Apply the AI's update file as normal. It will now validate.
+
+**If the app refuses the recovery, stop and read what it says.** It checks the
+precondition the owner asked for in code: if a package that really went out
+already carries one of those entries or that walk, registering this one would
+double-send, and it refuses by name.
+
+**Do not build a replacement package to get around this.** A replacement gets
+a new id, the AI's existing update file cites the old one, and the entries the
+21 Sep package carried would then travel twice.
+
+#### THE ONE THING NOT FIXED, DELIBERATELY
+
+**`sync/stateTransfer.ts` does not carry the `packages` store.** It exports
+`[plants, events, registry, meta]` only. So a Restore onto a new origin lands
+with the package counters intact and an empty package registry — and every AI
+update would then fail validation exactly the way this one did, with no ZIP-
+less way back. Recover-from-ZIP is now the escape hatch, but the hole is real.
+
+Left alone because the owner's instruction was explicit: implement and test
+this layer only, do not widen into the other Plant Bot issues. **It needs a
+decision, because carrying package history in a backup changes what a backup
+file contains** — the standing rule of 2026-09-18 applies.
+
+Two smaller things also left: `commitUpdate` and `mintDatedId` both still run
+*before* the ZIP exists, so an abandoned build folds pending entries and burns
+an id. Now visible rather than silent, which was the point, but not changed.
+
+
 ### PHASE 03.2 — CONTRACT VALIDATION & REAL-WORLD REVIEW CYCLE
 
 **This is the current phase. NO NEW FEATURE WORK IS AUTHORISED.** Bug fixes,

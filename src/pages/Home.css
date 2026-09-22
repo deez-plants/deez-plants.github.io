@@ -338,6 +338,8 @@
 }
 
 .home-handoff-kind.applied { color: var(--accent); }
+/* Built and unconfirmed: the one handoff line that is asking for something. */
+.home-handoff-kind.built { color: var(--warn); }
 
 .home-handoff-detail {
   grid-column: 1;

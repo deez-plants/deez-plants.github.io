@@ -181,6 +181,24 @@ export interface PackageRecord {
       the same rule `event_ids` applies to events. Absent on packages built
       before recording existed. */
   session_ids?: SessionId[];
+  /**
+   * When the owner confirmed the file actually saved — `null` while the
+   * package is built but unconfirmed.
+   *
+   * **Absent means sent.** Before 2026-09-21 a record was written by
+   * `confirmSent` and by nothing else, so every stored record's existence was
+   * its confirmation. Reading absence as "unconfirmed" would unsend the Sep 15
+   * and Sep 17 rounds. `package/registry.ts`'s `isConfirmedSent` is the only
+   * place that rule is written down; read it through that, never directly.
+   *
+   * No migration and no version bump: an added optional field needs neither,
+   * and the one interpretation of absence is settled above.
+   */
+  sent?: ISODate | null;
+  /** Rebuilt from its own ZIP after the build was lost, rather than written by
+      the build that made it. Kept so the Handoff log can say so — a recovered
+      row is evidence-derived, and the owner should be able to see which. */
+  recovered?: boolean;
 }
 
 /** Rule 2: no previously applied update cites the same package_id. */

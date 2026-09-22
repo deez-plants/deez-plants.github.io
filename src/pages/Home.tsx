@@ -5,6 +5,7 @@ import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore, healthBand } from '../score/score';
 import { Icon } from '../components/Icon';
 import { openDeezPlants } from '../db/schema';
+import { isConfirmedSent } from '../package/registry';
 import { formatDayMonth } from '../lib/dates';
 import type { ISODate } from '../types/ids';
 import './Home.css';
@@ -49,10 +50,16 @@ export interface HomeProps {
   onMarkPoint: () => Promise<void> | void;
 }
 
-/** One line per package sent or update applied, newest first. */
+/**
+ * One line per package built or sent, and per update applied, newest first.
+ *
+ * `built` is the 2026-09-21 addition: a package recorded at build time whose
+ * "did it save?" was never answered. It used to be invisible here, which is
+ * how a real reviewed round came to be missing from the log entirely.
+ */
 interface HandoffEntry {
   id: string;
-  kind: 'sent' | 'applied';
+  kind: 'sent' | 'built' | 'applied';
   date: ISODate;
   detail: string;
 }
@@ -109,9 +116,11 @@ export default function Home({
         const rows: HandoffEntry[] = [
           ...packages.map((p): HandoffEntry => ({
             id: `pkg-${p.package_id}`,
-            kind: 'sent',
+            kind: isConfirmedSent(p) ? 'sent' : 'built',
             date: p.generated,
-            detail: `${p.plant_ids.length} plants · ${p.event_ids.length} entries`,
+            detail: isConfirmedSent(p)
+              ? `${p.plant_ids.length} plants · ${p.event_ids.length} entries`
+              : 'not confirmed sent — open Handoff log',
           })),
           ...applied.map((a): HandoffEntry => ({
             id: `upd-${a.package_id}`,
@@ -333,7 +342,8 @@ export default function Home({
             {handoff.slice(0, HANDOFF_CAP).map((h) => (
               <li key={h.id}>
                 <span className={`home-handoff-kind ${h.kind}`}>
-                  {h.kind === 'sent' ? 'Package sent' : 'Update applied'}
+                  {h.kind === 'sent' ? 'Package sent'
+                    : h.kind === 'built' ? 'Package built' : 'Update applied'}
                 </span>
                 <span className="home-handoff-detail">{h.detail}</span>
                 <span className="home-handoff-date">{formatDayMonth(h.date)}</span>
