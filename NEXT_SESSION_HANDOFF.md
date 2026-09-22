@@ -248,45 +248,114 @@ themselves and can be answered a second time. `isConfirmedSent` in
 `package/registry.ts` is the only place that rule is written down — read it
 through that function, never by testing the field directly.
 
-#### WHAT THE OWNER HAS TO DO ON THE PHONE
+#### STOP. THE FIX IS COMMITTED AND NOT DEPLOYED.
 
-None of this can be done from here: the phone's IndexedDB is a different
-origin from the laptop's, and `PKG-2026-09-21-1` exists nowhere on this
-machine. The recovery is an in-app action, and it reads the real ZIP.
+**Left at the end of the 21 Sep session, with the owner having to go.**
 
-1. Open the app on the phone, **More → Handoff log**.
-2. Scroll to **Recover a package from its ZIP** → Choose a package ZIP → pick
-   the 21 Sep review package out of Files.
-3. It appears as `PKG-2026-09-21-1`, **NOT CONFIRMED SENT**. Tap
-   **Confirm sent** — the file did go to the AI.
-4. Apply the AI's update file as normal. It will now validate.
+`2d967c8` is committed locally and **not pushed**. `main` is one ahead of
+`origin/main`. The Pages workflow only fires on a push, so
+**https://deez-plants.github.io is still serving `5aaddee`** — the code with
+the bug in it.
 
-**If the app refuses the recovery, stop and read what it says.** It checks the
-precondition the owner asked for in code: if a package that really went out
-already carries one of those entries or that walk, registering this one would
+The owner went looking for Recover-from-ZIP on the phone and could not find
+it. That is why: it isn't there yet. They reported seeing only "This one never
+saved", which is exactly what the old Handoff log offers. Nothing is broken.
+
+**Two things to say back when they return, because both cost them time once:**
+
+- **Recover-from-ZIP is not on Home.** It is at the **foot of the Handoff log
+  screen**, below every round and below the "Applied without a package on
+  record" block. Own heading, `RECOVER A PACKAGE FROM ITS ZIP`. The earlier
+  summary said "an action" without saying where, and they searched Home.
+- **"This one never saved" is a different button and still exists.** It
+  un-sends a package the app already believes went out. **Confirm sent** and
+  **Discard** appear only on a package in the new NOT CONFIRMED SENT state,
+  which no package on their phone can be in until the deploy lands.
+
+**They confirmed Sep 15 and Sep 17 still read correctly** on the phone, which
+is the "absence of `sent` means sent" rule verified against their real data.
+That check is done; do not ask for it again.
+
+#### A · WHAT TO DO FIRST WHEN THEY COME BACK
+
+Ready to run. It needs one word from them, because a push publishes.
+
+1. **Ask to push `main`.** Do not push unasked. The workflow runs
+   `npm run check` before building, so a failing state cannot ship.
+2. **Watch the run finish** and confirm it went green — do not announce it is
+   live and leave them to discover otherwise.
+3. **Walk them through the recovery on the phone**, reading back what each
+   screen should say so they can report a mismatch:
+
+   1. **More → Handoff log**.
+   2. Scroll to the foot → **Recover a package from its ZIP** → Choose a
+      package ZIP → pick the 21 Sep review package out of Files.
+   3. It appears as `PKG-2026-09-21-1`, **NOT CONFIRMED SENT**, with its
+      plants and entry count. They check those look right.
+   4. Tap **Confirm sent** — the file did go to the AI.
+   5. Apply the AI's update file as normal. It will now validate.
+
+**It must be done on the phone**, at `deez-plants.github.io`. Doing it on the
+laptop registers the package into the laptop's separate database, where it
+does nothing for them.
+
+**If the app refuses the recovery, stop and read what it says.** The
+precondition is enforced in code: if a package that really went out already
+carries one of those entries or that walk, registering this one would
 double-send, and it refuses by name.
 
 **Do not build a replacement package to get around this.** A replacement gets
 a new id, the AI's existing update file cites the old one, and the entries the
 21 Sep package carried would then travel twice.
 
-#### THE ONE THING NOT FIXED, DELIBERATELY
+**This cannot be tested from here.** The ZIP and the database are both on the
+phone. The mechanism is tested against real ZIPs on a throwaway database;
+that is as close as this machine gets.
 
-**`sync/stateTransfer.ts` does not carry the `packages` store.** It exports
-`[plants, events, registry, meta]` only. So a Restore onto a new origin lands
-with the package counters intact and an empty package registry — and every AI
-update would then fail validation exactly the way this one did, with no ZIP-
-less way back. Recover-from-ZIP is now the escape hatch, but the hole is real.
+#### B · THE BACKUP GAP — PROPOSED, NOT APPROVED
 
-Left alone because the owner's instruction was explicit: implement and test
-this layer only, do not widen into the other Plant Bot issues. **It needs a
-decision, because carrying package history in a backup changes what a backup
-file contains** — the standing rule of 2026-09-18 applies.
+**`sync/stateTransfer.ts` does not carry the `packages` store**, nor
+`applied_updates`. It exports `[plants, events, registry, meta]` only. So a
+Restore onto a new origin lands with the package counters intact and an empty
+package registry — **and every AI update would then fail validation exactly
+the way this one did.** Recover-from-ZIP is now the escape hatch, but the hole
+is real.
 
-Two smaller things also left: `commitUpdate` and `mintDatedId` both still run
-*before* the ZIP exists, so an abandoned build folds pending entries and burns
-an id. Now visible rather than silent, which was the point, but not changed.
+**The worse half, found while checking this: `applied_updates` is missing
+too.** That store is what enforces "a package cannot be answered twice". After
+a restore, every past reply could be applied a second time, silently — 228
+already-settled changes taken again.
 
+**The exact shape proposed to the owner on 21 Sep, awaiting a yes:**
+
+- `StateFile` gains two optional arrays, `packages?: PackageRecord[]` and
+  `applied_updates?: AppliedUpdateRecord[]`.
+- Merge rule identical to entries: **add if absent, never overwrite.** A
+  restore can only add rounds that would otherwise be lost; it can never
+  unsend or re-open a round this device already has settled.
+- **No `STATE_FORMAT` bump, no migration** — optional fields, and an older app
+  reading a newer file ignores them.
+- Tests: the merge rule in `check/registry.check.cjs`, plus a 127.0.0.1
+  browser harness doing export → wipe → restore, proving the rounds come back
+  and that a restored `applied_updates` still blocks a second answer.
+
+**Why it is not built.** It changes what a backup file permanently contains —
+every backup from then on holds the history of their AI conversations. That is
+the standing rule of 2026-09-18: propose the shape and wait. The owner said
+"i think maybe you can fix both", which is a maybe, not the approval. **If
+they say yes to the shape above as written, build it without asking again.**
+
+**Suggested order, given to them: A first, alone.** It unblocks the review
+cycle they are mid-way through. B is insurance against a restore they have
+never performed, and doing it after the cycle closes keeps the governance
+migration and the plant-data corrections unmixed, which their own install
+checklist already asked for.
+
+#### TWO SMALLER THINGS, LEFT ALONE ON PURPOSE
+
+`commitUpdate` and `mintDatedId` both still run **before** the ZIP exists, so
+an abandoned build folds pending entries and burns a package id. Now visible
+on the Handoff log rather than silent, which was the point, but not changed.
 
 ### PHASE 03.2 — CONTRACT VALIDATION & REAL-WORLD REVIEW CYCLE
 
