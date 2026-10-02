@@ -359,6 +359,69 @@ Roughly half a day. **New capability, so it waits for the cycle to close** —
 the owner is taking it to their GPT for input first, which is why it is not
 built yet despite being approved here.
 
+#### GPT'S AUDIT LIST, 1 OCT — AUDITED, NOT BUILT
+
+Their GPT sent a nine-item audit/fix pass after the 1 Oct round landed. Logged
+here in brief; **nothing built, the owner is still weighing it.** Verdicts are
+from reading the code on 1 Oct.
+
+| # | Item | Verdict |
+|---|---|---|
+| 1 | `Inspect` with reason chips + 2/3/5/7-day recheck | **Partial** |
+| 2 | Inspect clears Needs attention, starts recheck | **Missing** |
+| 3 | Water · Feed · Inspect · Dead leaves as a 2×2 | **Partial** |
+| 4 | Pending-care preflight before building a package | **Premise stale** |
+| 5 | Coverage fails at 0s | **Missing** — already ours, see above |
+| 6 | Package BUILT → CONFIRMED SENT | **Done and deployed** |
+| 7 | Full-size photo viewer | **Missing** |
+| 8 | Keep flag, storage figure, multi-delete | **Missing** |
+| 9 | Lazy-load historical photos | **Already done, 2026-09-11** |
+
+**The notes that matter, rather than the table:**
+
+- **1 and 2 are one feature, and it is the significant one.** `Inspect`
+  already exists as an event type, is loggable from both screens, and already
+  does not touch watering, interval or adherence — that half is right. What is
+  missing is **a recheck date**, and that is new derived state: a per-plant
+  "come back on" that `needs_attention` would have to respect. It changes what
+  every future inspection carries, so **the standing rule of 2026-09-18
+  applies — propose the shape and wait.** Do not treat it as a UI change.
+  It also sits very close to rule 9: a recheck is the owner saying "I looked",
+  which is exactly the prompt-to-look the rule is about. It supports the rule
+  rather than straining it, but say so explicitly when proposing.
+- **3 is cheap and presentational.** `Inspect` and `Dead leaves` are in
+  `ROUTINE_TIER`, `Water` and `Feed` in `COMMON_TIER`; this is a re-tiering in
+  `care/careRound.ts`, nothing more. Keep the two screens identical — the
+  owner asked for one interface and `ROUND_ACTIONS` exists to hold that.
+- **4's premise is out of date and must be corrected back to them.** The
+  pending/Update step was removed on 2026-09-16; care events now commit on
+  write. So there are no uncommitted care events to sweep. Their real case —
+  Dead leaves selected, the second confirmation missed — is **a selection that
+  was never written at all**, and it persists nowhere, so a preflight cannot
+  find it. GPT's own caveat is the whole issue. The honest options are to
+  persist the in-progress round, or to make the second step harder to miss.
+  **Recommend the second.** Do not build a preflight that scans for something
+  that does not exist.
+- **8 needs a data-model answer before any code.** A photo is a `media`
+  record AND a `Photo` event. Deleting the bytes leaves the entry, which is
+  correct and append-only — but the screen must say that plainly, or the owner
+  will think deleting a photo deleted the record of having taken it.
+- **9 is already built** and GPT does not know. Heroes at boot, galleries
+  fetch their own through `ensureThumbs`. Tell them rather than rebuilding it.
+- **Nothing in GPT's list covers the backup gap below.** It is the most
+  dangerous item outstanding and it is not on their radar.
+
+**Ordering, if the owner asks:** 5 first (small, a real false alarm, bug fix),
+then 3 (cheap), then the backup gap, then 1+2 as a proposed data-shape change,
+then 7, then 8. The photo picker approved above fits beside 7 and 8.
+
+**Also reported by the owner, 1 Oct, unprompted:** the rebuilt package worked.
+GPT received the photos, the older cached entries and the transcripts, and the
+update file came back asking for approval row by row rather than wholesale.
+**That is the review contract working end to end on real data for the first
+time** — the first round since the reason started being stored, and the first
+with photos travelling under their own names.
+
 #### B · THE BACKUP GAP — PROPOSED, NOT APPROVED
 
 **`sync/stateTransfer.ts` does not carry the `packages` store**, nor
