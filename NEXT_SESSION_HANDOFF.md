@@ -359,10 +359,12 @@ Roughly half a day. **New capability, so it waits for the cycle to close** —
 the owner is taking it to their GPT for input first, which is why it is not
 built yet despite being approved here.
 
-#### SIX OF GPT'S ITEMS ARE BUILT, 1 OCT. NOT DEPLOYED YET.
+#### SIX OF GPT'S ITEMS ARE BUILT AND DEPLOYED, 1 OCT.
 
-Six commits, one per change, all checks passing, **not pushed**. The owner
-votes to deploy after seeing them; ask before pushing.
+Six commits, one per change, all checks passing, **pushed and live** as deploy
+run #61 — verified in the served bundle, not merely a green workflow. The owner
+has not yet tested them on the phone; the photo viewer under a real thumb is the
+one thing this machine cannot check.
 
 | Commit | What |
 |---|---|
@@ -404,97 +406,183 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
-#### THE DASHBOARD PASS — AGREED SHAPE, 1 OCT. MOCK-UP ROUND 5 IS OUT.
+#### START HERE 2 OCT: MOCK-UPS FIRST, THEN BUILD. FULL SPEC BELOW.
 
-Settled with the owner and their GPT across 1 Oct. **Build in this order**, which
-is both sides' order:
+**The owner went to bed on 1 Oct with this agreed and nothing built.** Their
+instruction: *the first thing you do tomorrow is build me some more mock-ups of
+the new home page and the planned changes and how the screen will change as I
+navigate and explanations of what happens and why — that will be first, then
+when I approve you go and do all the things you need to in the correct and
+safest order, including separate runs for things if that is safer.*
 
-1. **Inspect: reason + recheck.** Six optional chips — still moist · looks fine ·
-   drying normally · needs watching · standing water · other. A recheck on the
-   entry, live state **derived** from the most recent Inspect whose recheck has
-   not passed. Never a mutable field on the plant: that would be patched state,
-   which rule 10 forbids. Approved as a data shape by their GPT.
-2. **Verify suppression and reappearance in isolation** before anything is built
-   on top of it. Their GPT asked for this step and they are right — the whole
-   board depends on plants reliably leaving and returning.
-3. **The dashboard.** Then test on the phone before widening further.
+So: **Round 6 of the mock-up page before any app code.** Then wait.
 
-**The defer table, keyed on the chip** — replaced the formula, which was wrong.
-% of that plant's own watering interval:
+**ROUND 6 MUST COVER** — this is the brief, not a suggestion:
+
+- Home at full height **as it will actually be**, with everything that stays:
+  Care adherence, Since last time, Mark this point, Back up, Add a new plant,
+  Prepare review package, Apply AI update, Archived plants. Round 5 drew only
+  the changed parts and the owner reasonably read that as a plan to delete the
+  rest. **Nothing is removed but Do next and the standalone Due card.**
+- **The navigation flow, screen by screen**: tapping a plant's name goes to its
+  Log care page; tapping Checked opens the chip panel; tapping the ratings row
+  opens the list; tapping a plant there opens that plant's rating sheet; and
+  **back** lands where they left, scroll position intact.
+- An explanation beside each step of what happens and why — asked for
+  explicitly, and the half Round 5 was thin on.
+- Collapsed and expanded states for **Coming up** and for the **ratings row**.
+- The **Recent** list with Void on an entry, and the confirmation it raises.
+
+**Everything below is settled. Do not reopen it in Round 6 — draw it.**
+
+#### THE AGREED SPEC, 1 OCT — SETTLED WITH THE OWNER AND THEIR GPT
+
+**1 · INSPECT: REASON + RECHECK**
+
+Six optional chips: still moist · looks fine · drying normally · needs watching
+· standing water · other. A recheck lives **on the Inspect entry**; the live
+recheck is **derived** — the most recent Inspect whose recheck date has not
+passed. Never a mutable field on the plant: that is patched state, which rule 10
+forbids. Approved as a data shape by their GPT.
+
+Inspect must not touch last-watered, Water history, the interval, or adherence.
+It already does not; keep it that way.
+
+**The defer table, keyed on the chip.** Percentage of that plant's own watering
+interval:
 
 | Chip | Defer | Floor / cap |
 |---|---|---|
-| Still moist | 50% | 3–10 days |
-| Looks fine · no chip | 33% | 2–7 days |
-| Drying normally | 20% | 2–4 days |
+| Still moist | 50% | 3-10 days |
+| Looks fine · no chip | 33% | 2-7 days |
+| Drying normally | 20% | 2-4 days |
 | Needs watching | fixed | 2 days |
 | Standing water | drain, then | 2 days |
 
-**Why not a flat default, and why not my first rule either.** A flat 3 days was
-invented. My replacement — one third of the interval — ignored *where in the
-cycle* the check happened, and the owner caught it: a plant only reaches the
-dashboard once it is past due, so the "remaining interval" branch I designed
-around almost never fires there. What you saw should set when you look again,
-which is what the chip does.
+**Why not a formula.** A flat 3 days was invented. My replacement — one third of
+the interval — ignored *where in the cycle* the check happened, and the owner
+caught it: a plant only reaches the dashboard once it is past due, so the
+"remaining interval" branch almost never fires there. What you saw should set
+when you look again. That is what the chip does.
 
-**Standing water is the one chip with an action.** Roots in water get worse
-while you wait, so it offers **Drained it** / **Not yet** inline. Drained →
-2-day recheck. Not yet → stays on the board. The only chip that can refuse to
-go quiet.
+**Standing water is the one chip with an action.** It offers **Drained it** /
+**Not yet** inline. Drained gives a 2-day recheck. Not yet leaves it on the
+board. The only chip that can refuse to go quiet.
 
 **Repeated "still moist" is evidence, not an automatic change.** Their GPT
 proposes a longer interval in a normal review round if it sees the pattern. The
 app must never adjust an interval by itself.
 
-**Health staleness stays at 90 days**, confirmed from both sides. Confirming is
-one tap and moves `health_confirmed` without moving `health_changed`.
+**2 · HOME AS A WORKING DASHBOARD**
 
-**Every Inspect entry travels in the package, uncollapsed** — plant, date,
-chip, note, recheck. Their GPT asked for the chronology, not counts.
+- **Due and Most urgent merge** into one actionable list, **Needs doing**.
+  **Do next is retired** — a third list of the same plants with no buttons.
+- **Row treatment A, chosen off Round 5**: two equal buttons, Watered and
+  Checked with the recheck shown on it. Disagreeing with the row must cost
+  exactly what agreeing costs.
+- Tapping the plant's **name** opens that plant's **Log care** screen. This was
+  in `DESIGN_REFERENCE.md` from the start and was never built.
+- **One basket across every section**, so a plant in two lists is never asked
+  about twice. One commit bar, stuck to the bottom.
+- **Five rows per section, then See all.** The owner's rule.
+- **Coming up** — the "7 this week" that was only ever a digit — **shut by
+  default**, showing the total, expandable.
+- The **catch-up banner** sits **below the health block**, at the owner's
+  request. Sparkline and three-band bar return with it. All three were specified
+  in `DESIGN_REFERENCE.md` and never built.
+- **A row carrying two problems shows both reasons**, as two short lines.
 
-**Home itself:** Due and Most urgent **merge** into one actionable list; **Do
-next is retired** (a third list of the same plants with no buttons); **Coming
-up** surfaces the "7 this week" that was only ever a digit; five rows per
-section then See all; one basket across every section; the commit bar sticks to
-the bottom. The catch-up banner, sparkline and three-band bar — specified in
-`DESIGN_REFERENCE.md` and never built — come back as part of the rebuild, the
-banner **below** the health block at the owner's request.
+**3 · RATINGS — THE OWNER'S DESIGN, AND IT IS BETTER THAN MINE**
 
-**Home will diverge from `DESIGN_REFERENCE.md` more than any other screen, and
-that is sanctioned.** The original Home is a reporting surface that sends you
-elsewhere; the owner wants a clipboard. Written down so a later session does not
-"restore" it as drift.
+One compact row at the **bottom of Needs doing**: "Ratings · 9 of 22 not
+confirmed in 3 months". Opens a list, **oldest first** — which handles
+"priority once the dates float apart" for free. Each row offers **Still 7**
+(confirms in place, one tap, drops off) and **Change** (jumps to that plant's
+rating sheet).
 
-**A real bug in the shipped Home, found in the owner's own screenshot:** under
-Most urgent, "See all 8" is wired to the Due total. Most urgent held one plant.
-Fix it with the rebuild.
+**The problem this solves.** Rate 22 plants in one session and 90 days later all
+22 go stale on the same day — a wall of rows that teaches the owner to ignore
+it. My answer was to ration the list to three at a time; theirs was to collapse
+it to one line, which keeps the choice to blitz nine in ninety seconds. Theirs.
 
-**Mock-up Round 5 is published** on the cumulative screen mock-ups page, below
-Rounds 1–4. Three row treatments, the chip panel, the standing-water confirm,
-the commit bar in three states, and the whole board at full height. Three
-questions are open on it: which row treatment, how a row carrying two problems
-should read, and whether Coming up opens by default.
+**No "confirm all" button.** Rule 1: health is a human judgement, and one tap
+confirming 22 plants nobody looked at makes the number a lie.
 
-#### VOID FROM HISTORY — THE OWNER RAISED IT AGAIN, 1 OCT
+**4 · VOID FROM HISTORY — APPROVED 1 OCT**
 
-**Still not built. The owner explicitly asked that this not get lost again**,
-having watched the package fix sit undeployed for ten days.
+Approved after the owner asked for it three times in different words — a longer
+undo, a list of past actions, a way to take back a mis-tap. All one feature.
 
-The entry type works, the fold handles it, merging is safe. The only thing
-restricting it is where the button lives: the round you just logged, before you
-leave the screen. The wrong 008-ALO watering of 14 Sep still stands because of
-it.
+- **Immediate Undo** on the commit bar, living until they navigate away. **Not a
+  timer** — a countdown you cannot see is a rule you only learn by losing to it.
+- **Void from history** as the general answer, from a plant's History and from a
+  new **Recent** list on Home showing the last entries across all plants.
+- **V1 voids CARE ENTRIES ONLY** — Water, Feed, Inspect, routine. Deliberately
+  not ratings (rate again instead), not Edits including AI-applied ones (the
+  correction is a new edit, and voiding tangles with the conflict rule), not
+  Archive (it has its own path). This cuts the surface area to nearly nothing
+  while covering the real need.
+- **It takes a reason.** Same argument as storing the AI's reasoning: in 2031 the
+  record should say why something was taken back.
+- **Voiding a Void is refused.**
 
-**The new argument, which is the dashboard's:** the whole point of that board is
-to make logging six things as easy as logging one — which makes mis-logging six
-things just as easy. Ticking fast while walking around is precisely how a wrong
-entry gets in. The post-commit Undo covers the moment and nothing covers later.
+**No lock after a package is sent, and this was examined.** A Void is itself an
+entry, so it travels in the next package and the AI learns of the correction:
+watered on the 3rd, retracted on the 9th, both true, both permanent. That is
+what append-only is for.
 
-The owner's own words: *"you can build the void thing at the time you build the
-rest i think, or we wait cause its a major problem if its fucked, but we already
-waited and havent built or finished one thing from our last session like this
-and i dont want either to be lost."* Treat that as a leaning yes awaiting a
-clear one — and raise it rather than letting it lapse a third time.
+**Known consequence, not a bug:** voiding an old watering recalculates adherence,
+so figures the owner has already seen will move. Say so when it ships.
+
+**5 · THE SCROLL BUG — CONFIRMED, WITH THE LINE**
+
+`src/App.tsx:102` runs `window.scrollTo(0, 0)` on every screen change,
+**including going back**, so returning always lands at the top of a screen the
+owner had scrolled through. Correct on a push, wrong on a pop.
+
+Fix: remember scroll position per nav-stack entry, restore on back, zero on
+push. It matters far more once Home is long, so it ships with the dashboard.
+
+**6 · A REAL BUG IN THE SHIPPED HOME**
+
+In the owner's own screenshot: under **Most urgent**, "See all 8" is wired to the
+Due total while that list held one plant. Fix it with the rebuild.
+
+#### THE BUILD ORDER, AND WHY IT IS THIS ORDER
+
+The owner asked for the safest order and for separate runs where that is safer.
+Both sides agreed this sequence; their GPT asked for step 2 by name.
+
+**RUN 1 — Inspect: reason + recheck.** The defer table, the chips, the standing
+water confirm, the recheck on the entry. **Data-shape change**, already approved
+by the owner and sanity-checked by their GPT.
+
+**RUN 2 — Verify suppression and reappearance, in isolation, before anything is
+built on top.** A plant must reliably leave the attention lists and come back on
+its recheck date. Their GPT asked for this as its own step and they were right:
+the whole board depends on it, and it is far easier to test alone than through a
+dashboard. Browser harness on **127.0.0.1**, never localhost.
+
+**RUN 3 — The dashboard**, plus the scroll fix and the "See all 8" fix.
+
+**RUN 4 — Void from history**, plus the Recent list.
+
+**Keep 3 and 4 as separate runs** even though they ship together: the dashboard
+is a lot of surface, and Void touches the record. One commit per piece inside
+each run, as the 1 Oct pass did.
+
+**Then test on the phone before anything widens further.** Deploy is a push; ask
+first, and verify the served bundle rather than trusting a green workflow.
+
+#### WHAT NOT TO RE-LITIGATE
+
+- Home diverging from `DESIGN_REFERENCE.md` is **sanctioned**. The original Home
+  is a reporting surface that sends you elsewhere; the owner wants a clipboard.
+  Written down so a later session does not restore it as drift.
+- Rule 9 holds throughout and was checked: the lists are a prompt to look, a tick
+  records what the owner did after looking, and nothing on the screen instructs.
+  Keep the commit wording as "log what you did".
+- Nothing else is removed from Home. Only Do next and the standalone Due card.
 
 #### GPT'S AUDIT LIST, 1 OCT — AUDITED, NOT BUILT
 
