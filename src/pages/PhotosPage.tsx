@@ -10,6 +10,7 @@ import { ensureThumbs } from '../boot';
 import { editPlantFields } from '../care/editField';
 import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
 import { PlantChrome } from '../components/PlantChrome';
+import { PhotoViewer } from '../components/PhotoViewer';
 import './PhotosPage.css';
 
 /**
@@ -130,6 +131,18 @@ export default function PhotosPage({
     }
     return order.filter((k) => map.has(k)).map((k) => [k, map.get(k) as Entry[]] as const);
   }, [entries]);
+
+  /**
+   * The photographs in the order they appear on screen, flattened.
+   *
+   * The viewer swipes through THIS, not through `entries` — the grid is
+   * grouped by label, so swiping in `entries` order would jump out of the
+   * band you are looking at and feel broken.
+   */
+  const inOrder = useMemo(() => labelled.flatMap(([, list]) => list), [labelled]);
+
+  /** Which photograph is open full screen, by index into `inOrder`. */
+  const [viewing, setViewing] = useState<number | null>(null);
 
   const groups = useMemo(() => {
     const map = new Map<ISODate, Entry[]>();
@@ -257,9 +270,19 @@ export default function PhotosPage({
                   key={e.media_id}
                   className={`photos-tile${isHero ? ' hero' : ''}${isCompare ? ' compare' : ''}${flags.has(e.media_id) ? ' flagged' : ''}`}
                 >
-                  {url
-                    ? <img className="photos-tile-image" src={url} alt="" />
-                    : <div className="photos-tile-image empty" />}
+                  {/* The tile is a button now. Every photo decision this
+                      screen asks for was being made from an image too small
+                      to make it from — see `PhotoViewer`. */}
+                  <button
+                    type="button"
+                    className="photos-tile-open"
+                    onClick={() => setViewing(inOrder.findIndex((p) => p.media_id === e.media_id))}
+                    aria-label={`Open photo from ${formatDayMonthYear(e.date)} full screen`}
+                  >
+                    {url
+                      ? <img className="photos-tile-image" src={url} alt="" />
+                      : <div className="photos-tile-image empty" />}
+                  </button>
                   <span className="photos-tile-date">{formatDayMonthYear(e.date)}</span>
                   <div className="photos-tile-actions">
                     {isHero ? (
@@ -300,7 +323,18 @@ export default function PhotosPage({
         </section>
       ))}
 
+      {viewing !== null && (
+        <PhotoViewer
+          photos={inOrder}
+          index={viewing}
+          onIndex={setViewing}
+          plantName={plant.name}
+          onClose={() => setViewing(null)}
+        />
+      )}
+
       <p className="photos-note">
+        Tap any photograph to see it full size and swipe through the rest.
         Grouped by what each photograph shows, whole-plant first, because this
         is where you choose. <strong>Hero</strong> is the one image kept for
         good — it shows in lists and on the plant page.

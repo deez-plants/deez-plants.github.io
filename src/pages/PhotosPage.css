@@ -95,6 +95,18 @@
   box-shadow: 0 0 0 1px var(--accent) inset;
 }
 
+/* The thumbnail is the way into the full-size viewer, so it is a button. No
+   padding, no border, no background of its own — it has to look exactly like
+   the image it used to be. */
+.photos-tile-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 8px;
+}
+
 .photos-tile-image {
   display: block;
   width: 100%;
