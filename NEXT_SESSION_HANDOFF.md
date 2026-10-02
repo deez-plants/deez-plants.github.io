@@ -207,9 +207,9 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-### THE FIRST THING: PKG-2026-09-21-1 IS NOT RECOVERED YET
+### THE PACKAGE FIX IS BUILT AND DEPLOYED. READ THE 1 OCT STATE BELOW.
 
-**Built 2026-09-21. The owner still has to run the recovery on the phone.**
+**Built 2026-09-21, deployed 2026-10-01.**
 
 The owner's GPT reported a real blocker: a review package built on the phone,
 saved, handed over, reviewed and answered — and then refused on import with
@@ -248,69 +248,116 @@ themselves and can be answered a second time. `isConfirmedSent` in
 `package/registry.ts` is the only place that rule is written down — read it
 through that function, never by testing the field directly.
 
-#### STOP. THE FIX IS COMMITTED AND NOT DEPLOYED.
+#### DEPLOYED 2026-10-01. Run #60, verified in the served bundle.
 
-**Left at the end of the 21 Sep session, with the owner having to go.**
+Pushed on the owner's go-ahead after ten days parked: `6b636fb` went out as
+Deploy to GitHub Pages #60, completed successfully, and the live bundle at
+`deez-plants.github.io` was checked to actually contain `NOT CONFIRMED SENT`
+and `Recover a package from its ZIP` — not merely a green workflow.
 
-`2d967c8` is committed locally and **not pushed**. `main` is one ahead of
-`origin/main`. The Pages workflow only fires on a push, so
-**https://deez-plants.github.io is still serving `5aaddee`** — the code with
-the bug in it.
+**Why it sat ten days.** The 21 Sep session ended mid-sentence: the owner had
+to go at exactly the point where the next step was asking permission to push.
+They came back on 1 Oct having done a whole walk on the old build, and their
+GPT correctly reported that none of the fix was present. **Nothing was wrong
+with the code; it had simply never left this laptop.** If a session ever ends
+with work committed and unpushed, say so in the first line of the handoff.
 
-The owner went looking for Recover-from-ZIP on the phone and could not find
-it. That is why: it isn't there yet. They reported seeing only "This one never
-saved", which is exactly what the old Handoff log offers. Nothing is broken.
+**Two explanations that cost the owner time, worth reusing:**
 
-**Two things to say back when they return, because both cost them time once:**
+- **A deploy does not touch their data.** They believed pushing would wipe the
+  walk, photos and audio on the phone. Code and data are separate things at the
+  same origin; a deploy replaces the code and the IndexedDB is untouched. They
+  were close to re-recording a walk for nothing.
+- **Pull-to-refresh does nothing in an installed home-screen app** — no browser
+  chrome to pull. Close and reopen is the way to pick up a new build.
 
-- **Recover-from-ZIP is not on Home.** It is at the **foot of the Handoff log
-  screen**, below every round and below the "Applied without a package on
-  record" block. Own heading, `RECOVER A PACKAGE FROM ITS ZIP`. The earlier
-  summary said "an action" without saying where, and they searched Home.
-- **"This one never saved" is a different button and still exists.** It
-  un-sends a package the app already believes went out. **Confirm sent** and
-  **Discard** appear only on a package in the new NOT CONFIRMED SENT state,
-  which no package on their phone can be in until the deploy lands.
+#### WHERE THE 1 OCT ROUND ACTUALLY STANDS
 
-**They confirmed Sep 15 and Sep 17 still read correctly** on the phone, which
-is the "absence of `sent` means sent" rule verified against their real data.
-That check is done; do not ask for it again.
+The owner built a package on 1 Oct on the OLD build and **never tapped "Yes,
+saved"** — they did not know the question existed, having gone straight from
+the download to Files to GPT. So:
 
-#### A · WHAT TO DO FIRST WHEN THEY COME BACK
+- **That package is unregistered.** Whatever GPT returns against it will be
+  refused. It is dead; they were told to tell GPT to disregard it.
+- **Nothing was consumed.** Prepare showed **277 entries since last package, 5
+  walks (2 transcribed), 41 markers**. The last CONFIRMED package was 17 Sep,
+  so everything since is still queued — including the 21 Sep walk.
+- **`PKG-2026-09-21-1` is therefore largely moot.** Its entries were never
+  marked delivered, so they ride in the next package anyway. Recover-from-ZIP
+  remains available if they ever want that specific round registered, but do
+  not push them towards it — a fresh package carries strictly more.
 
-Ready to run. It needs one word from them, because a push publishes.
+**277 is not a bug, and the owner reasonably thought it was.** The 228 changes
+applied from the 17 Sep AI round are each an entry in their own right, written
+after that package was built, so no package has ever carried them. 228 plus a
+fortnight of real use is 277. Explain it that way rather than "that's correct".
 
-1. **Ask to push `main`.** Do not push unasked. The workflow runs
-   `npm run check` before building, so a failing state cannot ship.
-2. **Watch the run finish** and confirm it went green — do not announce it is
-   live and leave them to discover otherwise.
-3. **Walk them through the recovery on the phone**, reading back what each
-   screen should say so they can report a mismatch:
+**They were asked to sanity-check 5 unsent walks** against Recordings, in case
+any are strays. They said they deleted some old test ones and a short one.
 
-   1. **More → Handoff log**.
-   2. Scroll to the foot → **Recover a package from its ZIP** → Choose a
-      package ZIP → pick the 21 Sep review package out of Files.
-   3. It appears as `PKG-2026-09-21-1`, **NOT CONFIRMED SENT**, with its
-      plants and entry count. They check those look right.
-   4. Tap **Confirm sent** — the file did go to the AI.
-   5. Apply the AI's update file as normal. It will now validate.
+#### A · WHEN THEY REPORT BACK FROM THE REBUILD
 
-**It must be done on the phone**, at `deez-plants.github.io`. Doing it on the
-laptop registers the package into the laptop's separate database, where it
-does nothing for them.
+They are rebuilding the package now, having flagged photos by hand. Expect
+entry count, walk count and the Handoff log state. Nothing to do until then.
 
-**If the app refuses the recovery, stop and read what it says.** The
-precondition is enforced in code: if a package that really went out already
-carries one of those entries or that walk, registering this one would
-double-send, and it refuses by name.
+The one thing to watch: they should have tapped **"Yes, saved"**. On this
+build missing it is recoverable — the round shows NOT CONFIRMED SENT with
+Confirm sent and Discard beside it — but check rather than assume.
 
-**Do not build a replacement package to get around this.** A replacement gets
-a new id, the AI's existing update file cites the old one, and the entries the
-21 Sep package carried would then travel twice.
+#### THE COVERAGE GATE FAILS ON session-start. PROPOSE, THEN FIX.
 
-**This cannot be tested from here.** The ZIP and the database are both on the
-phone. The mechanism is tested against real ZIPs on a throwaway database;
-that is as close as this machine gets.
+**Seen on the 1 Oct and 20 Sep walks**: `coverage FAILED · Nothing was
+transcribed where the session-start marker sits.` The owner read the offset as
+`-1`; unverified, worth reading verbatim off their screen.
+
+Assertion 3 in `capture/coverage.ts` requires every marker to fall inside a
+transcribed segment. `session_start` is pushed at `elapsedSeconds()` ≈ 0. If
+the owner does not speak until a few seconds in, Whisper's first segment
+starts after the marker and the assertion fails — **for a walk that is
+perfectly fine.**
+
+**This is the same false positive the END of a walk already had and had fixed.**
+`END_TOLERANCE_S` is 20 seconds, added after a real walk failed because the
+owner took six seconds to find the stop button, with the note that *"a gate
+that cries wolf is worse than no gate."* The start never got the equivalent.
+That is an oversight, not a decision.
+
+**It is a bug fix, not new capability, so phase 03.2 permits it** — but it
+changes what the gate REFUSES, so propose the exact tolerance and wait rather
+than picking a number. Do not touch it while a package is being built.
+
+**What it costs today: nothing that blocks them.** The package still builds,
+the full transcript still travels. It ships `unverified` rather than
+`verified`, and the audio is not released for those walks.
+
+#### APPROVED 2026-10-01: THE PHOTO PICKER ON PREPARE
+
+**The owner approved this explicitly. Build it when the review cycle closes.**
+
+Flagging photos one at a time is genuinely bad — their words: "this is a HUGE
+hassle". Flagging was built as the minimum that made photos travel at all, and
+the screen that should ask never got made. The design below is **the owner's
+own proposal**, confirmed as described:
+
+- **A photos step on the Prepare screen**, before Build package.
+- Lists every photo taken **since the last confirmed package**, newest first,
+  as thumbnails — a rolling list that resets each round, so they never scroll
+  the whole library.
+- **Arrives ticked**, with **Clear** and individual unticks. Settled
+  deliberately: these are the owner's own photos going OUT, not AI changes
+  coming in, so rule 4's "rows arrive unselected" does not apply here. Do not
+  re-open this by analogy to the review table.
+- **Select all with more than `FLAG_CAP` waiting takes the newest 20 and says
+  so plainly.** Silently dropping ten is the failure mode to avoid.
+- The per-photo **For AI** button on Photos stays, for marking something at the
+  moment it is taken.
+- **Auto-including every photo taken during a walk was considered and
+  rejected** — a walk photographing twelve plants would blow the cap on its own
+  and push out the leaf that actually mattered.
+
+Roughly half a day. **New capability, so it waits for the cycle to close** —
+the owner is taking it to their GPT for input first, which is why it is not
+built yet despite being approved here.
 
 #### B · THE BACKUP GAP — PROPOSED, NOT APPROVED
 
