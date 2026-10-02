@@ -27,9 +27,10 @@ import { daysBetween } from '../lib/dates';
  * to relearn between them. The only difference is what happens after you pick
  * — the round asks which plants, the plant page asks for a note and a time.
  *
- * `Inspect` sits in routine because that is what it is: looking at a plant is
- * something you do constantly and it is not an intervention a rating should
- * sit either side of.
+ * `Inspect` is not an intervention a rating should sit either side of — it is
+ * looking, not doing — which is why it counts as routine on What works even
+ * though it now sits in the top four. Where a button lives and what an entry
+ * means are separate questions.
  *
  * **`Prune` is deliberately absent from all three.** Dead leaves, Trim back
  * and Hard prune replaced it and say which, and a plain "Prune" between them
@@ -38,10 +39,25 @@ import { daysBetween } from '../lib/dates';
  * be chosen. Retiring a button is not the same as deleting a type, and only
  * one of those is safe.
  */
-export const COMMON_TIER: readonly CareEventType[] = ['Water', 'Feed'];
+/**
+ * The four without a tap to reach them, as a 2x2.
+ *
+ * **Was Water and Feed alone.** The owner, 2026-10-01: these are the four
+ * things they actually do, and `Inspect` and `Dead leaves` were sitting behind
+ * the Routine accordion — a tap away from the two most common actions of a
+ * round. Nothing about the record changes; a `Dead leaves` entry written from
+ * here is the entry it always was.
+ *
+ * `Inspect` leading the second row rather than trailing it is deliberate:
+ * looking at a plant and deciding it is fine is the action that most often
+ * follows "this says it is overdue", so it belongs beside Water.
+ */
+export const COMMON_TIER: readonly CareEventType[] = [
+  'Water', 'Feed', 'Inspect', 'Dead leaves',
+];
 
 export const ROUTINE_TIER: readonly CareEventType[] = [
-  'Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist', 'Inspect',
+  'Trim back', 'Rotate', 'Wipe leaves', 'Mist',
 ];
 
 export const RARE_TIER: readonly CareEventType[] = [

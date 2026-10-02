@@ -553,10 +553,18 @@ const runRated = (rateEvents, as_of) => derive({
     [...C.CARE_TYPE_ORDER].sort(), [...tiers, ...R.RETIRED_TYPES].sort());
 
   // The owner's own order, most frequent first. Not alphabetical, and not the
-  // order CareEventType happens to declare: dead leaves leads because that is
-  // what they actually do most.
+  // order CareEventType happens to declare.
+  //
+  // 2026-10-01: Dead leaves and Inspect left this band for the top four, at the
+  // owner's request — they are two of the four things actually done. What stays
+  // here is what it always was, in the order it always had.
   eq('routine is in the owner’s order', [...R.ROUTINE_TIER],
-    ['Dead leaves', 'Trim back', 'Rotate', 'Wipe leaves', 'Mist', 'Inspect']);
+    ['Trim back', 'Rotate', 'Wipe leaves', 'Mist']);
+
+  // The 2x2 the owner asked for, in their order. `.care-actions.two` lays four
+  // out as two rows of two with no change to the CSS.
+  eq('the top four are the owner’s four, in order', [...R.COMMON_TIER],
+    ['Water', 'Feed', 'Inspect', 'Dead leaves']);
 
   const ev = (event_id, type, date, over = {}) => ({
     event_id, plant_id: '001-MON', type, date, time: '09:00',
