@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { boot, refresh, type Booted } from './boot';
 import { openDeezPlants } from './db/schema';
 import { commitUpdate } from './db/events';
@@ -93,15 +93,46 @@ export default function App() {
     enterScreen(screenKind, screenPlant);
   }, [screenKind, screenPlant]);
 
-  // Changing screens starts at the top of the new one. Without this the window
-  // keeps whatever scroll offset the previous screen had, so a long screen
-  // opened from a scrolled-down one lands halfway through itself — All pages
-  // opening at "Info and settings" with its own title off screen is how this
-  // was noticed. Filter and search state inside a screen doesn't move it,
-  // because neither of these two values changes.
+  /**
+   * Opening a screen starts at its top. **Going back does not.**
+   *
+   * The first half was already here: without it a long screen opened from a
+   * scrolled-down one lands halfway through itself, which is how All pages came
+   * to open at "Info and settings" with its own title off screen.
+   *
+   * The second half is the owner's bug, 2026-10-01. That reset ran on EVERY
+   * screen change including a pop, so going back always dumped them at the top
+   * of a screen they had scrolled through — scroll down Home, open a plant,
+   * swipe back, scroll down again. Barely noticeable on a short screen and
+   * thoroughly annoying on the long one Home is becoming.
+   *
+   * Keyed by the stack depth and the screen, so returning to Home restores
+   * Home's offset while opening a second plant still starts at the top.
+   */
+  const offsets = useRef(new Map<string, number>());
+  const scrollKey = `${nav.depth}:${screenKind}:${screenPlant ?? ''}`;
+  const previousKey = useRef<string | null>(null);
+  const depth = useRef<number | null>(null);
+
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [screenKind, screenPlant]);
+    // Remember where the screen being left was, before the new one is drawn
+    // over it. `previousKey` is a ref rather than the effect's cleanup because
+    // the cleanup runs after the scroll position has already changed.
+    const leaving = previousKey.current;
+    if (leaving !== null && leaving !== scrollKey) {
+      offsets.current.set(leaving, window.scrollY);
+    }
+    previousKey.current = scrollKey;
+
+    // A shallower stack than a moment ago means a pop — back, or an edge
+    // swipe, or the forward/back of a swapped plant. That is the only case
+    // that restores; everything else is a screen being opened and opens at its
+    // top. Reading it off the depth avoids every call site having to say so.
+    const popped = depth.current !== null && nav.depth < depth.current;
+    depth.current = nav.depth;
+
+    window.scrollTo(0, popped ? offsets.current.get(scrollKey) ?? 0 : 0);
+  }, [scrollKey, screenKind, screenPlant, nav.depth]);
 
   // Swipe from the left edge to go back, on every screen that has something
   // behind it. The owner asked for a back that works everywhere and noted

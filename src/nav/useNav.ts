@@ -36,6 +36,9 @@ export function useNav(initialTab: RootTab = 'plants') {
   return {
     current,
     activeTab,
+    /** How deep the stack is. `App` watches this to tell a pop from a push, so
+        that going back can restore where the screen was left. */
+    depth: stack.length,
     backLabel,
     canGoBack,
     canGoForward,
