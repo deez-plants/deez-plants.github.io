@@ -33,6 +33,27 @@ export interface TranscriptSegment {
 const END_TOLERANCE_S = 20;
 
 /**
+ * Section 6, assertion 3 — how much quiet may sit before the first word.
+ *
+ * **The same mistake as `END_TOLERANCE_S`, at the other end of the walk, found
+ * on 2026-10-01.** The owner's walks of 20 Sep and 1 Oct both failed with
+ * "nothing was transcribed where the session-start marker sits", and both were
+ * fine: Whisper's own report passed them, and speech simply began about a
+ * second after record was pressed. Nobody starts talking mid-press — you tap,
+ * you walk to the plant, then you say something.
+ *
+ * The end of a walk was given 20 seconds for exactly this reason, with the
+ * note that a gate which cries wolf is worse than no gate. The start never got
+ * the equivalent, so the one marker guaranteed to sit at offset zero was the
+ * one guaranteed to fail.
+ *
+ * It forgives silence BEFORE the first word only. A marker in the middle of a
+ * walk with nothing transcribed near it is still a real failure, which is the
+ * case the assertion exists to catch.
+ */
+const START_TOLERANCE_S = 20;
+
+/**
  * Section 6, assertion 2 — untranscribed audio between two segments.
  *
  * This is a backstop now rather than the main test. A gap is only judged at
@@ -178,7 +199,14 @@ export function checkCoverage(
     // `session_end`: reporting it would flag the recording for being honest.
     if (marker.type === 'gap') continue;
     const covered = segments.some((s) => marker.offset_s >= s.start && marker.offset_s <= s.end);
-    if (!covered) {
+    // Quiet before the first word, within tolerance. `session_start` sits at
+    // offset 0 by construction and the first segment almost never does, so
+    // without this the gate fails every honest walk — see `START_TOLERANCE_S`.
+    // Measured from the first segment rather than from zero, so a transcript
+    // that genuinely begins a minute late still fails.
+    const beforeFirstWord = marker.offset_s < segments[0].start
+      && segments[0].start - marker.offset_s <= START_TOLERANCE_S;
+    if (!covered && !beforeFirstWord) {
       failures.push({
         assertion: 3,
         offset_s: marker.offset_s,

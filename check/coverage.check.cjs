@@ -103,6 +103,41 @@ eq('assertion 3: an uncovered marker fails, and reports its own offset',
 eq('assertion 3: session_end past the last segment is not a failure',
   checkCoverage(FULL, 100, [{ offset_s: 100, type: 'session_end' }]).passed, true);
 
+/* The walks of 20 Sep and 1 Oct both failed here while being perfectly sound:
+   session_start sits at 0 by construction, and nobody speaks at second zero.
+   Whisper's own report passed them both. See `START_TOLERANCE_S`. */
+eq('assertion 3: silence before the first word does not fail session_start',
+  checkCoverage(
+    [{ start: 1.2, end: 40, text: 'a' }, { start: 40, end: 98, text: 'b' }],
+    100,
+    [{ offset_s: 0, type: 'session_start' }],
+  ).passed, true);
+
+eq('assertion 3: the allowance reaches 20s before the first word',
+  checkCoverage(
+    [{ start: 20, end: 98, text: 'a' }],
+    100,
+    [{ offset_s: 0, type: 'session_start' }],
+  ).passed, true);
+
+/* A transcript that genuinely starts a minute late is still a failure. The
+   allowance forgives a pause before speaking, not a missing opening. */
+eq('assertion 3: a transcript starting far too late still fails',
+  checkCoverage(
+    [{ start: 61, end: 98, text: 'a' }],
+    100,
+    [{ offset_s: 0, type: 'session_start' }],
+  ).failures.filter((f) => f.assertion === 3).map((f) => f.offset_s), [0]);
+
+/* The allowance is measured from the first segment, so it cannot be borrowed
+   by a marker in the middle of a walk with nothing transcribed near it. */
+eq('assertion 3: a mid-walk marker gets no start allowance',
+  checkCoverage(
+    [{ start: 0, end: 10, text: 'a' }, { start: 30, end: 98, text: 'b' }],
+    100,
+    [{ offset_s: 0, type: 'session_start' }, { offset_s: 20, type: 'plant_open', plant_id: '004-MNY' }],
+  ).failures.filter((f) => f.assertion === 3).map((f) => f.offset_s), [20]);
+
 // 4. Timestamps are monotonic and inside the recorded duration.
 eq('assertion 4: segments going backwards fail',
   failed(checkCoverage(
