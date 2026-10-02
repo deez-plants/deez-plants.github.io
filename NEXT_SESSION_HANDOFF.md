@@ -404,6 +404,98 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
+#### THE DASHBOARD PASS — AGREED SHAPE, 1 OCT. MOCK-UP ROUND 5 IS OUT.
+
+Settled with the owner and their GPT across 1 Oct. **Build in this order**, which
+is both sides' order:
+
+1. **Inspect: reason + recheck.** Six optional chips — still moist · looks fine ·
+   drying normally · needs watching · standing water · other. A recheck on the
+   entry, live state **derived** from the most recent Inspect whose recheck has
+   not passed. Never a mutable field on the plant: that would be patched state,
+   which rule 10 forbids. Approved as a data shape by their GPT.
+2. **Verify suppression and reappearance in isolation** before anything is built
+   on top of it. Their GPT asked for this step and they are right — the whole
+   board depends on plants reliably leaving and returning.
+3. **The dashboard.** Then test on the phone before widening further.
+
+**The defer table, keyed on the chip** — replaced the formula, which was wrong.
+% of that plant's own watering interval:
+
+| Chip | Defer | Floor / cap |
+|---|---|---|
+| Still moist | 50% | 3–10 days |
+| Looks fine · no chip | 33% | 2–7 days |
+| Drying normally | 20% | 2–4 days |
+| Needs watching | fixed | 2 days |
+| Standing water | drain, then | 2 days |
+
+**Why not a flat default, and why not my first rule either.** A flat 3 days was
+invented. My replacement — one third of the interval — ignored *where in the
+cycle* the check happened, and the owner caught it: a plant only reaches the
+dashboard once it is past due, so the "remaining interval" branch I designed
+around almost never fires there. What you saw should set when you look again,
+which is what the chip does.
+
+**Standing water is the one chip with an action.** Roots in water get worse
+while you wait, so it offers **Drained it** / **Not yet** inline. Drained →
+2-day recheck. Not yet → stays on the board. The only chip that can refuse to
+go quiet.
+
+**Repeated "still moist" is evidence, not an automatic change.** Their GPT
+proposes a longer interval in a normal review round if it sees the pattern. The
+app must never adjust an interval by itself.
+
+**Health staleness stays at 90 days**, confirmed from both sides. Confirming is
+one tap and moves `health_confirmed` without moving `health_changed`.
+
+**Every Inspect entry travels in the package, uncollapsed** — plant, date,
+chip, note, recheck. Their GPT asked for the chronology, not counts.
+
+**Home itself:** Due and Most urgent **merge** into one actionable list; **Do
+next is retired** (a third list of the same plants with no buttons); **Coming
+up** surfaces the "7 this week" that was only ever a digit; five rows per
+section then See all; one basket across every section; the commit bar sticks to
+the bottom. The catch-up banner, sparkline and three-band bar — specified in
+`DESIGN_REFERENCE.md` and never built — come back as part of the rebuild, the
+banner **below** the health block at the owner's request.
+
+**Home will diverge from `DESIGN_REFERENCE.md` more than any other screen, and
+that is sanctioned.** The original Home is a reporting surface that sends you
+elsewhere; the owner wants a clipboard. Written down so a later session does not
+"restore" it as drift.
+
+**A real bug in the shipped Home, found in the owner's own screenshot:** under
+Most urgent, "See all 8" is wired to the Due total. Most urgent held one plant.
+Fix it with the rebuild.
+
+**Mock-up Round 5 is published** on the cumulative screen mock-ups page, below
+Rounds 1–4. Three row treatments, the chip panel, the standing-water confirm,
+the commit bar in three states, and the whole board at full height. Three
+questions are open on it: which row treatment, how a row carrying two problems
+should read, and whether Coming up opens by default.
+
+#### VOID FROM HISTORY — THE OWNER RAISED IT AGAIN, 1 OCT
+
+**Still not built. The owner explicitly asked that this not get lost again**,
+having watched the package fix sit undeployed for ten days.
+
+The entry type works, the fold handles it, merging is safe. The only thing
+restricting it is where the button lives: the round you just logged, before you
+leave the screen. The wrong 008-ALO watering of 14 Sep still stands because of
+it.
+
+**The new argument, which is the dashboard's:** the whole point of that board is
+to make logging six things as easy as logging one — which makes mis-logging six
+things just as easy. Ticking fast while walking around is precisely how a wrong
+entry gets in. The post-commit Undo covers the moment and nothing covers later.
+
+The owner's own words: *"you can build the void thing at the time you build the
+rest i think, or we wait cause its a major problem if its fucked, but we already
+waited and havent built or finished one thing from our last session like this
+and i dont want either to be lost."* Treat that as a leaning yes awaiting a
+clear one — and raise it rather than letting it lapse a third time.
+
 #### GPT'S AUDIT LIST, 1 OCT — AUDITED, NOT BUILT
 
 Their GPT sent a nine-item audit/fix pass after the 1 Oct round landed. Logged
