@@ -406,6 +406,49 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
+#### RUN 1 IS BUILT, 2 OCT. NOT DEPLOYED. RUN 2 IS NEXT.
+
+`ba330df` — Inspect carries a reason and a recheck. **Not pushed**; the owner
+tests on the phone after Run 3 or 4, and a deploy is a push they approve.
+
+**Mock-up Round 6 is published and approved**, with these corrections folded in
+rather than redrawn: health block copy left alone (the shipped `ScoreBlock`
+already renders what the owner wanted — my mock drew prose the app has never
+used, and rule 6 means a tidy-up there would silently change six screens);
+bands read `14 Good · 6 Holding · 2 Struggling`; the section is called **Needs
+attention**, not Needs doing; **Recently logged**, not Recent; and the catch-up
+banner sits **after Care adherence**, opening the activity half of the screen.
+
+Final Home order: Health → Care adherence → caught-up banner → Needs attention
+(+ the ratings line at its foot) → Coming up → Recently logged → Handoff log →
+utility rows → tab bar.
+
+**What Run 1 added:** `care/inspect.ts` (the defer table, the live recheck, all
+pure), `reason` / `recheck_days` / `resolved` on `CareEvent`, `recheck` on
+`DerivedPlant`, the chip panel on a plant's Log care screen, and
+`check/inspect.check.cjs` (185 checks).
+
+**Two things in there a later pass must not undo:**
+
+- **`attention` still says `behind` on a deferred plant.** Being past an
+  interval is a fact about a date and a check does not change it; what a check
+  changes is whether the app keeps raising it. So the fact stays and the
+  collection's `needs_attention` list drops the plant. A plant kept on that list
+  only by `health_stale` stays — a look at the soil says nothing about a rating.
+- **An undrained standing-water check never quiets a plant**, however long its
+  recheck runs. Hiding the one plant that is actually wrong is the worst thing
+  this feature could do, and it is pinned by checks.
+
+**RUN 2, next: prove plants leave and come back, on its own.** Their GPT asked
+for this as its own step before the board is built on top of it. A browser
+harness on **127.0.0.1** — never localhost, which is the owner's record — that
+logs an inspection, confirms the plant leaves `needs_attention`, winds the clock
+to the recheck date and confirms it returns, and confirms an undrained standing
+water check never left in the first place.
+
+Then **Run 3** (the board, the scroll fix, the "See all 8" fix) and **Run 4**
+(Void from history, Recently logged).
+
 #### START HERE 2 OCT: MOCK-UPS FIRST, THEN BUILD. FULL SPEC BELOW.
 
 **The owner went to bed on 1 Oct with this agreed and nothing built.** Their
