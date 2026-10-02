@@ -406,7 +406,7 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
-#### RUN 1 IS BUILT, 2 OCT. NOT DEPLOYED. RUN 2 IS NEXT.
+#### RUNS 1 AND 2 ARE DONE, 2 OCT. NOT DEPLOYED. RUN 3 IS NEXT.
 
 `ba330df` — Inspect carries a reason and a recheck. **Not pushed**; the owner
 tests on the phone after Run 3 or 4, and a deploy is a push they approve.
@@ -439,14 +439,34 @@ pure), `reason` / `recheck_days` / `resolved` on `CareEvent`, `recheck` on
   recheck runs. Hiding the one plant that is actually wrong is the worst thing
   this feature could do, and it is pinned by checks.
 
-**RUN 2, next: prove plants leave and come back, on its own.** Their GPT asked
-for this as its own step before the board is built on top of it. A browser
-harness on **127.0.0.1** — never localhost, which is the owner's record — that
-logs an inspection, confirms the plant leaves `needs_attention`, winds the clock
-to the recheck date and confirms it returns, and confirms an undrained standing
-water check never left in the first place.
+**RUN 2 IS DONE** — `d09bd70`. Thirty checks added to `check/derive.check.cjs`
+against the fold directly, and twenty-five in **`check/browser/recheck.html`**,
+which goes through the real write path (`logDetailEvent`, the same call the Log
+care screen makes), folds what actually landed on disk, and winds the clock
+forward to prove the plant returns on the day it named rather than the day after.
 
-Then **Run 3** (the board, the scroll fix, the "See all 8" fix) and **Run 4**
+**And it found a real bug.** A check dated in the FUTURE deferred a plant now.
+The detail form lets the owner set the date, so one mistyped year would have
+hidden a plant until 2028 with nothing on screen explaining why. An inspection
+dated after today is now ignored — a recheck is a promise to look again after a
+look that has already happened. Pinned in both harnesses.
+
+**Other behaviour pinned by Run 2, worth not re-deriving:** a check never moves
+the watering, so a plant comes back saying it is *further* past than when it was
+checked; a voided check brings the plant straight back with no recheck left
+behind; a plant watered in the meantime is due again on its own schedule whatever
+a long recheck says; one plant's check quiets only that plant; and a plant held
+on the list by a stale rating stays there through a check.
+
+**The harness clears its own two plants' Water, Inspect and Void entries before
+it starts.** Its first run failed on entries a hand-driven UI test had left
+behind, and the numbers looked wrong rather than the state looking wrong, which
+cost a minute of chasing the code. Keep that cleanup.
+
+**RUN 3, next: the board.** The merged **Needs attention** list with two-button
+rows, one basket, the commit bar, Coming up (shut), the ratings line, the
+catch-up banner after Care adherence, the sparkline and three-band bar — plus
+**the scroll fix** (`src/App.tsx:102`) and **the "See all 8" fix**. Then **Run 4**
 (Void from history, Recently logged).
 
 #### START HERE 2 OCT: MOCK-UPS FIRST, THEN BUILD. FULL SPEC BELOW.
