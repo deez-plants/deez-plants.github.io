@@ -1,0 +1,191 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>backup carries AI rounds</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  Does a backup remember which packages went to the AI?
+
+  Until 2026-10-01 it did not. `readState` exported plants, events, registry
+  and the counters, and nothing else — so a restore landed with the package
+  counters intact and an EMPTY package registry. Two consequences, and the
+  second is the dangerous one:
+
+    - every AI update would be refused, because no package on the new device
+      had ever been exported;
+    - `applied_updates` is what enforces "a package cannot be answered twice",
+      so without it every reply ever applied could be applied again.
+
+  ## Pinned to 127.0.0.1, same as package-registry.html
+
+  This writes: it builds a package, restores a file, and adds rows. IndexedDB
+  is per-origin, so `127.0.0.1:5173` is a throwaway database and
+  `localhost:5173` is where the owner's record lives. It REFUSES to run
+  anywhere else.
+
+    http://127.0.0.1:5173/check/browser/backup-rounds.html
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+const ok = (name, cond) => check(name, !!cond, true);
+
+if (location.hostname !== '127.0.0.1') {
+  out.textContent = 'REFUSED\n\n'
+    + `This harness writes. It runs only on 127.0.0.1, whose database is a\n`
+    + `throwaway. You opened it on "${location.hostname}", which on this\n`
+    + `machine is where the owner's record lives.`;
+  throw new Error('wrong origin');
+}
+
+const { openDeezPlants } = await import('/src/db/schema.ts');
+const { boot, refresh } = await import('/src/boot.ts');
+const { exportRecord, parseStateFile, restoreState } = await import('/src/sync/stateTransfer.ts');
+const { buildReviewPackage, confirmPackageSent } = await import('/src/package/export.ts');
+const { isConfirmedSent } = await import('/src/package/registry.ts');
+const { validateUpdateFile } = await import('/src/package/validate.ts');
+
+const booted = await boot();
+const TODAY = booted.as_of;
+let db = await openDeezPlants();
+
+for (const p of await db.getAll('packages')) await db.delete('packages', p.package_id);
+for (const a of await db.getAll('applied_updates')) await db.delete('applied_updates', a.package_id);
+
+/* -- a real round, confirmed sent and answered ---------------------------- */
+
+log('\n— a settled round —');
+
+const pkg = await buildReviewPackage(db, (await refresh()).state, TODAY);
+await confirmPackageSent(db, pkg.package_id, TODAY);
+await db.put('applied_updates', {
+  package_id: pkg.package_id, applied: TODAY, accepted_count: 3, rejected_count: 1,
+});
+
+const sent = await db.get('packages', pkg.package_id);
+ok('the package is confirmed sent', isConfirmedSent(sent));
+
+/* -- it travels in the backup --------------------------------------------- */
+
+log('\n— the backup file —');
+
+const file = parseStateFile(await (await exportRecord(db, TODAY)).blob.text());
+
+// The whole point. Before 2026-10-01 both of these were undefined.
+ok('the backup carries the package registry', Array.isArray(file.packages));
+ok('and the applied updates', Array.isArray(file.applied_updates));
+check('the settled round is in it',
+  file.packages.filter((p) => p.package_id === pkg.package_id).length, 1);
+check('with its sent date intact',
+  file.packages.find((p) => p.package_id === pkg.package_id).sent, TODAY);
+check('and its reply', file.applied_updates.map((a) => a.package_id), [pkg.package_id]);
+
+/* -- a fresh device: the failure this fixes ------------------------------- */
+
+log('\n— restoring onto a device that has none —');
+
+// Stand in for the new phone by emptying both stores. The events and plants
+// stay, which is exactly the state a restore produced before: a complete
+// record with no memory of ever having spoken to the AI.
+for (const p of await db.getAll('packages')) await db.delete('packages', p.package_id);
+for (const a of await db.getAll('applied_updates')) await db.delete('applied_updates', a.package_id);
+
+const plantIds = sent.plant_ids;
+const updateFile = {
+  package_id: pkg.package_id,
+  generated: TODAY,
+  changes: [{ plant_id: plantIds[0], field: 'light', value: 'Bright indirect light', reason: 'A specific reason about this plant.' }],
+  unaddressed: plantIds.slice(1),
+};
+const ctx = async () => ({
+  state: (await refresh()).state,
+  packages: await db.getAll('packages'),
+  appliedUpdates: await db.getAll('applied_updates'),
+  events: await db.getAll('events'),
+});
+
+{
+  const r = validateUpdateFile(updateFile, await ctx());
+  ok('with the registry gone, the AI update is refused — the old bug', !r.ok);
+}
+
+const result = await restoreState(db, file);
+check('the restore reports the package it brought back', result.packages_added, 1);
+check('and the reply', result.applied_added, 1);
+
+{
+  const back = await db.get('packages', pkg.package_id);
+  ok('the round is in the handoff log again', !!back);
+  ok('still confirmed sent, not demoted to built', isConfirmedSent(back));
+  check('carrying the same entries', back.event_ids.length, sent.event_ids.length);
+}
+
+/* -- and the guard it carries with it ------------------------------------- */
+
+log('\n— the guard that came back with it —');
+
+{
+  // The restored `applied_updates` row is what refuses this. Without it the
+  // file would validate and 228 settled changes could be applied twice.
+  const r = validateUpdateFile(updateFile, await ctx());
+  ok('the already-answered package still cannot be answered again', !r.ok);
+  ok('and says so for the right reason', !r.ok && r.reason.includes('already been applied'));
+}
+
+/* -- restoring twice adds nothing ----------------------------------------- */
+
+log('\n— idempotent —');
+
+const again = await restoreState(db, file);
+check('a second restore adds no packages', again.packages_added, 0);
+check('and no applied updates', again.applied_added, 0);
+
+/* -- a restore never overwrites what this device has settled -------------- */
+
+log('\n— add if absent, never overwrite —');
+
+{
+  // The file says this package was answered with 3 accepted. This device says
+  // 9. The device wins: a restore may only add rounds it is missing.
+  await db.put('applied_updates', {
+    package_id: pkg.package_id, applied: TODAY, accepted_count: 9, rejected_count: 0,
+  });
+  await restoreState(db, file);
+  check('the local record of a reply is not overwritten',
+    (await db.get('applied_updates', pkg.package_id)).accepted_count, 9);
+}
+
+{
+  // Same the other way: an incoming unsent copy must not unsend a package this
+  // device has confirmed.
+  const stale = {
+    ...file,
+    packages: file.packages.map((p) => ({ ...p, sent: null })),
+  };
+  await restoreState(db, stale);
+  ok('an unsent copy in a file cannot unsend a settled package',
+    isConfirmedSent(await db.get('packages', pkg.package_id)));
+}
+
+/* -- an older backup file still restores ---------------------------------- */
+
+log('\n— an older file —');
+
+{
+  const old = { ...file };
+  delete old.packages;
+  delete old.applied_updates;
+  const r = await restoreState(db, old);
+  check('a file written before this change adds no rounds', [r.packages_added, r.applied_added], [0, 0]);
+  ok('and restores without complaint', !!(await db.get('packages', pkg.package_id)));
+}
+
+log(`\n${fails === 0 ? 'ALL PASSED' : `${fails} FAILED`}`);
+</script>
+</body></html>

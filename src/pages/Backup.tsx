@@ -220,6 +220,16 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
               {restored.events_already_here > 0 && <> · {restored.events_already_here} already here</>}</li>
             {restored.media_added > 0 && <li><strong>{restored.media_added}</strong> photos added</li>}
             {restored.sessions_added > 0 && <li><strong>{restored.sessions_added}</strong> walks added</li>}
+            {/* Said out loud rather than left silent: these are what let an AI
+                update be applied at all, and what stops one being applied
+                twice. A restore that quietly skipped them used to leave the
+                app refusing every reply. */}
+            {restored.packages_added > 0 && (
+              <li><strong>{restored.packages_added}</strong> AI packages added to the handoff log</li>
+            )}
+            {restored.applied_added > 0 && (
+              <li><strong>{restored.applied_added}</strong> applied updates added</li>
+            )}
             {restored.registry_taken && <li>Rooms and planters taken from the file</li>}
           </ul>
         </section>

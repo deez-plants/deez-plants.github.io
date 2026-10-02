@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { openDeezPlants, REGISTRY_KEY, META_KEY, type DeezDB, type MediaRecord, type SessionRecord } from '../db/schema';
+import { openDeezPlants, REGISTRY_KEY, META_KEY, type AppliedUpdateRecord, type DeezDB, type MediaRecord, type PackageRecord, type SessionRecord } from '../db/schema';
 import { readSessionSegments, extensionFor } from '../capture/recording';
 import { stamp } from '../package/export';
 import type { PlantBaseline, Registry } from '../types/plant';
@@ -48,6 +48,26 @@ export interface StateFile {
       entries; this is the bookkeeping that goes with them. */
   media?: Omit<MediaRecord, 'blob' | 'thumb'>[];
   sessions?: SessionRecord[];
+  /**
+   * Which packages went to the AI, and which replies were applied.
+   *
+   * **Added 2026-10-01, and the omission was dangerous.** These two stores are
+   * not facts about plants, which is why they were left out — but they are
+   * what the update validator reads, and leaving them behind broke a restored
+   * device in two ways at once.
+   *
+   * Every AI update would be refused, because no package on the new device
+   * had ever been exported — the exact sentence that cost the owner a week in
+   * September, arriving from a completely different cause.
+   *
+   * And worse: `applied_updates` is what enforces *a package cannot be
+   * answered twice*. Without it, **every reply ever applied could be applied
+   * again**, silently — 228 already-settled changes taken a second time.
+   *
+   * Optional, so an older file simply has none and restores as it always did.
+   */
+  packages?: PackageRecord[];
+  applied_updates?: AppliedUpdateRecord[];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -55,11 +75,13 @@ export interface StateFile {
 /* -------------------------------------------------------------------------- */
 
 async function readState(db: DeezDB, as_of: ISODate): Promise<StateFile> {
-  const [plants, events, registry, meta] = await Promise.all([
+  const [plants, events, registry, meta, packages, applied_updates] = await Promise.all([
     db.getAll('plants'),
     db.getAll('events'),
     db.get('registry', REGISTRY_KEY),
     db.get('meta', META_KEY),
+    db.getAll('packages'),
+    db.getAll('applied_updates'),
   ]);
   return {
     format: STATE_FORMAT,
@@ -73,6 +95,8 @@ async function readState(db: DeezDB, as_of: ISODate): Promise<StateFile> {
       package: meta?.package_counter ?? {},
       session: meta?.session_counter ?? {},
     },
+    packages,
+    applied_updates,
   };
 }
 
@@ -182,6 +206,9 @@ export interface RestoreResult {
   events_already_here: number;
   media_added: number;
   sessions_added: number;
+  /** AI rounds the file knew about and this device did not. */
+  packages_added: number;
+  applied_added: number;
   registry_taken: boolean;
   /** From the file, so the screen can say where this came from. */
   from_device: string;
@@ -229,6 +256,8 @@ export async function restoreState(db: DeezDB, state: StateFile): Promise<Restor
     events_already_here: 0,
     media_added: 0,
     sessions_added: 0,
+    packages_added: 0,
+    applied_added: 0,
     registry_taken: false,
     from_device: state.device_label || state.device_id,
     exported: state.exported,
@@ -254,6 +283,33 @@ export async function restoreState(db: DeezDB, state: StateFile): Promise<Restor
   if (!registry && state.registry) {
     await db.put('registry', state.registry, REGISTRY_KEY);
     result.registry_taken = true;
+  }
+
+  /**
+   * The AI round-trip history: which packages went out, which replies landed.
+   *
+   * **Add if absent, never overwrite** — the same rule the entries above use,
+   * for the same reason. A restore can only ever give this device rounds it
+   * did not have; it can never unsend a package this device has settled, nor
+   * re-open one it has already answered.
+   *
+   * That direction matters more than it looks. `applied_updates` is what the
+   * validator reads to refuse a second answer to the same package, so a
+   * restore that overwrote it would hand back the ability to apply 228
+   * already-settled changes a second time.
+   */
+  const existingPackages = new Set((await db.getAllKeys('packages')).map(String));
+  for (const p of state.packages ?? []) {
+    if (existingPackages.has(p.package_id)) continue;
+    await db.add('packages', p);
+    result.packages_added += 1;
+  }
+
+  const existingApplied = new Set((await db.getAllKeys('applied_updates')).map(String));
+  for (const a of state.applied_updates ?? []) {
+    if (existingApplied.has(a.package_id)) continue;
+    await db.add('applied_updates', a);
+    result.applied_added += 1;
   }
 
   // Counters move forward, never back: a restored file must not let this
