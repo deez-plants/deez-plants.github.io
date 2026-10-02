@@ -3,6 +3,7 @@ import type { ClockTime, DeviceId, EventId, ISODate, PlantId } from '../types/id
 import type { CareEvent, CareEventType, StoredEvent } from '../types/event';
 import type { DerivedPlant, DerivedState } from '../types/derived';
 import type { Registry } from '../types/plant';
+import type { InspectReason } from './inspect';
 import { appendEvents, commitUpdate, deviceId, mintEventId, nowClockTime } from '../db/events';
 import { daysBetween } from '../lib/dates';
 
@@ -512,10 +513,19 @@ export interface DetailDraft {
   date: ISODate;
   time: ClockTime;
   note: string;
+  /**
+   * `Inspect` only. What the soil looked like, when to look again, and whether
+   * standing water was dealt with. All optional: a check with no reason is
+   * still a check, and the owner is not made to classify anything on a walk.
+   * See `care/inspect.ts`.
+   */
+  reason?: InspectReason | null;
+  recheck_days?: number | null;
+  resolved?: boolean;
 }
 
 export function emptyDetailDraft(as_of: ISODate): DetailDraft {
-  return { type: null, date: as_of, time: nowClockTime(), note: '' };
+  return { type: null, date: as_of, time: nowClockTime(), note: '', reason: null, recheck_days: null };
 }
 
 export function buildDetailEvent(
@@ -527,6 +537,20 @@ export function buildDetailEvent(
   const note = draft.note.trim();
   if (note.length > NOTE_MAX) throw new Error(`A note is at most ${NOTE_MAX} characters.`);
 
+  // The inspection extras ride only on an inspection. Putting a recheck on a
+  // watering would be meaningless, and an entry carrying fields its own type
+  // never reads is how a log becomes hard to trust.
+  const inspect = draft.type === 'Inspect'
+    ? {
+      ...(draft.reason ? { reason: draft.reason } : {}),
+      ...(draft.recheck_days ? { recheck_days: draft.recheck_days } : {}),
+      // Written only where it means something: `standing_water` with the
+      // question answered. Absent everywhere else, so `resolved === false`
+      // always means "the owner said they had not dealt with it".
+      ...(draft.reason === 'standing_water' ? { resolved: draft.resolved === true } : {}),
+    }
+    : {};
+
   return {
     event_id: mintEventId(ctx.device_id, draft.date, draft.time),
     plant_id,
@@ -534,6 +558,7 @@ export function buildDetailEvent(
     date: draft.date,
     time: draft.time,
     ...(note ? { note } : {}),
+    ...inspect,
     source: 'user',
     device_id: ctx.device_id,
   };

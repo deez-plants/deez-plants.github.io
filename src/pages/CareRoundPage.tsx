@@ -11,6 +11,10 @@ import {
   roundCandidates, roundHeading, rowStatus, selectionGroups, toggle,
   type DetailDraft, type RoundAction, type RoundDraft,
 } from '../care/careRound';
+import {
+  deferDays, INSPECT_REASONS, REASON_TEXT, RECHECK_CHOICES,
+} from '../care/inspect';
+import { addDays, formatDayMonth } from '../lib/dates';
 import { PlantChrome } from '../components/PlantChrome';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore } from '../score/score';
@@ -93,6 +97,9 @@ export default function CareRoundPage({
 
   const [detailDraft, setDetailDraft] = useState<DetailDraft>(() => emptyDetailDraft(as_of));
   const [detailFlash, setDetailFlash] = useState<DetailFlash | null>(null);
+  /** Once the owner has set the recheck by hand, a chip must not move it back
+      under them. Reset with the draft. */
+  const [recheckTouched, setRecheckTouched] = useState(false);
   const [detailBusy, setDetailBusy] = useState(false);
   // **Two pages, and which one this is depends on `detailPlantId`.**
   //
@@ -289,6 +296,7 @@ export default function CareRoundPage({
       await onChanged();
       setDetailFlash({ kind: 'logged', type: detailDraft.type });
       setDetailDraft(emptyDetailDraft(as_of));
+      setRecheckTouched(false);
     } catch (e: unknown) {
       setDetailFlash({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -598,6 +606,113 @@ export default function CareRoundPage({
             <div className="care-detail-grid">
               {RARE_TIER.map((t) => careTypeButton(t))}
             </div>
+          )}
+
+          {/* An inspection, and only an inspection, asks two more things: what
+              the soil looked like, and when to come back. Both optional —
+              the owner must not be made to classify a plant on a walk. The
+              chip moves the recheck, because what you saw is the only thing
+              that actually varies. See `care/inspect.ts`. */}
+          {detailDraft.type === 'Inspect' && (
+            <>
+              <label className="care-detail-field-label">WHAT DID YOU SEE?</label>
+              <div className="care-chips">
+                {INSPECT_REASONS.map((r) => {
+                  const on = detailDraft.reason === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      aria-pressed={on}
+                      className={`care-chip${on ? ' on' : ''}${r === 'standing_water' ? ' flag' : ''}`}
+                      onClick={() => setDetailDraft({
+                        ...detailDraft,
+                        // Tapping the chosen one again clears it: a reason
+                        // picked by mistake should not be stuck on the entry.
+                        reason: on ? null : r,
+                        resolved: false,
+                        // The chip sets the wait unless the owner has already
+                        // moved it themselves.
+                        recheck_days: recheckTouched
+                          ? detailDraft.recheck_days
+                          : deferDays(on ? null : r, detailPlant?.water_interval_days ?? null),
+                      })}
+                    >
+                      {REASON_TEXT[r]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* The one condition that gets worse while it waits. Everything
+                  else here is the owner saying there is nothing to do. */}
+              {detailDraft.reason === 'standing_water' && (
+                <div className="care-drain">
+                  <p>
+                    Tip it out now — roots sitting in water is the one thing here
+                    that gets worse while you wait.
+                  </p>
+                  <div className="care-drain-row">
+                    <button
+                      type="button"
+                      aria-pressed={detailDraft.resolved === true}
+                      className={detailDraft.resolved === true ? 'care-drain-btn on' : 'care-drain-btn'}
+                      onClick={() => setDetailDraft({ ...detailDraft, resolved: true })}
+                    >
+                      Drained it
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={detailDraft.resolved !== true}
+                      className={detailDraft.resolved !== true ? 'care-drain-btn on' : 'care-drain-btn'}
+                      onClick={() => setDetailDraft({ ...detailDraft, resolved: false })}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                  {detailDraft.resolved !== true && (
+                    <p className="care-drain-warn">
+                      Left undrained, this plant stays on Needs attention whatever
+                      the recheck says.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <label className="care-detail-field-label">LOOK AGAIN IN</label>
+              <div className="care-chips">
+                {RECHECK_CHOICES.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={detailDraft.recheck_days === d}
+                    className={detailDraft.recheck_days === d ? 'care-chip on' : 'care-chip'}
+                    onClick={() => {
+                      setRecheckTouched(true);
+                      setDetailDraft({ ...detailDraft, recheck_days: d });
+                    }}
+                  >
+                    {d} days
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  aria-pressed={!detailDraft.recheck_days}
+                  className={!detailDraft.recheck_days ? 'care-chip on' : 'care-chip'}
+                  onClick={() => {
+                    setRecheckTouched(true);
+                    setDetailDraft({ ...detailDraft, recheck_days: null });
+                  }}
+                >
+                  Don't remind me
+                </button>
+              </div>
+              <p className="care-detail-photo-note">
+                {detailDraft.recheck_days
+                  ? `Back on Needs attention on ${formatDayMonth(addDays(detailDraft.date, detailDraft.recheck_days))}.`
+                  : 'This records that you looked. It will not change when the plant next comes up.'}
+              </p>
+            </>
           )}
 
           <label className="care-detail-field-label" htmlFor="care-detail-date">DATE &amp; TIME</label>

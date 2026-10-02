@@ -31,6 +31,7 @@
     "../src/nav/stack.ts",
     "../src/package/validate.ts",
     "../src/package/registry.ts",
-    "../src/capture/photoStore.ts"
+    "../src/capture/photoStore.ts",
+    "../src/care/inspect.ts"
   ]
 }

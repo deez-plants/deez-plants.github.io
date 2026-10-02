@@ -3,6 +3,7 @@ import type {
   Adherence, CareInstruction, Health, HealthSource, PlantBaseline, Registry, Season, StatusLabel,
 } from './plant';
 import type { StoredEvent } from './event';
+import type { LiveRecheck } from '../care/inspect';
 
 /* -------------------------------------------------------------------------- */
 /* Health — section 3b and "Confirming a rating is not a no-op" (section 4).   */
@@ -145,6 +146,19 @@ export interface DerivedPlant {
   /** Most recent event of any type on this plant. See DECISION 6. */
   last_checked: ISODate | null;
   attention: AttentionReason[];
+
+  /**
+   * The live recheck, if the owner has looked at this plant and deferred it.
+   *
+   * Derived from the most recent `Inspect` carrying one, never stored — see
+   * `care/inspect.ts`. Null when none is in force, or when the day it named
+   * has arrived.
+   *
+   * **Consumers that build their own past-interval lists must respect this.**
+   * `attention` still says `behind`, because that remains true; this says the
+   * owner has already dealt with it.
+   */
+  recheck: LiveRecheck | null;
 
   /** Which events behind this plant are uncommitted, for the pending badges. */
   pending_event_ids: EventId[];

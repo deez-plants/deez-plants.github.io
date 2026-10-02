@@ -9,6 +9,7 @@ import type {
 } from '../types/derived';
 import { addDays, daysBetween, seasonOf, toDay } from '../lib/dates';
 import { decodeFieldValue } from './fieldCodec';
+import { isDeferred, liveRecheckFrom, type StoredInspect } from '../care/inspect';
 
 /**
  * The whole of the derived state, rebuilt from the event log. Pure and total:
@@ -72,6 +73,9 @@ interface Working {
   intervals: IntervalPoint[];
   rates: (RateEvent & { pending: 0 | 1 })[];
   waters: ISODate[];
+  /** Inspections, for the live recheck. Voided ones never arrive here — the
+      fold drops them before `applyPlantEvent` runs. */
+  inspects: StoredInspect[];
   instructions: CareInstruction[];
   photos: MediaId[];
   archive: { date: ISODate; reason: string } | null;
@@ -128,6 +132,7 @@ function newWorking(base: PlantBaseline): Working {
       winter: base.water_interval_days_winter,
     }],
     rates: [],
+    inspects: [],
     waters: [],
     instructions: [],
     photos: [],
@@ -294,6 +299,12 @@ function applyPlantEvent(w: Working, e: StoredEvent): void {
     case 'Water':
       w.waters.push(e.date);
       break;
+    case 'Inspect':
+      // Looking at a plant moves no number. It is kept only so the live
+      // recheck can be derived — see `care/inspect.ts`, and rule 10: this is
+      // read back from the log every time, never stored on the plant.
+      w.inspects.push(e);
+      break;
     default:
       break;
   }
@@ -432,6 +443,7 @@ function finalizePlant(
 ): DerivedPlant {
   const health = deriveHealth(w, as_of);
   const adherence = deriveAdherence(w, as_of);
+  const recheck = liveRecheckFrom(w.inspects, as_of);
   const archived = w.archive !== null;
 
   // Rule 9 lives in the consumers, not here: none of these reasons may be
@@ -455,6 +467,18 @@ function finalizePlant(
     archived_reason: w.archive?.reason ?? null,
     health,
     adherence,
+    /**
+     * The owner looked at this plant and said it was not ready — see
+     * `care/inspect.ts`. Null once the date it named has arrived.
+     *
+     * **`attention` is deliberately left alone.** Being past an interval is a
+     * fact about a date, and a check does not change it; what a check changes
+     * is whether the app should keep raising it. So the fact stays and the
+     * collection's `needs_attention` list drops the plant instead. Rule 9, from
+     * the other side: the interval passing is a prompt to look, and this is the
+     * record of having looked.
+     */
+    recheck,
     care_instructions: w.instructions,
     photos: w.photos,
     hero: w.fields.hero_media,
@@ -645,6 +669,10 @@ export const derive: Derive = ({ baselines, events, registry, as_of, include_pen
   // ignore it. Only `behind` and a stale rating reach the collection list.
   const needs_attention = active
     .filter((p) => p.attention.includes('behind') || p.attention.includes('health_stale'))
+    // A plant the owner has looked at and deferred sits out until the date they
+    // named. A stale rating is not deferred by a look at the soil, so a plant
+    // kept only by `health_stale` stays — the two are unrelated judgements.
+    .filter((p) => !(isDeferred(p.recheck) && !p.attention.includes('health_stale')))
     .map((p) => p.plant_id);
 
   return {

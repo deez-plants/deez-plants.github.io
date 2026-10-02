@@ -2,6 +2,7 @@ import type {
   ClockTime, DeviceId, EventId, ISODate, InstructionId, MediaId, PackageId, PlantId, SessionId,
 } from './ids';
 import type { EditableField, Health, MediaLabel } from './plant';
+import type { InspectReason } from '../care/inspect';
 
 /** Section 5. */
 export type EventType =
@@ -79,6 +80,23 @@ interface EventCommon {
 export interface CareEvent extends EventCommon {
   type: CareEventType;
   plant_id: PlantId;
+  /**
+   * `Inspect` only. What the soil looked like, and when to come back.
+   *
+   * Added 2026-10-02, approved by the owner and their GPT as a data-shape
+   * change. Both optional: an inspection with no reason is still an
+   * inspection, and one with no recheck simply says nothing about when to look
+   * again.
+   *
+   * **The recheck belongs here rather than on the plant.** A `next_check` field
+   * would be state patched in place, which rule 10 forbids; the live recheck is
+   * derived from the most recent `Inspect` carrying one. See `care/inspect.ts`.
+   */
+  reason?: InspectReason;
+  recheck_days?: number;
+  /** `standing_water` only: false when the owner said they had not drained it.
+      Such an inspection never quiets the plant, whatever the recheck says. */
+  resolved?: boolean;
 }
 
 /** Section 4. The rating lives in `to`. Confirming without changing is one of these. */
