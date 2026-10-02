@@ -11,6 +11,9 @@ import { editPlantFields } from '../care/editField';
 import { PhotoCaptureButton } from '../components/PhotoCaptureButton';
 import { PlantChrome } from '../components/PlantChrome';
 import { PhotoViewer } from '../components/PhotoViewer';
+import {
+  deletePhotos, formatBytes, protectedPhotos, setKeep, summarisePhotos,
+} from '../capture/photoStore';
 import './PhotosPage.css';
 
 /**
@@ -85,6 +88,14 @@ export default function PhotosPage({
     }
   };
 
+  /**
+   * Which of this plant's photographs still have their image.
+   *
+   * Null until read, and everything shows meanwhile rather than nothing — a
+   * gallery that flashes empty on every open is worse than one that settles.
+   */
+  const [present, setPresent] = useState<Set<MediaId> | null>(null);
+
   const entries = useMemo<Entry[]>(() => {
     const byMedia = new Map<MediaId, Entry>();
     for (const e of events) {
@@ -95,8 +106,14 @@ export default function PhotosPage({
     }
     // Newest first, following `plant.photos`' own event order reversed.
     const order = new Map(plant.photos.map((id, i) => [id, i]));
-    return [...byMedia.values()].sort((a, b) => (order.get(b.media_id) ?? -1) - (order.get(a.media_id) ?? -1));
-  }, [events, plant.plant_id, plant.photos]);
+    return [...byMedia.values()]
+      // The list comes off the event log, which is append-only and therefore
+      // still names a photograph whose image has been deleted. The gallery is
+      // the images you HAVE; the entry saying you took one stays in History,
+      // which is where it belongs and where it is not a broken tile.
+      .filter((e) => present === null || present.has(e.media_id))
+      .sort((a, b) => (order.get(b.media_id) ?? -1) - (order.get(a.media_id) ?? -1));
+  }, [events, plant.plant_id, plant.photos, present]);
 
   // Boot only loads each plant's hero, so a gallery has to fetch its own
   // thumbnails. `ensureThumbs` fills the same map every screen already holds;
@@ -143,6 +160,68 @@ export default function PhotosPage({
 
   /** Which photograph is open full screen, by index into `inOrder`. */
   const [viewing, setViewing] = useState<number | null>(null);
+
+  /**
+   * Protecting and clearing out photographs. See `capture/photoStore.ts`.
+   *
+   * `keep` and the sizes live on the media records, so this screen reads them
+   * directly — they are not derived state and nothing else needs them.
+   */
+  const [keeps, setKeeps] = useState<Set<MediaId>>(new Set());
+  const [sizes, setSizes] = useState<{ count: number; bytes: number } | null>(null);
+  /** Null when not choosing; a set, possibly empty, while choosing. */
+  const [choosing, setChoosing] = useState<Set<MediaId> | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const db = await openDeezPlants();
+      const mine = (await db.getAll('media')).filter((m) => m.plant_id === plant.plant_id);
+      if (!live) return;
+      setPresent(new Set(mine.map((m) => m.media_id)));
+      setKeeps(new Set(mine.filter((m) => m.keep).map((m) => m.media_id)));
+      setSizes(summarisePhotos(mine, new Set()));
+    })();
+    return () => { live = false; };
+  }, [plant.plant_id, reload]);
+
+  const protectedHere = useMemo(
+    () => protectedPhotos([plant], entries.map((e) => ({ media_id: e.media_id, keep: keeps.has(e.media_id) }))),
+    [plant, entries, keeps],
+  );
+
+  const toggleKeep = async (media_id: MediaId) => {
+    const db = await openDeezPlants();
+    await setKeep(db, media_id, !keeps.has(media_id));
+    setReload((n) => n + 1);
+  };
+
+  const toggleChoice = (media_id: MediaId) => {
+    setChoosing((current) => {
+      if (!current) return current;
+      const next = new Set(current);
+      if (next.has(media_id)) next.delete(media_id);
+      else next.add(media_id);
+      return next;
+    });
+  };
+
+  const chosenProtected = useMemo(
+    () => [...(choosing ?? [])].filter((id) => protectedHere.has(id)),
+    [choosing, protectedHere],
+  );
+
+  const doDelete = async () => {
+    const ids = [...(choosing ?? [])];
+    const db = await openDeezPlants();
+    await deletePhotos(db, ids);
+    setChoosing(null);
+    setConfirming(false);
+    setReload((n) => n + 1);
+    await onChanged();
+  };
 
   const groups = useMemo(() => {
     const map = new Map<ISODate, Entry[]>();
@@ -223,7 +302,10 @@ export default function PhotosPage({
       />
 
       <h1 className="photos-title">{plant.name}</h1>
-      <p className="photos-sub">{entries.length} photo{entries.length === 1 ? '' : 's'} · {groups.length} session{groups.length === 1 ? '' : 's'}</p>
+      <p className="photos-sub">
+        {entries.length} photo{entries.length === 1 ? '' : 's'} · {groups.length} session{groups.length === 1 ? '' : 's'}
+        {sizes && sizes.bytes > 0 && ` · ${formatBytes(sizes.bytes)}`}
+      </p>
 
       <PhotoCaptureButton
         plant_id={plant.plant_id}
@@ -236,7 +318,18 @@ export default function PhotosPage({
 
       {error && <p className="photos-error">{error}</p>}
 
-      {groups.length === 0 && <p className="photos-empty">Nothing captured for this plant yet.</p>}
+      {groups.length === 0 && (
+        <p className="photos-empty">
+          {present !== null && plant.photos.length > 0
+            // Not "nothing captured": photographs were taken and their images
+            // have since been deleted, and saying the first would read as the
+            // record having lost them.
+            ? `No images held for this plant. ${plant.photos.length} photograph`
+              + `${plant.photos.length === 1 ? ' was' : 's were'} taken and since deleted —`
+              + ' History still shows when.'
+            : 'Nothing captured for this plant yet.'}
+        </p>
+      )}
 
       {chosen.length > 0 && (
         <div className="photos-chosen">
@@ -248,6 +341,63 @@ export default function PhotosPage({
           <button type="button" className="photos-chosen-clear" onClick={() => void writeCompare(null)}>
             Use the latest two
           </button>
+        </div>
+      )}
+
+      {/* Clearing out a batch. Deliberately behind a mode rather than a delete
+          button on every tile: one stray tap should not be able to remove a
+          photograph, and the owner asked not to have to curate them one by
+          one either. */}
+      {entries.length > 0 && (
+        <div className="photos-manage">
+          {choosing === null ? (
+            <button type="button" className="photos-manage-start" onClick={() => setChoosing(new Set())}>
+              Choose photos to delete
+            </button>
+          ) : (
+            <>
+              <span className="photos-manage-count">
+                {choosing.size === 0 ? 'Tap photographs to choose them' : `${choosing.size} chosen`}
+              </span>
+              <button
+                type="button"
+                className="photos-manage-del"
+                disabled={choosing.size === 0}
+                onClick={() => setConfirming(true)}
+              >
+                Delete
+              </button>
+              <button type="button" className="photos-manage-stop" onClick={() => { setChoosing(null); setConfirming(false); }}>
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {confirming && choosing && (
+        <div className="photos-confirm">
+          <p>
+            Delete {choosing.size} photograph{choosing.size === 1 ? '' : 's'}?
+            {' '}
+            <strong>The images go. The entries saying you took them stay</strong> —
+            your history still shows the photograph was taken, on the day it was.
+          </p>
+          {chosenProtected.length > 0 && (
+            <p className="photos-confirm-warn">
+              {chosenProtected.length} of them {chosenProtected.length === 1 ? 'is' : 'are'} protected —
+              marked Keep, or in use as a hero or a What works comparison. Deleting
+              {chosenProtected.length === 1 ? ' it' : ' them'} will leave those places empty.
+            </p>
+          )}
+          <div className="photos-confirm-row">
+            <button type="button" className="photos-confirm-yes" onClick={() => void doDelete()}>
+              Yes, delete
+            </button>
+            <button type="button" className="photos-confirm-no" onClick={() => setConfirming(false)}>
+              No
+            </button>
+          </div>
         </div>
       )}
 
@@ -268,7 +418,9 @@ export default function PhotosPage({
               return (
                 <div
                   key={e.media_id}
-                  className={`photos-tile${isHero ? ' hero' : ''}${isCompare ? ' compare' : ''}${flags.has(e.media_id) ? ' flagged' : ''}`}
+                  className={`photos-tile${isHero ? ' hero' : ''}${isCompare ? ' compare' : ''}`
+                    + `${flags.has(e.media_id) ? ' flagged' : ''}`
+                    + `${choosing?.has(e.media_id) ? ' chosen' : ''}`}
                 >
                   {/* The tile is a button now. Every photo decision this
                       screen asks for was being made from an image too small
@@ -276,8 +428,13 @@ export default function PhotosPage({
                   <button
                     type="button"
                     className="photos-tile-open"
-                    onClick={() => setViewing(inOrder.findIndex((p) => p.media_id === e.media_id))}
-                    aria-label={`Open photo from ${formatDayMonthYear(e.date)} full screen`}
+                    aria-pressed={choosing ? choosing.has(e.media_id) : undefined}
+                    onClick={() => (choosing
+                      ? toggleChoice(e.media_id)
+                      : setViewing(inOrder.findIndex((p) => p.media_id === e.media_id)))}
+                    aria-label={choosing
+                      ? `Choose photo from ${formatDayMonthYear(e.date)}`
+                      : `Open photo from ${formatDayMonthYear(e.date)} full screen`}
                   >
                     {url
                       ? <img className="photos-tile-image" src={url} alt="" />
@@ -314,6 +471,16 @@ export default function PhotosPage({
                       onClick={() => void toggleReview(e.media_id)}
                     >
                       {flags.has(e.media_id) ? 'For AI ✓' : 'For AI'}
+                    </button>
+                    {/* A hero or a comparison is already protected by being
+                        one; Keep is for the photograph that matters for a
+                        reason only the owner knows. */}
+                    <button
+                      type="button"
+                      className={keeps.has(e.media_id) ? 'photos-tile-keep on' : 'photos-tile-keep'}
+                      onClick={() => void toggleKeep(e.media_id)}
+                    >
+                      {keeps.has(e.media_id) ? 'Keep ✓' : 'Keep'}
                     </button>
                   </div>
                 </div>

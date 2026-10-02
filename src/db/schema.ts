@@ -30,6 +30,16 @@ export interface MediaRecord {
   blob: Blob;
   /** Generated at capture and at seed import. What the lists actually render. */
   thumb: Blob;
+  /**
+   * Protected from a bulk delete. See `capture/photoStore.ts`.
+   *
+   * On the record rather than in `meta` beside the review flags, because this
+   * is a long-lived decision about one photograph rather than an intent about
+   * the next package — and because here it travels in the full export beside
+   * the image it protects. Protection that vanished on a restore would be
+   * protection the owner thought they had.
+   */
+  keep?: boolean;
 }
 
 /** Section 6, tiers table. */

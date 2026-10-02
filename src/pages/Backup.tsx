@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { openDeezPlants, META_KEY, type DeezDB } from '../db/schema';
 import { sessionAudioBytes } from '../capture/recording';
+import { summarisePhotos } from '../capture/photoStore';
 import {
   exportEverything,
   exportRecord,
@@ -66,6 +67,28 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
         }
         if (live) setWalks({ total: sessions.length, transcribed, bytes });
       } catch { /* the cards still work without the summary */ }
+    })();
+    return () => { live = false; };
+  }, [restored]);
+
+  /**
+   * What the photographs come to, across every plant.
+   *
+   * Audio is the thing that grows dangerously and the card above already says
+   * so. Photographs are the slow one — roughly 40MB a year at the owner's
+   * rate — and until now the app never said how many there were or what they
+   * cost. A figure is what makes "should I clear some out" a question with an
+   * answer; the clearing out itself is per plant, on Photos.
+   */
+  const [photos, setPhotos] = useState<{ count: number; bytes: number } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const db = await openDeezPlants();
+        const summary = summarisePhotos(await db.getAll('media'), new Set());
+        if (live) setPhotos(summary);
+      } catch { /* same as above: a missing summary must not break the cards */ }
     })();
     return () => { live = false; };
   }, [restored]);
@@ -172,6 +195,13 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
                 + `still ${walks.total - walks.transcribed === 1 ? 'has' : 'have'} no transcript, `
                 + `so ${walks.total - walks.transcribed === 1 ? 'its' : 'their'} audio travels — ${formatBytes(walks.bytes)}. `
                 + `Transcribe ${walks.total - walks.transcribed === 1 ? 'it' : 'them'} first and this backup gets much smaller.`}
+          </p>
+        )}
+        {photos && photos.count > 0 && (
+          <p className="backup-note">
+            {photos.count} photograph{photos.count === 1 ? '' : 's'}, {formatBytes(photos.bytes)}.
+            Clear any out from a plant's own Photos page — the images go, the
+            entries saying you took them stay.
           </p>
         )}
         <button

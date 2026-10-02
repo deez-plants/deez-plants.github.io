@@ -30,6 +30,7 @@
     "../src/capture/clock.ts",
     "../src/nav/stack.ts",
     "../src/package/validate.ts",
-    "../src/package/registry.ts"
+    "../src/package/registry.ts",
+    "../src/capture/photoStore.ts"
   ]
 }
