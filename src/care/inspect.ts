@@ -151,6 +151,15 @@ export function liveRecheckFrom(
 
   for (const e of inspects) {
     if (!e.recheck_days) continue;
+    /**
+     * A check dated in the future quiets nothing.
+     *
+     * Found by the Run 2 harness on 2026-10-02: the detail form lets the owner
+     * set the date, so one mistyped year would have hidden a plant for twelve
+     * months with nothing on screen saying why. A recheck is a promise to look
+     * again after a look that has already happened.
+     */
+    if (e.date > as_of) continue;
     const unresolved = standingWaterNeedsAction(e.reason ?? null) && e.resolved === false;
     // Later entry wins. Equal dates fall to the later one in the log, which is
     // the later one in time — entries are appended in order and sorted by date.

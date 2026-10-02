@@ -186,6 +186,24 @@ const ins = (event_id, date, over = {}) => ({
     liveRecheck(log, '013-OXA', '2026-10-02', new Set(['E1'])), null);
 }
 
+/* ------------------------------------------- a check dated in the future -- */
+
+{
+  // Found by the Run 2 browser harness, not by reasoning about it. The detail
+  // form lets the owner set the date, so one mistyped year would have hidden a
+  // plant for twelve months with nothing on screen saying why.
+  const list = [ins('E1', '2027-01-01', { reason: 'still_moist', recheck_days: 4 })];
+  eq('a check dated next year defers nothing today', liveRecheckFrom(list, '2026-10-02'), null);
+  ok('and takes effect on the day it was made', !!liveRecheckFrom(list, '2027-01-01'));
+
+  // A real check must not be hidden by a future-dated one sitting after it.
+  const both = [
+    ins('E1', '2026-10-02', { reason: 'looks_fine', recheck_days: 3 }),
+    ins('E2', '2027-01-01', { reason: 'still_moist', recheck_days: 10 }),
+  ];
+  eq('the real check still applies', liveRecheckFrom(both, '2026-10-02').event_id, 'E1');
+}
+
 /* ---------------------------------------------------------------- misc -- */
 
 ok('nothing is deferred by a null recheck', !isDeferred(null));

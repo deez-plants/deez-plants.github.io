@@ -461,5 +461,147 @@ const run = (baselines, events, as_of, include_pending = false) =>
   eq('a rating can be taken back as well', unrated.plants['001-MON'].health.current, null);
 }
 
+/* ------------------- a check defers a plant, and it comes back ------------- */
+
+/**
+ * RUN 2 of the dashboard work, 2026-10-02. Their GPT asked for this to be
+ * proved on its own before the board is built on top of it, and they were
+ * right: everything on that screen rests on a plant reliably leaving the list
+ * and reliably returning.
+ *
+ * `derive` is where it actually happens, so this is where it is pinned. The
+ * browser harness covers the same ground through the real logging path.
+ */
+
+const inspect = (o) => ev({ type: 'Inspect', ...o });
+
+{
+  // A 7-day plant, watered on the 1st, looked at on the 12th -- four days past.
+  const watered = ev({ type: 'Water', date: '2026-09-01' });
+
+  const before = run([base('001-MON')], [watered], '2026-09-12');
+  eq('past its interval, it is behind', before.plants['001-MON'].attention.includes('behind'), true);
+  eq('and on the collection list', before.collection.needs_attention, ['001-MON']);
+  eq('with no recheck in force', before.plants['001-MON'].recheck, null);
+
+  // Looked at it. Still moist, so four days on a 7-day plant.
+  const checked = inspect({ date: '2026-09-12', reason: 'still_moist', recheck_days: 4 });
+  const after = run([base('001-MON')], [watered, checked], '2026-09-12');
+
+  eq('after a check it leaves the list', after.collection.needs_attention, []);
+  eq('and carries the date it comes back', after.plants['001-MON'].recheck.until, '2026-09-16');
+  eq('and the reason it was deferred', after.plants['001-MON'].recheck.reason, 'still_moist');
+
+  // THE RULE THAT MUST NOT BEND. The plant is still past its interval and the
+  // record still says so. What changed is whether the app keeps raising it.
+  eq('it still reads as behind', after.plants['001-MON'].attention.includes('behind'), true);
+
+  // And nothing about the watering moved: a check is not a watering.
+  eq('the last watering is untouched', after.plants['001-MON'].adherence.last_water,
+    before.plants['001-MON'].adherence.last_water);
+  eq('and so is how far past it is', after.plants['001-MON'].adherence.days_past,
+    before.plants['001-MON'].adherence.days_past);
+
+  // It comes back on the day it named, not the day after.
+  eq('still quiet the day before', run([base('001-MON')], [watered, checked], '2026-09-15').collection.needs_attention, []);
+  eq('back on the list on the day itself', run([base('001-MON')], [watered, checked], '2026-09-16').collection.needs_attention, ['001-MON']);
+  eq('and the recheck is spent', run([base('001-MON')], [watered, checked], '2026-09-16').plants['001-MON'].recheck, null);
+  eq('still there a week later', run([base('001-MON')], [watered, checked], '2026-09-23').collection.needs_attention, ['001-MON']);
+}
+
+{
+  // Standing water the owner did not deal with. The plant must NOT go quiet --
+  // hiding the one plant that is actually wrong is the worst thing this
+  // feature could do.
+  const watered = ev({ type: 'Water', date: '2026-09-01' });
+  const undrained = inspect({ date: '2026-09-12', reason: 'standing_water', recheck_days: 2, resolved: false });
+  const s = run([base('001-MON')], [watered, undrained], '2026-09-12');
+
+  eq('an undrained plant stays on the list', s.collection.needs_attention, ['001-MON']);
+  eq('and says why it is still there', s.plants['001-MON'].recheck.unresolved, true);
+  eq('months later it is still there',
+    run([base('001-MON')], [watered, undrained], '2027-01-01').collection.needs_attention, ['001-MON']);
+
+  const drained = inspect({ date: '2026-09-12', reason: 'standing_water', recheck_days: 2, resolved: true });
+  eq('once drained it defers like any other',
+    run([base('001-MON')], [watered, drained], '2026-09-12').collection.needs_attention, []);
+}
+
+{
+  // A check taken back cannot keep a plant quiet. Otherwise voiding a
+  // mis-tapped inspection would leave the plant hidden with nothing on screen
+  // explaining why -- the worst kind of bug, because nothing looks wrong.
+  const watered = ev({ type: 'Water', date: '2026-09-01' });
+  const checked = inspect({ event_id: 'EV-CHECK', date: '2026-09-12', reason: 'looks_fine', recheck_days: 3 });
+  const voided = ev({ type: 'Void', date: '2026-09-12', voids: 'EV-CHECK' });
+
+  eq('the check defers it', run([base('001-MON')], [watered, checked], '2026-09-13').collection.needs_attention, []);
+  eq('voiding the check brings it straight back',
+    run([base('001-MON')], [watered, checked, voided], '2026-09-13').collection.needs_attention, ['001-MON']);
+  eq('and leaves no recheck behind',
+    run([base('001-MON')], [watered, checked, voided], '2026-09-13').plants['001-MON'].recheck, null);
+}
+
+{
+  // An inspection with no recheck is a record that the owner looked, and
+  // nothing more. It must not quiet anything.
+  const watered = ev({ type: 'Water', date: '2026-09-01' });
+  const bare = inspect({ date: '2026-09-12', reason: 'looks_fine' });
+  eq('a check with no recheck defers nothing',
+    run([base('001-MON')], [watered, bare], '2026-09-12').collection.needs_attention, ['001-MON']);
+}
+
+{
+  // Watering it clears the problem outright, and the stale recheck must not
+  // then hold the plant off the list once it is genuinely due again.
+  const events = [
+    ev({ type: 'Water', date: '2026-09-01' }),
+    inspect({ date: '2026-09-12', reason: 'still_moist', recheck_days: 10 }),
+    ev({ type: 'Water', date: '2026-09-13' }),
+  ];
+  eq('watered, so not behind at all', run([base('001-MON')], events, '2026-09-14').collection.needs_attention, []);
+  // Due again on the 20th, five days before that long recheck expires.
+  eq('and due again on its own schedule, recheck or no recheck',
+    run([base('001-MON')], events, '2026-09-25').collection.needs_attention, ['001-MON']);
+}
+
+{
+  // A stale rating is a different judgement from a look at the soil, so a
+  // plant held on the list by health_stale stays there through a check.
+  const rated = ev({ type: 'Rate', date: '2026-01-01', to: 7 });
+  const watered = ev({ type: 'Water', date: '2026-09-01' });
+  const checked = inspect({ date: '2026-09-12', reason: 'looks_fine', recheck_days: 5 });
+  const s = run([base('001-MON')], [rated, watered, checked], '2026-09-12');
+
+  eq('the rating is stale', s.plants['001-MON'].attention.includes('health_stale'), true);
+  eq('so the plant stays on the list despite the check', s.collection.needs_attention, ['001-MON']);
+  eq('though the recheck is still in force', s.plants['001-MON'].recheck.until, '2026-09-17');
+}
+
+{
+  // The later check wins, even when an earlier one would run longer.
+  const events = [
+    ev({ type: 'Water', date: '2026-09-01' }),
+    inspect({ date: '2026-09-12', reason: 'still_moist', recheck_days: 10 }),
+    inspect({ date: '2026-09-14', reason: 'drying_normally', recheck_days: 2 }),
+  ];
+  eq('the latest check sets the date',
+    run([base('001-MON')], events, '2026-09-15').plants['001-MON'].recheck.until, '2026-09-16');
+  eq('so the long earlier one does not hold it',
+    run([base('001-MON')], events, '2026-09-16').collection.needs_attention, ['001-MON']);
+}
+
+{
+  // One plant's check does not quiet another.
+  const events = [
+    ev({ plant_id: '001-MON', type: 'Water', date: '2026-09-01' }),
+    ev({ plant_id: '002-SNK', type: 'Water', date: '2026-09-01' }),
+    inspect({ plant_id: '001-MON', date: '2026-09-12', reason: 'looks_fine', recheck_days: 4 }),
+  ];
+  const s = run([base('001-MON'), base('002-SNK')], events, '2026-09-12');
+  eq('only the checked plant leaves', s.collection.needs_attention, ['002-SNK']);
+  eq('and the other has no recheck', s.plants['002-SNK'].recheck, null);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

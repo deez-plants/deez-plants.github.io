@@ -1,0 +1,233 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>a check defers a plant</title></head>
+<body style="font:16px monospace;background:#111;color:#eee;padding:20px">
+<!--
+  Does a plant actually leave Needs attention when you check it, and actually
+  come back?
+
+  RUN 2 of the dashboard work. Their GPT asked for this to be proved on its own
+  before the board is built on top of it, and they were right: every row on that
+  screen rests on a plant reliably leaving the list and reliably returning.
+
+  `check/derive.check.cjs` pins the same rules against the fold directly. This
+  one goes through the REAL WRITE PATH — the same `logDetailEvent` the Log care
+  screen calls — and then folds what actually landed on disk. The two together
+  cover both halves: the entry is written correctly, and the fold reads it back
+  correctly.
+
+  ## Pinned to 127.0.0.1
+
+  It writes events. IndexedDB is per-origin, so `127.0.0.1:5173` is a throwaway
+  database and `localhost:5173` is where the owner's record lives. It REFUSES to
+  run anywhere else.
+
+    http://127.0.0.1:5173/check/browser/recheck.html
+-->
+<pre id="out">running…</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+out.textContent = 'start';
+let fails = 0;
+const check = (name, got, want) => {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  if (!ok) fails++;
+  log(`${ok ? 'PASS' : 'FAIL'} ${name}` + (ok ? '' : `\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`));
+};
+const ok = (name, cond) => check(name, !!cond, true);
+
+if (location.hostname !== '127.0.0.1') {
+  out.textContent = 'REFUSED\n\n'
+    + `This harness writes events. It runs only on 127.0.0.1, whose database is\n`
+    + `a throwaway. You opened it on "${location.hostname}", which on this\n`
+    + `machine is where the owner's record lives.`;
+  throw new Error('wrong origin');
+}
+
+const { openDeezPlants, REGISTRY_KEY } = await import('/src/db/schema.ts');
+const { boot } = await import('/src/boot.ts');
+const { derive } = await import('/src/db/derive.ts');
+const { appendEvents, deviceId, mintEventId } = await import('/src/db/events.ts');
+const { logDetailEvent, emptyDetailDraft } = await import('/src/care/careRound.ts');
+const { addDays } = await import('/src/lib/dates.ts');
+const { deferDays } = await import('/src/care/inspect.ts');
+
+await boot();
+const db = await openDeezPlants();
+
+const PLANT = '013-OXA';           // Purple Shamrock, 7-day interval
+const OTHER = '001-MON';           // Large Monstera, 7-day interval
+
+/** Fold what is actually on disk, at whatever date we please. Winding the
+    clock is the only way to prove a plant comes BACK. */
+const stateOn = async (as_of) => derive({
+  baselines: await db.getAll('plants'),
+  events: await db.getAll('events'),
+  registry: await db.get('registry', REGISTRY_KEY),
+  as_of,
+  include_pending: false,
+});
+
+const device = await deviceId(db);
+const write = async (e) => (await appendEvents(db, [e]))[0];
+const careEvent = (plant_id, type, date, over = {}) => ({
+  event_id: mintEventId(device, date, '10:00'),
+  plant_id, type, date, time: '10:00', source: 'user', device_id: device, ...over,
+});
+
+/**
+ * Start from a known place.
+ *
+ * A re-run, or a session that logged a check by hand to see the screen, leaves
+ * entries behind that silently change what every assertion below means — the
+ * first run of this harness failed on exactly that and it took a minute to see
+ * why the numbers were wrong rather than the code. Only these two plants, and
+ * only on the throwaway database.
+ */
+for (const e of await db.getAll('events')) {
+  if (e.plant_id !== PLANT && e.plant_id !== OTHER) continue;
+  if (e.type === 'Inspect' || e.type === 'Void' || e.type === 'Water') {
+    await db.delete('events', e.event_id);
+  }
+}
+
+/* -- a plant that is genuinely past its interval -------------------------- */
+
+log('\n— setting up —');
+
+// Water both plants well in the past, so both are behind. Nothing here is a
+// fixture in the test sense: it is the real event the real app writes.
+const WATERED = '2026-09-01';
+await write(careEvent(PLANT, 'Water', WATERED));
+await write(careEvent(OTHER, 'Water', WATERED));
+
+const TODAY = '2026-09-12';
+const before = await stateOn(TODAY);
+ok('the plant is past its interval', before.plants[PLANT].attention.includes('behind'));
+ok('and on the collection list', before.collection.needs_attention.includes(PLANT));
+check('with no recheck in force', before.plants[PLANT].recheck, null);
+
+const daysPast = before.plants[PLANT].adherence.days_past;
+const lastWater = before.plants[PLANT].adherence.last_water;
+
+/* -- check it, through the real logging path ------------------------------ */
+
+log('\n— logging a check the way the screen does —');
+
+const interval = before.plants[PLANT].water_interval_days;
+const days = deferDays('still_moist', interval);
+check('a 7-day plant, still moist, defers 4 days', days, 4);
+
+await logDetailEvent(db, PLANT, {
+  ...emptyDetailDraft(TODAY),
+  type: 'Inspect',
+  note: '',
+  reason: 'still_moist',
+  recheck_days: days,
+});
+
+const after = await stateOn(TODAY);
+check('it leaves the list', after.collection.needs_attention.includes(PLANT), false);
+check('and names the day it comes back', after.plants[PLANT].recheck.until, addDays(TODAY, days));
+check('carrying the reason', after.plants[PLANT].recheck.reason, 'still_moist');
+
+// THE RULE THAT MUST NOT BEND. It is still past its interval and the record
+// still says so; what changed is whether the app keeps raising it.
+ok('it still reads as behind', after.plants[PLANT].attention.includes('behind'));
+
+// A check is not a watering. Nothing about the schedule moved.
+check('the last watering is untouched', after.plants[PLANT].adherence.last_water, lastWater);
+check('and how far past it is', after.plants[PLANT].adherence.days_past, daysPast);
+
+// And it quieted only the plant it was about.
+ok('the other plant is still on the list', after.collection.needs_attention.includes(OTHER));
+check('and has no recheck', after.plants[OTHER].recheck, null);
+
+/* -- wind the clock ------------------------------------------------------- */
+
+log('\n— and does it come back? —');
+
+const DUE_BACK = addDays(TODAY, days);
+check('still quiet the day before',
+  (await stateOn(addDays(DUE_BACK, -1))).collection.needs_attention.includes(PLANT), false);
+ok('back on the list on the day it named',
+  (await stateOn(DUE_BACK)).collection.needs_attention.includes(PLANT));
+check('and the recheck is spent', (await stateOn(DUE_BACK)).plants[PLANT].recheck, null);
+ok('still there a week after that',
+  (await stateOn(addDays(DUE_BACK, 7))).collection.needs_attention.includes(PLANT));
+
+// It comes back saying how far past it now is — which is further, because a
+// check never moved the watering.
+const back = await stateOn(DUE_BACK);
+check('and it is further past than when it was checked', back.plants[PLANT].adherence.days_past, daysPast + days);
+
+/* -- standing water that was never dealt with ----------------------------- */
+
+log('\n— the one that must never go quiet —');
+
+await write(careEvent(OTHER, 'Inspect', TODAY, {
+  event_id: 'EV-RUN2-UNDRAINED', reason: 'standing_water', recheck_days: 2, resolved: false,
+}));
+
+{
+  const s = await stateOn(TODAY);
+  ok('an undrained plant does not leave the list', s.collection.needs_attention.includes(OTHER));
+  ok('and says why it is still there', s.plants[OTHER].recheck.unresolved);
+  ok('months later it is still there',
+    (await stateOn('2027-01-01')).collection.needs_attention.includes(OTHER));
+}
+
+/* -- taking the check back ------------------------------------------------ */
+
+log('\n— voiding a check brings the plant straight back —');
+
+const theCheck = (await db.getAll('events'))
+  .filter((e) => e.plant_id === PLANT && e.type === 'Inspect')
+  .sort((a, b) => (a.date < b.date ? -1 : 1))
+  .pop();
+ok('found the inspection that was logged', !!theCheck);
+
+await write({
+  event_id: 'EV-RUN2-VOID',
+  plant_id: PLANT, type: 'Void', date: TODAY, time: '11:00',
+  voids: theCheck.event_id, source: 'user', device_id: device,
+});
+
+{
+  const s = await stateOn(TODAY);
+  ok('the plant is back on the list immediately', s.collection.needs_attention.includes(PLANT));
+  check('with no recheck left behind', s.plants[PLANT].recheck, null);
+}
+
+/* -- a check dated in the future ------------------------------------------ */
+
+log('\n— a mistyped date must not hide a plant for a year —');
+
+{
+  // This harness found this. The detail form lets the owner set the date, so
+  // one wrong year would have quieted a plant until 2028 with nothing on
+  // screen explaining it.
+  await write(careEvent(OTHER, 'Inspect', '2027-06-01', {
+    event_id: 'EV-RUN2-FUTURE', reason: 'looks_fine', recheck_days: 7,
+  }));
+  const s = await stateOn(TODAY);
+  ok('a check dated next year does not quiet the plant today',
+    s.collection.needs_attention.includes(OTHER));
+  await db.delete('events', 'EV-RUN2-FUTURE');
+}
+
+/* -- it survives a reopen ------------------------------------------------- */
+
+log('\n— across a reopen —');
+
+{
+  // Nothing here is held in memory, but a rule derived from the log should be
+  // provably derived from the log.
+  const s = await stateOn('2027-01-01');
+  ok('the undrained plant is still showing after everything above',
+    s.collection.needs_attention.includes(OTHER));
+}
+
+log(`\n${fails === 0 ? 'ALL PASSED' : `${fails} FAILED`}`);
+</script>
+</body></html>
