@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { DerivedState } from '../types/derived';
-import type { ISODate, PackageId } from '../types/ids';
+import type { ISODate, MediaId, PackageId } from '../types/ids';
 import { openDeezPlants } from '../db/schema';
-import { buildReviewPackage, discardBuiltPackage, previewReviewPackage, saveBlob, type PackagePreview } from '../package/export';
+import {
+  buildReviewPackage, discardBuiltPackage, photosSinceLastPackage, previewReviewPackage,
+  saveBlob, type PackagePreview, type PhotoChoice,
+} from '../package/export';
+import { FLAG_CAP, readFlags, setFlags } from '../package/reviewFlags';
+import { ensureThumbs } from '../boot';
+import { formatDayMonth } from '../lib/dates';
 import './PrepareReviewPackage.css';
 
 /**
@@ -39,6 +45,61 @@ type Status =
 export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }: PrepareReviewPackageProps) {
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
 
+  /**
+   * The photographs this package could carry, and which of them are ticked.
+   *
+   * **The owner, 2026-10-01: "this is a HUGE hassle."** Flagging was built as
+   * the minimum that made a photo travel at all — one button per photograph,
+   * on each plant's own gallery — and the screen that should simply ask never
+   * got made. So choosing eight photographs meant visiting eight plants.
+   *
+   * Everything taken since the last confirmed package, newest first, **ticked
+   * on arrival**. These are the owner's own photographs going out, not AI
+   * changes coming in, so rule 4's "rows arrive unselected" does not apply
+   * here — that rule is about what it takes to accept someone else's work.
+   *
+   * Selection is held here and written only when the package is built, so
+   * opening this screen to look at it changes nothing.
+   */
+  const [choices, setChoices] = useState<PhotoChoice[] | null>(null);
+  const [picked, setPicked] = useState<Set<MediaId>>(new Set());
+  const [thumbs, setThumbs] = useState<Map<string, string>>(new Map());
+  const [photosOpen, setPhotosOpen] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const db = await openDeezPlants();
+      const [list, already] = await Promise.all([photosSinceLastPackage(db), readFlags(db)]);
+      if (!live) return;
+      setChoices(list);
+      // Ticked on arrival, newest first, up to the cap. Anything already
+      // flagged from a plant's own gallery is in the same list and so is
+      // already ticked — `already` is read only so that a flag set elsewhere
+      // can never be silently dropped by this screen's cap.
+      const flagged = new Set(already);
+      const ordered = [...list].sort((a, b) =>
+        Number(flagged.has(b.media_id)) - Number(flagged.has(a.media_id)));
+      setPicked(new Set(ordered.slice(0, FLAG_CAP).map((c) => c.media_id)));
+      setThumbs(await ensureThumbs(list.map((c) => c.media_id)));
+    })();
+    return () => { live = false; };
+  }, []);
+
+  const toggle = (media_id: MediaId) => {
+    setPicked((current) => {
+      const next = new Set(current);
+      if (next.has(media_id)) next.delete(media_id);
+      else if (next.size < FLAG_CAP) next.add(media_id);
+      return next;
+    });
+  };
+
+  /** Newest first, up to the cap — and the screen says when it stopped. */
+  const selectAll = () => {
+    setPicked(new Set((choices ?? []).slice(0, FLAG_CAP).map((c) => c.media_id)));
+  };
+
   useEffect(() => {
     let live = true;
     (async () => {
@@ -57,6 +118,9 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
     setStatus({ kind: 'building' });
     try {
       const db = await openDeezPlants();
+      // The picker's answer, written now rather than as it was tapped — so
+      // looking at this screen and leaving changes nothing about the record.
+      await setFlags(db, [...picked]);
       const pkg = await buildReviewPackage(db, state, as_of);
       saveBlob(pkg.blob, pkg.filename);
       // Not `done`. The Share sheet reports nothing back, so whether this
@@ -120,11 +184,13 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
           </li>
           {/* Only when there are some. An empty row here would read as a
               missing feature rather than an unused one. */}
-          {status.kind === 'ready' && status.media_count > 0 && (
+          {/* Reads the picker below rather than the stored flags, so the file
+              list and the choice on screen can never disagree. */}
+          {picked.size > 0 && (
             <li>
               <span className="prep-file-name">media/</span>
               <span className="prep-file-detail">
-                {status.media_count} flagged photo{status.media_count === 1 ? '' : 's'},
+                {picked.size} photo{picked.size === 1 ? '' : 's'},
                 named so the AI knows which plant it is looking at
               </span>
             </li>
@@ -154,6 +220,80 @@ export default function PrepareReviewPackage({ state, as_of, backLabel, onBack }
           All {status.session_count} walk{status.session_count === 1 ? '' : 's'} transcribed.
           The AI reads your own words, attributed to the plant whose page was open.
         </p>
+      )}
+
+      {/* Choosing this round's photographs, in one place. See the note on
+          `choices` for why this screen exists at all. */}
+      {(status.kind === 'ready' || status.kind === 'building') && choices !== null && choices.length > 0 && (
+        <section className="prep-photos">
+          <button
+            type="button"
+            className="prep-photos-head"
+            aria-expanded={photosOpen}
+            onClick={() => setPhotosOpen(!photosOpen)}
+          >
+            <span className="prep-photos-title">
+              Photos for the AI
+              <span className="prep-photos-count">
+                {picked.size} of {choices.length} chosen
+              </span>
+            </span>
+            <span className="prep-photos-mark">{photosOpen ? '−' : '+'}</span>
+          </button>
+
+          {photosOpen && (
+            <>
+              <p className="prep-photos-note">
+                Everything photographed since your last package, newest first.
+                They travel named, so the AI knows which plant it is looking at.
+                {choices.length > FLAG_CAP && (
+                  <> One package carries {FLAG_CAP}, so the newest {FLAG_CAP} are
+                    chosen and the other {choices.length - FLAG_CAP} are not —
+                    untick one to make room.
+                  </>
+                )}
+              </p>
+
+              <div className="prep-photos-bulk">
+                <button type="button" onClick={selectAll}>
+                  Select {choices.length > FLAG_CAP ? `newest ${FLAG_CAP}` : 'all'}
+                </button>
+                <button type="button" onClick={() => setPicked(new Set())}>Clear</button>
+              </div>
+
+              <div className="prep-photos-grid">
+                {choices.map((c) => {
+                  const on = picked.has(c.media_id);
+                  const url = thumbs.get(c.media_id);
+                  return (
+                    <button
+                      key={c.media_id}
+                      type="button"
+                      className={on ? 'prep-photo on' : 'prep-photo'}
+                      aria-pressed={on}
+                      onClick={() => toggle(c.media_id)}
+                    >
+                      {url
+                        ? <img className="prep-photo-image" src={url} alt="" />
+                        : <span className="prep-photo-image empty" />}
+                      <span className="prep-photo-meta">
+                        {c.plant_id ? state.plants[c.plant_id]?.name ?? c.plant_id : 'Collection'}
+                      </span>
+                      <span className="prep-photo-date">{formatDayMonth(c.date)}</span>
+                      {on && <span className="prep-photo-tick">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {picked.size >= FLAG_CAP && (
+                <p className="prep-photos-note">
+                  That is the {FLAG_CAP} one package carries. Untick one to choose another.
+                </p>
+              )}
+            </>
+          )}
+        </section>
       )}
 
       {/* The app cannot see whether a Share sheet succeeded, so it asks. Until

@@ -78,6 +78,19 @@ export async function clearFlags(db: DeezDB): Promise<void> {
 }
 
 /**
+ * Replace the whole set at once — what the picker on Prepare writes when the
+ * owner builds.
+ *
+ * The per-photo button on Photos still toggles one at a time; this is the
+ * other way in, for choosing a round's photographs in one go rather than
+ * hunting through plants. Capped the same way, keeping the NEWEST, because a
+ * silent drop of ten is the failure mode that cap has to avoid.
+ */
+export async function setFlags(db: DeezDB, flags: readonly MediaId[]): Promise<void> {
+  await writeFlags(db, flags.slice(0, FLAG_CAP));
+}
+
+/**
  * Flags naming a photo that no longer exists, dropped.
  *
  * A photo can be deleted after being flagged, and a package must not try to

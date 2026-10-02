@@ -156,3 +156,132 @@
   background: none;
   border: 1px solid var(--line-strong);
 }
+
+/* ------------------------------------------- choosing this round's photos -- */
+/* See the note on `choices` in PrepareReviewPackage.tsx. Collapsed by default:
+   most rounds the ticked default is right and the owner never opens it. */
+
+.prep-photos {
+  margin: 0 0 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.prep-photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 13px 16px;
+  background: none;
+  border: 0;
+  text-align: left;
+}
+
+.prep-photos-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font: 600 22px/1.25 var(--sans);
+  color: var(--ink);
+}
+
+.prep-photos-count {
+  font: 400 20px/1.3 var(--sans);
+  color: var(--ink-50);
+}
+
+.prep-photos-mark {
+  flex: none;
+  font: 400 26px/1 var(--sans);
+  color: var(--ink-50);
+}
+
+.prep-photos-note {
+  margin: 0;
+  padding: 0 16px 12px;
+  font: 400 20px/1.35 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.prep-photos-bulk {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.prep-photos-bulk button {
+  min-height: 44px;
+  padding: 9px 16px;
+  font: 600 20px/1 var(--sans);
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.prep-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.prep-photo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: left;
+  /* Unticked reads as set aside rather than broken. */
+  opacity: 0.5;
+}
+
+.prep-photo.on {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+.prep-photo-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 7px;
+  background: var(--panel);
+}
+
+.prep-photo-meta {
+  font: 600 18px/1.2 var(--sans);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.prep-photo-date {
+  font: 400 17px/1 var(--mono);
+  color: var(--ink-45);
+}
+
+.prep-photo-tick {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font: 600 17px/1 var(--sans);
+  color: var(--ink-inverse, #0b0d0b);
+  background: var(--accent);
+  border-radius: 50%;
+}

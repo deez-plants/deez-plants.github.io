@@ -18,8 +18,9 @@ import { SCREEN_LOG_NOTE, sidecarFor } from '../capture/sessions';
 import { readScreenLog } from '../capture/screenLog';
 import { routeMarkerCount } from '../capture/liveSession';
 import type { DerivedPlant, DerivedState } from '../types/derived';
-import type { ISODate, PackageId } from '../types/ids';
+import type { ISODate, MediaId, PackageId, PlantId } from '../types/ids';
 import type { Manifest, ManifestPlant } from '../types/package';
+import type { MediaLabel } from '../types/plant';
 
 /**
  * Prepare review package (screen 19). FIELD_DEFINITIONS.md section 7: the
@@ -195,6 +196,15 @@ async function markersFile(sessions: readonly SessionRecord[]) {
 
 /** What "Build package" would produce, without minting a package_id or
     writing a `PackageRecord` — safe to call just to render a preview. */
+/** One photograph the next package could carry. */
+export interface PhotoChoice {
+  media_id: MediaId;
+  /** Null on a collection-level entry — rare, but the type allows it. */
+  plant_id: PlantId | null;
+  date: ISODate;
+  label: MediaLabel | null;
+}
+
 export interface PackagePreview {
   plant_count: number;
   event_count: number;
@@ -206,6 +216,41 @@ export interface PackagePreview {
   marker_count: number;
   /** Photos flagged for review, ready to travel. */
   media_count: number;
+}
+
+/**
+ * Photographs taken since the last confirmed package — what the picker on
+ * Prepare offers.
+ *
+ * Measured off the entries that have not travelled yet rather than off a date,
+ * exactly like the entries and the walks, so it is a rolling list that empties
+ * itself each round. The owner should never scroll their whole library to
+ * choose this round's photographs.
+ *
+ * Newest first. Media rides on any entry type, not only `Photo`, so this reads
+ * `media` wherever it appears.
+ */
+export async function photosSinceLastPackage(db: DeezDB): Promise<PhotoChoice[]> {
+  const consumed = consumedEventIds(await db.getAll('packages'));
+  const present = new Set(await db.getAllKeys('media'));
+  const events = await db.getAll('events');
+
+  const out: PhotoChoice[] = [];
+  for (const e of events) {
+    if (consumed.has(e.event_id) || !e.media) continue;
+    e.media.forEach((media_id, i) => {
+      if (!present.has(media_id)) return;
+      out.push({
+        media_id,
+        plant_id: e.plant_id,
+        date: e.date,
+        label: e.media_labels?.[i] ?? null,
+      });
+    });
+  }
+  // Newest first, and stable for two photographs taken on the same day: the
+  // later entry in the log is the later photograph.
+  return out.reverse();
 }
 
 export async function previewReviewPackage(db: DeezDB, state: DerivedState): Promise<PackagePreview> {
