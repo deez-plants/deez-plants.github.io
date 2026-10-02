@@ -359,6 +359,51 @@ Roughly half a day. **New capability, so it waits for the cycle to close** —
 the owner is taking it to their GPT for input first, which is why it is not
 built yet despite being approved here.
 
+#### SIX OF GPT'S ITEMS ARE BUILT, 1 OCT. NOT DEPLOYED YET.
+
+Six commits, one per change, all checks passing, **not pushed**. The owner
+votes to deploy after seeing them; ask before pushing.
+
+| Commit | What |
+|---|---|
+| `43b996b` | The coverage gate stops failing walks for starting quietly |
+| `0855f32` | Water · Feed · Inspect · Dead leaves are the top four |
+| `787ff0a` | A backup remembers which packages went to the AI |
+| `1faa0ef` | Tap a photograph to see it full size |
+| `a02d9e8` | Choose this round's photographs on the Prepare screen |
+| `489f67a` | Keep a photograph, see what they cost, clear a batch out |
+
+**The owner's three answers, carried into the next pass as well:** a recheck
+hides a plant until its date and then it returns; reason chips are optional;
+protected photographs are never deleted without a separate confirmation.
+
+**New files worth knowing:** `capture/photoStore.ts` (keep, sizes, delete —
+pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`,
+`check/browser/backup-rounds.html`.
+
+**Things the build decided that a later pass should not quietly undo:**
+
+- **`keep` lives on the media record, not in `meta`** beside the review flags.
+  A review flag is an intent about the next package and is deliberately not
+  backed up; `keep` is a long-lived decision that has to travel in the full
+  export beside the image it protects.
+- **The photo picker arrives ticked.** Settled with the owner: these are their
+  own photographs going OUT, not AI changes coming in, so rule 4's "rows arrive
+  unselected" does not apply. Do not re-open it by analogy to the review table.
+- **The gallery now lists images actually held**, not every photograph the log
+  names. Deleting leaves the entry — that is rule 5 — but an entry pointing at
+  deleted bytes is a broken tile, not a gallery item.
+- **`Inspect` moved tier but not meaning.** It still counts as routine on What
+  works. Where a button lives and what an entry means are separate questions.
+- **Deleting a photograph is the audio release in a different coat:** the bytes
+  go, the record of them stands. Any future automation here must keep that
+  split and must stay manual — the owner was explicit, and so was the earlier
+  decision about audio.
+
+**Still open, in the order suggested to the owner:** `Inspect` + recheck (next
+pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
+with its premise corrected.
+
 #### GPT'S AUDIT LIST, 1 OCT — AUDITED, NOT BUILT
 
 Their GPT sent a nine-item audit/fix pass after the 1 Oct round landed. Logged
