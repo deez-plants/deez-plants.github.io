@@ -32,6 +32,7 @@
     "../src/package/validate.ts",
     "../src/package/registry.ts",
     "../src/capture/photoStore.ts",
-    "../src/care/inspect.ts"
+    "../src/care/inspect.ts",
+    "../src/care/board.ts"
   ]
 }

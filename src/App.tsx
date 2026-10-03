@@ -283,7 +283,6 @@ export default function App() {
         state={state}
         snapshots={snapshots}
         onOpenPlant={(plant_id) => nav.push({ kind: 'detail', plant_id }, 'Home')}
-        onPlaceholder={(title, subtitle) => placeholder(title, subtitle, 'Home')}
         onArchived={() => nav.push({ kind: 'archive' }, 'Home')}
         onAdherenceHistory={() => nav.push({ kind: 'adherence' }, 'Home')}
         onHealthHistory={() => nav.push({ kind: 'health-history' }, 'Home')}
@@ -294,6 +293,9 @@ export default function App() {
         lastBackup={load.data.last_backup}
         onSinceLastTime={() => nav.push({ kind: 'since' }, 'Home')}
         onMarkPoint={markPoint}
+        as_of={as_of}
+        onLogCare={(plant_id) => nav.push({ kind: 'care', plant_id }, 'Home')}
+        onChanged={reload}
       />
     );
   } else if (screen.kind === 'record') {

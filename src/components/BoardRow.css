@@ -1,0 +1,69 @@
+/* One plant on the Home board. See BoardRow.tsx for why there are two buttons. */
+
+.brow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px 14px;
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.brow.ticked { border-color: var(--accent); }
+
+/* The name is the way into the plant's own Log care screen, so it is a button —
+   but it has to read as the row's title, not as a control. */
+.brow-name {
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: 600 25px/1.2 var(--sans);
+  color: var(--ink);
+  text-align: left;
+}
+
+.brow-why {
+  font: 400 21px/1.3 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+/* Rule 9: this is a fact about a date. The colour marks it as worth a look,
+   never as an instruction — the words do the work, not the hue. */
+.brow-why.past { color: var(--warn); }
+.brow-why.rating { color: var(--amber); }
+
+.brow-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+/* Equal in every respect, deliberately. See the note in BoardRow.tsx. */
+.brow-btn {
+  flex: 1;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 8px;
+  font: 600 21px/1 var(--sans);
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+}
+
+.brow-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent, #122a13);
+}
+
+.brow-days {
+  font: 600 18px/1 var(--mono);
+  opacity: 0.75;
+}

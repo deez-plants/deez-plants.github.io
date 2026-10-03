@@ -228,6 +228,9 @@ export interface AppMeta {
   /** Date -> highest N used, for PKG-YYYY-MM-DD-N and SES-YYYY-MM-DD-N. */
   package_counter: Record<string, number>;
   session_counter: Record<string, number>;
+  /** When the app was last opened, for the catch-up banner. Bookkeeping about
+      using the app, not a fact about a plant, so deliberately not an event. */
+  last_opened?: ISODate | null;
   last_state_export: ISODate | null;
   last_state_import: ISODate | null;
   /**

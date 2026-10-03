@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { PlantId } from '../types/ids';
+import type { EventId, PlantId } from '../types/ids';
 import type { DerivedPlant, DerivedState, Snapshot } from '../types/derived';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore, healthBand } from '../score/score';
 import { Icon } from '../components/Icon';
-import { openDeezPlants } from '../db/schema';
+import { openDeezPlants, META_KEY } from '../db/schema';
+import {
+  buildBoard, commitLabel, counts, ratingsLine, restingLine, toggle,
+  SECTION_CAP, type Basket,
+} from '../care/board';
+import { BoardRowView } from '../components/BoardRow';
+import { logBoard, undoBoard } from '../care/boardCommit';
+import { ratePlant } from '../care/rate';
 import { isConfirmedSent } from '../package/registry';
-import { formatDayMonth } from '../lib/dates';
+import { daysBetween, formatDayMonth } from '../lib/dates';
 import type { ISODate } from '../types/ids';
 import './Home.css';
 
@@ -35,7 +42,6 @@ export interface HomeProps {
   /** Oldest first. Frozen collection averages, one per Update commit. */
   snapshots: readonly Snapshot[];
   onOpenPlant: (plant_id: PlantId) => void;
-  onPlaceholder: (title: string, subtitle?: string) => void;
   onArchived: () => void;
   onAdherenceHistory: () => void;
   onHealthHistory: () => void;
@@ -48,6 +54,14 @@ export interface HomeProps {
   onSinceLastTime: () => void;
   /** Save the state as it stands as a point to compare against later. */
   onMarkPoint: () => Promise<void> | void;
+  /** Today, for the recheck dates and the catch-up count. */
+  as_of: ISODate;
+  /** Straight to one plant's Log care screen — what tapping a row's name does.
+      The original design asked for this from the start and the app never did
+      it, so every row sent you to the plant page to find the grid yourself. */
+  onLogCare: (plant_id: PlantId) => void;
+  /** Re-read and rebuild after the board writes entries. */
+  onChanged: () => Promise<void> | void;
 }
 
 /**
@@ -65,18 +79,128 @@ interface HandoffEntry {
 }
 
 const HANDOFF_CAP = 4;
-const NEEDS_ATTENTION_CAP = 6;
-const MOST_URGENT_CAP = 6;
 
 export default function Home({
-  state, snapshots, onOpenPlant, onPlaceholder, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
+  state, snapshots, onOpenPlant, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
   onPreparePackage, onApplyUpdate, onBackup, lastBackup, onSinceLastTime, onMarkPoint,
+  as_of, onLogCare, onChanged,
 }: HomeProps) {
   const [marking, setMarking] = useState(false);
+
   const active = useMemo(
     () => state.order.map((id) => state.plants[id]).filter((p) => !p.archived),
     [state],
   );
+
+  /**
+   * The board, and what has been ticked on it.
+   *
+   * One basket for the whole screen rather than one per section: a plant can
+   * sit in two lists at once and being asked about it twice is exactly what
+   * makes a screen tiring. See `care/board.ts`.
+   */
+  const board = useMemo(() => buildBoard(state), [state]);
+  const [basket, setBasket] = useState<Basket>(() => new Map());
+  const [attentionOpen, setAttentionOpen] = useState(false);
+  const [comingOpen, setComingOpen] = useState(false);
+  const [comingAll, setComingAll] = useState(false);
+  const [ratingsOpen, setRatingsOpen] = useState(false);
+  const [confirming, setConfirming] = useState<PlantId | null>(null);
+  const [logging, setLogging] = useState(false);
+  /** How many were just logged, for the Undo that follows. Cleared on leaving
+      Home, which is this component unmounting. */
+  const [justLogged, setJustLogged] = useState<{ ids: EventId[]; n: number } | null>(null);
+
+  const basketCounts = counts(basket);
+  const resting = restingLine(board, as_of);
+  const ratings = ratingsLine(board, active.length);
+
+  /**
+   * Confirming a rating from the list.
+   *
+   * Rule 7: confirming without changing is a real action. It writes a `Rate`
+   * event and refreshes `health_confirmed` without moving `health_changed`, and
+   * it has to be a single tap — which is the whole reason this list exists
+   * rather than sending the owner into each plant.
+   */
+  const confirmRating = async (plant: DerivedPlant) => {
+    if (plant.health.current === null || confirming) return;
+    setConfirming(plant.plant_id);
+    try {
+      const db = await openDeezPlants();
+      await ratePlant(db, plant.plant_id, plant.health.current, as_of);
+      await onChanged();
+    } finally {
+      setConfirming(null);
+    }
+  };
+
+  /** Everything ticked, written as ordinary entries in one go. */
+  const commit = async () => {
+    if (basketCounts.total === 0 || logging) return;
+    setLogging(true);
+    try {
+      const db = await openDeezPlants();
+      const result = await logBoard(db, state, basket, as_of);
+      setBasket(new Map());
+      setJustLogged({ ids: result.event_ids, n: result.watered + result.checked });
+      await onChanged();
+    } finally {
+      setLogging(false);
+    }
+  };
+
+  /**
+   * The immediate undo.
+   *
+   * It stays until the owner leaves Home rather than expiring on a timer: a
+   * countdown you cannot see is a rule you only learn by losing to it. Taking
+   * something back later is Void from history, which is its own screen.
+   */
+  const undo = async () => {
+    if (!justLogged || logging) return;
+    setLogging(true);
+    try {
+      const db = await openDeezPlants();
+      await undoBoard(db, justLogged.ids, as_of);
+      setJustLogged(null);
+      await onChanged();
+    } finally {
+      setLogging(false);
+    }
+  };
+
+  /**
+   * How long since the app was last opened, and what moved while they were
+   * away. Written to `meta` on every open — bookkeeping about using the app,
+   * not a fact about a plant, so it is deliberately not an event.
+   */
+  const [catchUp, setCatchUp] = useState<{ days: number; moved: number } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const db = await openDeezPlants();
+        const meta = await db.get('meta', META_KEY);
+        if (!meta) return;
+        const last = meta.last_opened ?? null;
+        await db.put('meta', { ...meta, last_opened: as_of }, META_KEY);
+        if (!live || !last) return;
+        const away = daysBetween(last, as_of);
+        // Three days is the floor the design named. Below that, "caught up"
+        // is noise on a screen opened most days.
+        if (away < 3) return;
+        const moved = active.filter((p) => {
+          const past = p.adherence.days_past;
+          return past !== null && past >= 0 && past < away;
+        }).length;
+        setCatchUp({ days: away, moved });
+      } catch {
+        // The banner is a courtesy. A read failure must not take Home down.
+      }
+    })();
+    return () => { live = false; };
+  }, [as_of, active]);
 
   const rated = active.filter((p) => p.health.current !== null);
   const bands = { good: 0, holding: 0, struggling: 0 };
@@ -88,14 +212,6 @@ export default function Home({
   const slipping = active.filter((p) => p.adherence.state === 'slip').length;
   const behind = active.filter((p) => p.adherence.state === 'behind').length;
 
-  const pastInterval = active.filter((p) => p.adherence.days_past !== null && p.adherence.days_past > 0);
-  const dueToday = active.filter((p) => p.adherence.days_past === 0);
-  const dueThisWeek = active.filter(
-    (p) => p.adherence.days_past !== null && p.adherence.days_past < 0 && p.adherence.days_past >= -6,
-  );
-  const dueTotal = pastInterval.length + dueToday.length + dueThisWeek.length;
-
-  const needsAttention = state.collection.needs_attention.map((id) => state.plants[id]);
 
   // Every saved collection average, oldest first. Snapshots with no rating in
   // them are dropped rather than plotted as zero — an unrated collection has
@@ -141,17 +257,6 @@ export default function Home({
     .map((s) => s.state.collection.average_health)
     .filter((v): v is number => v !== null);
 
-  const mostUrgent = [...pastInterval, ...dueToday]
-    .sort((a, b) => (b.adherence.days_past ?? 0) - (a.adherence.days_past ?? 0));
-
-  const attentionReason = (p: DerivedPlant): string => {
-    if (p.attention.includes('behind') && p.adherence.days_past !== null && p.adherence.days_past > 0) {
-      const n = p.adherence.days_past;
-      return `Check soil — ${n} day${n === 1 ? '' : 's'} past interval`;
-    }
-    if (p.attention.includes('health_stale')) return 'Not looked at in three months';
-    return 'Check soil';
-  };
 
   return (
     <main className="home">
@@ -179,8 +284,8 @@ export default function Home({
         <p className="home-bands-line">
           {rated.length > 0 && (
             <>
-              {bands.good} doing well · {bands.holding} holding
-              {bands.struggling > 0 && <> · {bands.struggling} struggling</>}
+              {bands.good} Good · {bands.holding} Holding
+              {bands.struggling > 0 && <> · {bands.struggling} Struggling</>}
             </>
           )}
         </p>
@@ -233,107 +338,150 @@ export default function Home({
         </button>
       </section>
 
-      <section className="home-card">
-        <span className="home-label">DUE</span>
-        <p className="home-card-line home-due-total">{dueTotal}</p>
-        <div className="home-due-split">
-          <div>
-            <span className="home-due-n past">{pastInterval.length}</span>
-            <span className="home-due-label">Past interval</span>
-          </div>
-          <div>
-            <span className="home-due-n">{dueToday.length}</span>
-            <span className="home-due-label">Today</span>
-          </div>
-          <div>
-            <span className="home-due-n">{dueThisWeek.length}</span>
-            <span className="home-due-label">This week</span>
-          </div>
-        </div>
-        <p className="home-due-note">Water only — feed has no tracked schedule yet.</p>
-      </section>
+      {/* The catch-up banner, after the two standing figures. The owner's
+          placement: Health and Care adherence are the picture that is always
+          true, and this opens the half of the screen that is about what has
+          happened and what to do next. */}
+      {catchUp && (
+        <section className="home-catchup">
+          <span className="home-catchup-head">Caught up after {catchUp.days} days away</span>
+          <span className="home-catchup-body">
+            {catchUp.moved > 0
+              ? `${catchUp.moved} plant${catchUp.moved === 1 ? '' : 's'} moved into due.`
+              : 'Nothing new came due.'}
+            {board.needs_attention.length > 0
+              && ` ${board.needs_attention.length} ${board.needs_attention.length === 1 ? 'is' : 'are'} past an interval.`}
+          </span>
+        </section>
+      )}
 
+      {/* ------------------------------------------------------------------
+          Needs attention — Due, Most urgent and the old Needs attention card
+          merged into one actionable list.
+
+          The owner's screenshot of 1 Oct had all three cards talking about the
+          same plant: Due 8, Needs attention 1, Most urgent 1, every one of them
+          Purple Shamrock. Three cards, one plant, most of a screen, and nothing
+          you could act on without navigating away.
+
+          Rule 9 governs every word here. The list is a prompt to look; a tick
+          records what you did after looking. That is why the two buttons carry
+          equal weight — the app's guess comes from a date and the person is the
+          one holding the can.
+          ------------------------------------------------------------------ */}
       <section className="home-card">
         <div className="home-section-head">
           <span className="home-section-title">Needs attention</span>
-          <span className="home-badge">{needsAttention.length}</span>
+          {board.needs_attention.length > 0 && (
+            <span className="home-count">{board.needs_attention.length}</span>
+          )}
         </div>
-        {needsAttention.length === 0 ? (
-          <p className="home-sub">Up to date.</p>
+
+        {board.needs_attention.length === 0 ? (
+          <p className="home-sub">
+            {resting ?? 'Nothing past its watering interval.'}
+          </p>
         ) : (
-          <ul className="home-rows">
-            {needsAttention.slice(0, NEEDS_ATTENTION_CAP).map((p) => (
+          <>
+            <ul className="home-board">
+              {(attentionOpen ? board.needs_attention : board.needs_attention.slice(0, SECTION_CAP))
+                .map((row) => (
+                  <li key={row.plant.plant_id}>
+                    <BoardRowView
+                      row={row}
+                      action={basket.get(row.plant.plant_id) ?? null}
+                      onOpen={() => onLogCare(row.plant.plant_id)}
+                      onTick={(a) => setBasket((b) => toggle(b, row.plant.plant_id, a))}
+                    />
+                  </li>
+                ))}
+            </ul>
+            {board.needs_attention.length > SECTION_CAP && (
+              <button type="button" className="home-link" onClick={() => setAttentionOpen(!attentionOpen)}>
+                {attentionOpen ? 'Show fewer ›' : `See all ${board.needs_attention.length} ›`}
+              </button>
+            )}
+            {resting && <p className="home-sub home-resting">{resting}</p>}
+          </>
+        )}
+
+        {/* One line for however many plants need a rating confirmed. The
+            owner's design: rate twenty-two in a sitting and ninety days later
+            all twenty-two go stale on the same day, and a wall of rows teaches
+            you to ignore the lot. Confirming resets each plant's own ninety
+            days, so the cluster breaks itself apart after one pass. */}
+        {ratings && (
+          <button type="button" className="home-ratings" onClick={() => setRatingsOpen(!ratingsOpen)}>
+            <span>{ratings}</span>
+            <span className="home-ratings-mark">{ratingsOpen ? '−' : '›'}</span>
+          </button>
+        )}
+        {ratingsOpen && (
+          <ul className="home-ratings-list">
+            {board.stale_ratings.map((p) => (
               <li key={p.plant_id}>
-                <button type="button" className="home-row" onClick={() => onOpenPlant(p.plant_id)}>
-                  <span className="home-row-body">
-                    <span className="home-row-name">{p.name}</span>
-                    <span className="home-row-sub">{attentionReason(p)}</span>
+                <span className="home-ratings-name">
+                  {p.name}
+                  <span className="home-ratings-said">
+                    {p.health.current === null
+                      ? 'never rated'
+                      : `said ${p.health.current} · ${formatDayMonth(p.health.confirmed as ISODate)}`}
                   </span>
-                  <span className="home-row-chev" aria-hidden="true">›</span>
+                </span>
+                {p.health.current !== null && (
+                  <button
+                    type="button"
+                    className="home-ratings-confirm"
+                    disabled={confirming !== null}
+                    onClick={() => void confirmRating(p)}
+                  >
+                    {confirming === p.plant_id ? '…' : `Still ${p.health.current}`}
+                  </button>
+                )}
+                <button type="button" className="home-ratings-change" onClick={() => onOpenPlant(p.plant_id)}>
+                  Change
                 </button>
               </li>
             ))}
           </ul>
         )}
-        {needsAttention.length > NEEDS_ATTENTION_CAP && (
-          <button
-            type="button"
-            className="home-link"
-            onClick={() => onPlaceholder('Needs attention', `All ${needsAttention.length} plants.`)}
-          >
-            See all {needsAttention.length} ›
-          </button>
-        )}
       </section>
 
-      <section className="home-card">
-        <div className="home-section-head">
-          <span className="home-section-title">Most urgent</span>
-        </div>
-        {mostUrgent.length === 0 ? (
-          <p className="home-sub">Nothing past its watering interval.</p>
-        ) : (
-          <ul className="home-rows">
-            {mostUrgent.slice(0, MOST_URGENT_CAP).map((p) => {
-              const days = p.adherence.days_past ?? 0;
-              return (
-                <li key={p.plant_id}>
-                  {/* The plant's name on its own line, what and how far past
-                      underneath — the same shape Needs attention uses. It was
-                      one cramped row with the care tag first, which buried the
-                      name in the middle: the name is the thing you scan for,
-                      and the owner said it read as a mess. */}
-                  <button type="button" className="home-row" onClick={() => onOpenPlant(p.plant_id)}>
-                    <span className="home-row-body">
-                      <span className="home-row-name">{p.name}</span>
-                      <span className="home-row-meta">
-                        <span className="home-row-tag water">WATER</span>
-                        <span className="home-row-days">
-                          {/* Rule 9: how long since the interval, never an
-                              instruction to water. */}
-                          {days > 0
-                            ? `${days} day${days === 1 ? '' : 's'} past interval`
-                            : 'interval is up today'}
-                        </span>
-                      </span>
-                    </span>
-                    <span className="home-row-chev" aria-hidden="true">›</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {dueTotal > MOST_URGENT_CAP && (
-          <button
-            type="button"
-            className="home-link"
-            onClick={() => onPlaceholder('Due', `${dueTotal} plants due or past interval.`)}
-          >
-            See all {dueTotal} ›
+      {/* Coming up — the "7 this week" that was only ever a digit on the old
+          Due card. Shut by default at the owner's request: most of the time the
+          answer is "nothing yet", and it is one tap away when they are walking
+          round with the can. */}
+      {board.coming_up.length > 0 && (
+        <section className="home-card">
+          <button type="button" className="home-fold" onClick={() => setComingOpen(!comingOpen)}>
+            <span className="home-section-title">Coming up</span>
+            <span className="home-fold-count">{board.coming_up.length} this week</span>
+            <span className="home-fold-mark">{comingOpen ? '−' : '+'}</span>
           </button>
-        )}
-      </section>
+          {comingOpen && (
+            <>
+              <ul className="home-board">
+                {(comingAll ? board.coming_up : board.coming_up.slice(0, SECTION_CAP)).map((row) => (
+                  <li key={row.plant.plant_id}>
+                    <BoardRowView
+                      row={row}
+                      action={basket.get(row.plant.plant_id) ?? null}
+                      onOpen={() => onLogCare(row.plant.plant_id)}
+                      onTick={(a) => setBasket((b) => toggle(b, row.plant.plant_id, a))}
+                    />
+                  </li>
+                ))}
+              </ul>
+              {board.coming_up.length > SECTION_CAP && (
+                <button type="button" className="home-link" onClick={() => setComingAll(!comingAll)}>
+                  {comingAll ? 'Show fewer ›' : `See all ${board.coming_up.length} ›`}
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
 
       {handoff.length > 0 && (
         <section className="home-card">
@@ -422,6 +570,31 @@ export default function Home({
           <span className="home-row-chev" aria-hidden="true">›</span>
         </button>
       </div>
+      {/* One basket for the whole screen, committed once. It stays visible at
+          rest rather than appearing from nowhere, so it is never something to
+          hunt for — and the wording is "log what you did", because rule 9
+          forbids this screen from reading as instructions. */}
+      {(basketCounts.total > 0 || justLogged) && (
+        <div className="home-bar">
+          {justLogged && basketCounts.total === 0 ? (
+            <>
+              <span className="home-bar-done">Logged {justLogged.n}</span>
+              <button type="button" className="home-bar-undo" disabled={logging} onClick={() => void undo()}>
+                Undo
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="home-bar-commit"
+              disabled={logging}
+              onClick={() => void commit()}
+            >
+              {logging ? 'Logging…' : commitLabel(basketCounts)}
+            </button>
+          )}
+        </div>
+      )}
     </main>
   );
 }
