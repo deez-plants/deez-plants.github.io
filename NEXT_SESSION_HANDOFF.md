@@ -406,7 +406,7 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
-#### RUNS 1 AND 2 ARE DONE, 2 OCT. NOT DEPLOYED. RUN 3 IS NEXT.
+#### RUNS 1-3 ARE DONE, 2 OCT. NOT DEPLOYED. RUN 4 IS NEXT.
 
 `ba330df` — Inspect carries a reason and a recheck. **Not pushed**; the owner
 tests on the phone after Run 3 or 4, and a deploy is a push they approve.
@@ -463,11 +463,43 @@ it starts.** Its first run failed on entries a hand-driven UI test had left
 behind, and the numbers looked wrong rather than the state looking wrong, which
 cost a minute of chasing the code. Keep that cleanup.
 
-**RUN 3, next: the board.** The merged **Needs attention** list with two-button
-rows, one basket, the commit bar, Coming up (shut), the ratings line, the
-catch-up banner after Care adherence, the sparkline and three-band bar — plus
-**the scroll fix** (`src/App.tsx:102`) and **the "See all 8" fix**. Then **Run 4**
-(Void from history, Recently logged).
+**RUN 3 IS DONE** — three commits: `aa39163` the scroll fix, `0a86230` the board.
+
+New files: `care/board.ts` (what Home shows, pure, 38 checks in
+`check/board.check.cjs`), `care/boardCommit.ts` (basket to entries, and the
+undo), `components/BoardRow.tsx`.
+
+**Decisions inside Run 3 that a later pass must not quietly undo:**
+
+- **The two row buttons are equal in size and weight.** Not a primary Watered
+  with "checked it instead" underneath. The row's suggestion comes from a date
+  and the owner is the one looking at the soil, so making the honest answer the
+  slower one is how a record fills with waterings that did not happen. Rule 9 as
+  an interface rather than as a sentence.
+- **One basket keyed by plant**, so a plant on two lists cannot be ticked twice,
+  and Watered after Checked replaces rather than stacks.
+- **Undo lives until the owner leaves Home, not on a timer.** A countdown you
+  cannot see is a rule you only learn by losing to it.
+- **A row with two problems shows both reasons.** Letting water win is how the
+  stale ratings stayed invisible on the old screen.
+- **See all expands the list in place** rather than pushing a screen. That is
+  also what killed the "See all 8" bug rather than patching its number.
+- **The scroll restore reads a pop off the stack depth**, so no call site has to
+  announce it; a swapped plant or a forward still opens at the top.
+- `meta.last_opened` is new — bookkeeping about using the app, not a fact about
+  a plant, so deliberately not an event. It feeds the catch-up banner, which
+  needs three days away before it says anything.
+
+**RUN 4, next and last before the phone test: Void from history**, plus the
+**Recently logged** list on Home. Scope is settled and narrow: **care entries
+only** — not ratings (rate again instead), not Edits including AI-applied ones,
+not Archive. It takes a reason, the three agreed chips being *Wrong plant /
+Didn't do it / Mis-tapped*. Voiding a Void is refused. `undoBoard` in
+`care/boardCommit.ts` already writes Voids correctly and is the pattern to
+follow.
+
+**Then the phone.** Deploy is a push the owner approves; verify the served
+bundle rather than trusting a green workflow.
 
 #### START HERE 2 OCT: MOCK-UPS FIRST, THEN BUILD. FULL SPEC BELOW.
 
