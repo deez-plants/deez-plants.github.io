@@ -520,6 +520,29 @@ water tomorrow. Backdating stays open. This is the other half of the fix the Run
 lists and had to come first, because the fold must be right whatever is already
 in an append-only log; this stops a bad date being written at all.
 
+#### TWO IDEAS THE OWNER PARKED, 2 OCT — RAISE THEM, DO NOT BUILD THEM
+
+Both were theirs, both were deliberately deferred, and both are the kind of
+thing that gets lost. **They asked for them to be written down so they could
+change their mind later.** Raise them after they have used the board for a week;
+do not build either unprompted.
+
+**1 · The "All" link under Needs attention.** Their words: *a default 5 list with
+the highest priority first, then the number, then "All" underlined linking to
+them all so I can see them all and click as I go.* The list already shows five,
+worst first, with the count in the header; what they described differently is the
+line underneath, which currently reads **"See all 12 ›"** and would become
+something like **12 plants · <u>All</u>**. They chose to live with the current
+wording first. If they say the See-all line reads wrong, this is the shape they
+had in mind.
+
+**2 · Take back being one fold deeper.** Recently logged is now shut by default,
+which is right for everyday use but puts **Take back** two taps away instead of
+one. The owner accepted that knowingly. **If they ever report hunting for it, do
+not just reopen the fold** — that trade was made on purpose. The better answer is
+probably a Take back on the plant's own History, where someone looking for a
+specific mistake would go first.
+
 #### WHAT IS LEFT: THE PHONE
 
 Everything agreed on 1-2 Oct is built. **Nine commits, nothing pushed.**
