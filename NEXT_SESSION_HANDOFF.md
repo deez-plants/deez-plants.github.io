@@ -207,7 +207,91 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-### THE PACKAGE FIX IS BUILT AND DEPLOYED. READ THE 1 OCT STATE BELOW.
+### WHERE THINGS STAND — END OF 2 OCTOBER 2026
+
+**Everything agreed on 1-2 Oct is built, deployed and live.** Deploy run #64,
+verified in the served bundle rather than trusting a green workflow. The owner
+stopped for the day after testing on the phone and will be back soon.
+
+**Nothing is waiting to be pushed. The working tree is clean.**
+
+#### WHAT THE OWNER HAS AND HAS NOT TESTED
+
+They opened the app, looked, and reported three real bugs — all fixed and
+deployed the same day. **They have not yet walked round the flat with it**, which
+is the test the whole thing was built for.
+
+Confirmed working by them, on the phone:
+
+- the board, ticking and the commit bar
+- tapping a plant's name going to its Log care screen
+- **back landing where they left** — "the back works normal now"
+- Inspect with the reason chips and the recheck
+- Recently logged, after it was collapsed
+- the backup date, after it was fixed
+
+**Not yet seen, because the conditions have not arisen:**
+
+- **The ratings line.** Nothing of theirs can be stale until December — they
+  have no rating older than 90 days. Do not treat its absence as a bug.
+- **The catch-up banner.** Needs three days away before it says anything.
+- **A plant returning after a recheck expires.** Proven in two harnesses,
+  never yet watched happen on the phone.
+
+**Still only they can judge:** the two-button row under a real thumb, whether
+the commit bar is reachable one-handed on a long screen, and whether Coming up
+shut is right.
+
+#### THE THREE BUGS THEY FOUND IN THE FIRST MINUTES, AND WHY THEY MATTER
+
+Worth reading as a group: all three were invisible to every check in the repo
+and obvious within seconds of a person holding the phone.
+
+1. **Recently logged opened showing six rows.** It is not a log to read, it is a
+   tool you reach for when something went wrong. Shut by default now.
+2. **The fold `+` and `−` could not be seen.** They inherited the muted grey of
+   the old More-actions accordion — right for something quiet, wrong for the
+   only way into a section. Now 32px, bold, accent green, in a 44px target.
+3. **The backup date never updated.** Both export paths wrote
+   `last_state_export` correctly and nothing told Home to re-read it; Home reads
+   `last_backup` once, at boot. The owner found it twice over without meaning
+   to, because tapping Mark this point corrected it — that reloads for its own
+   reasons. **Every path that writes something Home displays must call
+   `onChanged`.** The restore path always did; the exports did not.
+
+**`Mark this point` also gained the second line** every other utility row on
+that screen already had. The owner had forgotten what it was for, which is fair:
+a snapshot is taken automatically when a review package is built, so the manual
+one only matters for a moment they can see coming and the app cannot.
+
+#### WHAT IS ACTUALLY OPEN
+
+**Nothing is half-built.** These are decisions and observations, not unfinished
+work.
+
+| | |
+|---|---|
+| **The phone walk** | The real test. Everything else waits on it. |
+| **The "All" link under Needs attention** | Parked by the owner. See the section below — raise it, do not build it. |
+| **Take back one fold deeper** | Parked knowingly. If they report hunting for it, the fix is Take back on a plant's own History, **not** reopening the fold. |
+| **Feed has no tracked schedule** | So Coming up and Needs attention are watering only. The old Due card said so out loud and the new board does not. Worth a line if they ever track feed. |
+| **The backup gap** | `sync/stateTransfer.ts` — still the most dangerous thing outstanding and still not on anyone's list but this one. See its own section below. |
+| **013-OXA winter interval, 022-CAC species** | Plant-data corrections for an ordinary AI review round. Never fix these in code. |
+
+#### IF THE OWNER REPORTS SOMETHING ODD
+
+Three things that are correct and look like bugs:
+
+- **A deferred plant still reads as "behind"** in its own attention list. Being
+  past an interval is a fact about a date; a check does not change it. What a
+  check changes is whether the board keeps raising it.
+- **A plant returns from a recheck saying it is FURTHER past** than when it was
+  checked. Correct — a check never moves the watering.
+- **Voiding an old watering moves adherence figures they have already seen.**
+  "On time 14 of 18" becomes "13 of 17". That is the feature working.
+
+
+### THE 1 OCT RECORD — THE PACKAGE FIX, AND THE SIX ITEMS AFTER IT
 
 **Built 2026-09-21, deployed 2026-10-01.**
 
@@ -406,7 +490,7 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
-#### ALL FOUR RUNS ARE DONE, 2 OCT. NOT DEPLOYED. THE PHONE IS NEXT.
+#### ALL FOUR RUNS ARE DONE AND DEPLOYED, 2 OCT.
 
 `ba330df` — Inspect carries a reason and a recheck. **Not pushed**; the owner
 tests on the phone after Run 3 or 4, and a deploy is a push they approve.
@@ -490,7 +574,10 @@ undo), `components/BoardRow.tsx`.
   a plant, so deliberately not an event. It feeds the catch-up banner, which
   needs three days away before it says anything.
 
-**RUN 4 IS DONE** — `f0a5425` the date cap, `d836502` Void from history.
+**RUN 4 IS DONE** — `f0a5425` the date cap, `d836502` Void from history. Then
+three bugs the owner found on the phone: `7ee9ec8` (Recently logged shut, the
+fold markers visible) and `0031e80` (the backup date, and Mark this point's
+second line). **All deployed, run #64.**
 
 New: `care/voidEntry.ts` (the rules, 35 checks in `check/void.check.cjs`) and
 `components/RecentlyLogged.tsx` on Home.
@@ -545,11 +632,12 @@ specific mistake would go first.
 
 #### WHAT IS LEFT: THE PHONE
 
-Everything agreed on 1-2 Oct is built. **Nine commits, nothing pushed.**
+Everything agreed on 1-2 Oct is built **and deployed** — fifteen commits across
+two days, the last at run #64.
 
-**Ask before pushing** — a deploy is the owner's call — then verify the served
-bundle rather than trusting a green workflow, and tell them to close and reopen
-the app rather than pull-to-refresh, which does nothing in an installed app.
+**A deploy is always the owner's call**: ask, then verify the served bundle
+rather than trusting a green workflow, and tell them to close and reopen the app
+rather than pull-to-refresh, which does nothing in an installed app.
 
 **What only they can test:** the two-button row under a real thumb, whether the
 commit bar is reachable one-handed, whether Coming up shut is right, and whether
@@ -564,7 +652,7 @@ the catch-up banner reads well after a real gap. None of that is checkable here.
   only**. The old Due card said so out loud and the new board does not — worth a
   line if the owner ever starts tracking feed.
 
-#### START HERE 2 OCT: MOCK-UPS FIRST, THEN BUILD. FULL SPEC BELOW.
+#### HOW THE 2 OCT WORK WAS AGREED — MOCK-UPS FIRST, THEN BUILD (DONE)
 
 **The owner went to bed on 1 Oct with this agreed and nothing built.** Their
 instruction: *the first thing you do tomorrow is build me some more mock-ups of
