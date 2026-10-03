@@ -258,6 +258,10 @@ export default function Home({
     return () => { live = false; };
   }, [state]);
 
+  /** When the last snapshot was taken, so the row can say so. Snapshots are
+      capped at five and kept oldest first — the last one is the newest. */
+  const lastMarked = snapshots.length ? snapshots[snapshots.length - 1].taken : null;
+
   const sparkline = snapshots
     .map((s) => s.state.collection.average_health)
     .filter((v): v is number => v !== null);
@@ -530,6 +534,16 @@ export default function Home({
           <span className="home-row-icon"><Icon name="add" size={22} /></span>
           <span className="home-row-body">
             <span className="home-row-name">{marking ? 'Marking…' : 'Mark this point'}</span>
+            {/* It said nothing at all, and the owner forgot what it was for —
+                reasonably, since every other utility row here carries a second
+                line and this one did not. A snapshot is taken automatically
+                when a review package is built; this is the manual one, for a
+                moment only they can see coming: before a repotting session,
+                before going away, before moving everything around. */}
+            <span className="home-row-sub">
+              A point for Since last time to compare against
+              {lastMarked && ` · last marked ${formatDayMonth(lastMarked)}`}
+            </span>
           </span>
         </button>
         <button type="button" className="home-util-row backup" onClick={onBackup}>

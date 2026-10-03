@@ -114,6 +114,13 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
    * package. The asymmetry is deliberate: a package wrongly marked sent loses
    * evidence permanently, while a backup date that is a day optimistic only
    * misleads about recency — nothing is lost and the next save corrects it.
+   *
+   * **Writing it is not enough: the screen showing it has to be told.** Home
+   * reads `last_backup` once, at boot, so an export that only wrote the date
+   * left Home saying 17 September while the record said today. The owner found
+   * that on 2026-10-02, and found it twice over — tapping Mark this point
+   * corrected it, because that reloads for its own reasons. Every path that
+   * calls this calls `onChanged` after it.
    */
   const noteBackup = async (db: DeezDB) => {
     const meta = await db.get('meta', META_KEY);
@@ -126,6 +133,7 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
     saveFile(out.blob, out.filename);
     await noteBackup(db);
     setSaved(`${out.filename} · ${out.plant_count} plants · ${out.event_count} entries · ${formatBytes(out.bytes)}`);
+    await onChanged();
   });
 
   const doExportEverything = () => run('everything', async () => {
@@ -134,6 +142,7 @@ export default function Backup({ as_of, backLabel, onBack, onChanged }: BackupPr
     saveFile(out.blob, out.filename);
     await noteBackup(db);
     setSaved(`${out.filename} · ${formatBytes(out.bytes)} including photos and audio`);
+    await onChanged();
   });
 
   const doRestore = (file: File) => run('restore', async () => {
