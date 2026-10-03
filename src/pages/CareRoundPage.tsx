@@ -721,6 +721,17 @@ export default function CareRoundPage({
               id="care-detail-date"
               type="date"
               className="care-detail-input"
+              /* A care entry records what you DID, and you cannot water
+                 tomorrow. Backdating stays open — logging yesterday's watering
+                 is ordinary — but the future does not.
+
+                 Found the hard way: a future-dated Inspect used to defer a
+                 plant immediately, so one mistyped year would have hidden it
+                 until 2028 with nothing on screen saying why. `care/inspect.ts`
+                 now ignores such an entry, because the fold has to be right
+                 whatever is already in an append-only log. This stops it being
+                 written in the first place. */
+              max={as_of}
               value={detailDraft.date}
               onChange={(e) => setDetailDraft({ ...detailDraft, date: e.target.value as ISODate })}
             />
