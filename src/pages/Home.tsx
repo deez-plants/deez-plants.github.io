@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { EventId, PlantId } from '../types/ids';
 import type { DerivedPlant, DerivedState, Snapshot } from '../types/derived';
+import type { StoredEvent } from '../types/event';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore, healthBand } from '../score/score';
 import { Icon } from '../components/Icon';
@@ -10,6 +11,7 @@ import {
   SECTION_CAP, type Basket,
 } from '../care/board';
 import { BoardRowView } from '../components/BoardRow';
+import { RecentlyLogged } from '../components/RecentlyLogged';
 import { logBoard, undoBoard } from '../care/boardCommit';
 import { ratePlant } from '../care/rate';
 import { isConfirmedSent } from '../package/registry';
@@ -56,6 +58,9 @@ export interface HomeProps {
   onMarkPoint: () => Promise<void> | void;
   /** Today, for the recheck dates and the catch-up count. */
   as_of: ISODate;
+  /** The raw log, for Recently logged. Read directly rather than through
+      derived state: taking an entry back needs the entry, not its effect. */
+  events: readonly StoredEvent[];
   /** Straight to one plant's Log care screen — what tapping a row's name does.
       The original design asked for this from the start and the app never did
       it, so every row sent you to the plant page to find the grid yourself. */
@@ -83,7 +88,7 @@ const HANDOFF_CAP = 4;
 export default function Home({
   state, snapshots, onOpenPlant, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
   onPreparePackage, onApplyUpdate, onBackup, lastBackup, onSinceLastTime, onMarkPoint,
-  as_of, onLogCare, onChanged,
+  as_of, events, onLogCare, onChanged,
 }: HomeProps) {
   const [marking, setMarking] = useState(false);
 
@@ -482,6 +487,8 @@ export default function Home({
         </section>
       )}
 
+
+      <RecentlyLogged state={state} events={events} as_of={as_of} onChanged={onChanged} />
 
       {handoff.length > 0 && (
         <section className="home-card">

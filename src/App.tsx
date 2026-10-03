@@ -294,6 +294,7 @@ export default function App() {
         onSinceLastTime={() => nav.push({ kind: 'since' }, 'Home')}
         onMarkPoint={markPoint}
         as_of={as_of}
+        events={events}
         onLogCare={(plant_id) => nav.push({ kind: 'care', plant_id }, 'Home')}
         onChanged={reload}
       />
