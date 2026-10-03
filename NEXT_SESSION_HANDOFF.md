@@ -406,7 +406,7 @@ pure half checked in `check/photostore.check.cjs`), `components/PhotoViewer.tsx`
 pass, a proposed data-shape change — see GPT's 1 and 2 below), then GPT's 4
 with its premise corrected.
 
-#### RUNS 1-3 ARE DONE, 2 OCT. NOT DEPLOYED. RUN 4 IS NEXT.
+#### ALL FOUR RUNS ARE DONE, 2 OCT. NOT DEPLOYED. THE PHONE IS NEXT.
 
 `ba330df` — Inspect carries a reason and a recheck. **Not pushed**; the owner
 tests on the phone after Run 3 or 4, and a deploy is a push they approve.
@@ -490,16 +490,56 @@ undo), `components/BoardRow.tsx`.
   a plant, so deliberately not an event. It feeds the catch-up banner, which
   needs three days away before it says anything.
 
-**RUN 4, next and last before the phone test: Void from history**, plus the
-**Recently logged** list on Home. Scope is settled and narrow: **care entries
-only** — not ratings (rate again instead), not Edits including AI-applied ones,
-not Archive. It takes a reason, the three agreed chips being *Wrong plant /
-Didn't do it / Mis-tapped*. Voiding a Void is refused. `undoBoard` in
-`care/boardCommit.ts` already writes Voids correctly and is the pattern to
-follow.
+**RUN 4 IS DONE** — `f0a5425` the date cap, `d836502` Void from history.
 
-**Then the phone.** Deploy is a push the owner approves; verify the served
-bundle rather than trusting a green workflow.
+New: `care/voidEntry.ts` (the rules, 35 checks in `check/void.check.cjs`) and
+`components/RecentlyLogged.tsx` on Home.
+
+**The refusals are the feature, not the happy path.** This is the one write in
+the app that changes what past numbers say — void an old watering and adherence
+recalculates — so it is only safe while it refuses everything it was not meant
+to touch. Care entries only. A rating is refused because rating again is one tap
+and cheaper; an Edit because the correction for a wrong value is a new edit, and
+voiding one tangles with the conflict rule; Archive because it has its own path;
+and a Void cannot be voided, which would leave the record asserting two opposite
+things. **Widening any of that is a decision, not an oversight.**
+
+**Every refusal is a sentence, never a greyed-out button** — "why can't I tap
+this" is how a person decides an app is broken. The single exception is a Void
+row, which gets no button at all, because one that always refuses is noise.
+
+A taken-back entry **stays on the list**, struck through, with its correction
+beneath it. Hiding it would make the record read as if nothing had happened.
+
+The confirmation **says adherence will change before they commit**, rather than
+leaving a figure they have already seen to move without explanation.
+
+**Also in Run 4: the care date is capped at today** (`f0a5425`). You cannot
+water tomorrow. Backdating stays open. This is the other half of the fix the Run
+2 harness prompted — that one made a future-dated inspection harmless to the
+lists and had to come first, because the fold must be right whatever is already
+in an append-only log; this stops a bad date being written at all.
+
+#### WHAT IS LEFT: THE PHONE
+
+Everything agreed on 1-2 Oct is built. **Nine commits, nothing pushed.**
+
+**Ask before pushing** — a deploy is the owner's call — then verify the served
+bundle rather than trusting a green workflow, and tell them to close and reopen
+the app rather than pull-to-refresh, which does nothing in an installed app.
+
+**What only they can test:** the two-button row under a real thumb, whether the
+commit bar is reachable one-handed, whether Coming up shut is right, and whether
+the catch-up banner reads well after a real gap. None of that is checkable here.
+
+**Known and deliberately not built:**
+
+- `Void` is per entry. There is no bulk take-back, and nothing has asked for one.
+- The ratings list has no "confirm all", and must not get one. Rule 1: one tap
+  confirming 22 plants nobody looked at makes the number a lie.
+- Feed has no tracked schedule, so **Coming up and Needs attention are watering
+  only**. The old Due card said so out loud and the new board does not — worth a
+  line if the owner ever starts tracking feed.
 
 #### START HERE 2 OCT: MOCK-UPS FIRST, THEN BUILD. FULL SPEC BELOW.
 
