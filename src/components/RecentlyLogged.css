@@ -125,3 +125,8 @@
   background: none;
   border: 1px solid var(--line-strong);
 }
+
+/* The fold header reuses Home's, so the two folds on that screen behave and
+   read identically. The label keeps its mono caps but loses the block margin
+   it carries when it stands alone above a list. */
+.rec-label { margin: 0; }

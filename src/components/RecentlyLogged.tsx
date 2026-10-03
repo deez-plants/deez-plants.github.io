@@ -32,6 +32,15 @@ import './RecentlyLogged.css';
  * A taken-back entry stays on the list, struck through, with its correction
  * beneath it. Hiding it would make the correction invisible, which is the
  * opposite of what append-only is for.
+ *
+ * ## Shut by default
+ *
+ * It opened showing six rows on the first build, and the owner wanted it shut.
+ * They are right, and the reason is worth keeping: this is not a log to read,
+ * it is a tool you reach for when something went wrong. Most days it should be
+ * a closed line with a count on it, the same shape as Coming up — two folds on
+ * one screen that behave identically rather than two that each have their own
+ * idea.
  */
 
 const RECENT_CAP = 6;
@@ -45,6 +54,7 @@ export interface RecentlyLoggedProps {
 
 export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLoggedProps) {
   const [open, setOpen] = useState(false);
+  const [more, setMore] = useState(false);
   const [asking, setAsking] = useState<StoredEvent | null>(null);
   const [reason, setReason] = useState<VoidReason | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,7 +63,7 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
   const rows = recentEntries(
     events,
     (plant_id) => state.plants[plant_id]?.name ?? plant_id,
-    open ? RECENT_CAP * 3 : RECENT_CAP,
+    more ? RECENT_CAP * 3 : RECENT_CAP,
   );
   if (rows.length === 0) return null;
 
@@ -75,8 +85,14 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
 
   return (
     <section className="home-card">
-      <span className="home-label">RECENTLY LOGGED</span>
+      <button type="button" className="home-fold" onClick={() => setOpen(!open)}>
+        <span className="home-label rec-label">Recently logged</span>
+        <span className="home-fold-count">{rows.length}</span>
+        <span className="home-fold-mark">{open ? '−' : '+'}</span>
+      </button>
 
+      {open && (
+      <>
       <ul className="rec-list">
         {rows.map((row) => (
           <li key={row.event.event_id} className={row.voided ? 'rec voided' : 'rec'}>
@@ -116,8 +132,8 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
       {refused && <p className="rec-refused">{refused}</p>}
 
       {rows.length >= RECENT_CAP && (
-        <button type="button" className="home-link" onClick={() => setOpen(!open)}>
-          {open ? 'Show fewer ›' : 'See more ›'}
+        <button type="button" className="home-link" onClick={() => setMore(!more)}>
+          {more ? 'Show fewer ›' : 'See more ›'}
         </button>
       )}
 
@@ -160,6 +176,8 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
     </section>
   );

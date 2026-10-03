@@ -401,7 +401,11 @@
   text-align: left;
 }
 
-.home-ratings-mark { flex: none; font-size: 24px; color: var(--ink-40); }
+/* The fold markers are the only way into these sections, so they have to read
+   as controls rather than as punctuation. They were inheriting the muted grey
+   of the old "More actions" accordion, which was right for something quiet and
+   wrong for something you are meant to spot — the owner could not see them. */
+.home-ratings-mark { flex: none; font: 600 30px/1 var(--sans); color: var(--accent); }
 
 .home-ratings-list {
   display: flex;
@@ -462,13 +466,25 @@
   text-align: left;
 }
 
+/* The count sits between the title and the marker, so a shut fold still says
+   whether there is anything behind it. */
 .home-fold-count {
   flex: 1;
   font: 400 21px/1.2 var(--sans);
   color: var(--ink-50);
 }
 
-.home-fold-mark { flex: none; font: 400 26px/1 var(--sans); color: var(--ink-40); }
+.home-fold-mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* A thumb needs more than the glyph. */
+  width: 44px;
+  height: 44px;
+  font: 600 32px/1 var(--sans);
+  color: var(--accent);
+}
 
 /* The catch-up banner. Sits after Care adherence at the owner's request: the
    two figures above are the standing picture, and this opens the half of the
