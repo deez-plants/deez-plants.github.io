@@ -207,11 +207,73 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-### WHERE THINGS STAND — END OF 2 OCTOBER 2026
+### READ THIS FIRST — WINDOW CLOSED 16 OCTOBER 2026
+
+**The last code change was 2 October. Nothing has been committed in the
+fortnight since.** The tree is clean, everything is pushed, and the live site is
+deploy run #64.
+
+**So the sections below describe the app accurately and describe the OWNER'S
+SITUATION as it was two weeks ago.** Do not assume the two are still the same.
+
+#### THE FIRST THING TO DO IS ASK, NOT BUILD
+
+A fortnight of real use may have happened and this file cannot see any of it.
+The phone holds the record; this laptop holds only the code. Before proposing
+anything, ask the owner:
+
+1. **Did you walk round the flat with the board?** That is the test all four
+   runs of 2 Oct were built for and it had not happened when the window closed.
+   Everything queued below is less important than the answer.
+2. **Has there been an AI review round since 1 October?** If a package was built,
+   sent and answered, the Handoff log on the phone will say so and some of the
+   plant-data items below may already be settled.
+3. **Any walks recorded?** Transcripts, the coverage gate, the start-tolerance
+   fix of 1 Oct — none of that has been exercised on a real walk since it landed.
+4. **Anything behaving oddly?** Check the "If the owner reports something odd"
+   list below before treating an answer as a bug: three correct behaviours there
+   look like faults.
+
+**Do not open the app on `localhost:5173` to "check" anything.** That is a
+separate database from the phone and tells you nothing about their record. Every
+browser harness in `check/browser/` is pinned to `127.0.0.1` for this reason.
+
+#### WHAT THEY WILL SEE THAT THEY HAVE NOT SEEN BEFORE
+
+Two things that could not appear on 2 Oct and can now:
+
+- **The catch-up banner.** It needs three days away; after a fortnight it will
+  fire on the next open, below Care adherence, saying how many plants moved into
+  due. **It has never been seen by anyone.** If it reads wrong, that is new
+  information, not a regression.
+- **Plants returning from a recheck.** Any inspection logged on 2 Oct has long
+  since expired, so those plants are back on the board — reading as *further*
+  past than when they were checked, which is correct and explained below.
+
+Still not due: **the ratings line.** Staleness is 90 days from a confirmation,
+and their ratings are not old enough until December.
+
+#### THE STATE OF THE RECORD, AS LAST KNOWN
+
+From the 1 Oct round, and unchanged on this machine since:
+
+- `PKG-2026-10-01-3` was built, confirmed sent, answered and applied — the first
+  complete review cycle with photos travelling under their own names and the
+  AI's reasoning stored on each entry.
+- `PKG-2026-09-21-1` was never registered. Its entries rode along in the 1 Oct
+  package anyway, so it is **moot, not outstanding**. Its ZIP is still in
+  `OneDrive/Deez Plants/3 ai` if it is ever wanted; Recover-from-ZIP would take
+  it. Do not push the owner towards it.
+- 22 plants, one archived (`009-SPD`). 21 active. That is correct, not a gap.
+
+### WHERE THE CODE STANDS — END OF 2 OCTOBER 2026 (STILL CURRENT)
 
 **Everything agreed on 1-2 Oct is built, deployed and live.** Deploy run #64,
-verified in the served bundle rather than trusting a green workflow. The owner
-stopped for the day after testing on the phone and will be back soon.
+verified in the served bundle rather than trusting a green workflow.
+
+**This section is about the code and is still accurate.** What it says about
+the owner — what they had and had not tested — is two weeks old; see the
+16 October note above.
 
 **Nothing is waiting to be pushed. The working tree is clean.**
 
@@ -277,6 +339,102 @@ work.
 | **Feed has no tracked schedule** | So Coming up and Needs attention are watering only. The old Due card said so out loud and the new board does not. Worth a line if they ever track feed. |
 | **The backup gap** | `sync/stateTransfer.ts` — still the most dangerous thing outstanding and still not on anyone's list but this one. See its own section below. |
 | **013-OXA winter interval, 022-CAC species** | Plant-data corrections for an ordinary AI review round. Never fix these in code. |
+
+#### THE DECISIONS OF 1-2 OCTOBER, WITH THEIR REASONING
+
+Every one of these was argued through and settled. They are listed together
+because a reason is what stops a later pass undoing a decision it mistakes for
+an accident — and several of these look arbitrary from the outside.
+
+**On the board**
+
+- **The two row buttons are equal in size and weight.** Not a primary *Watered*
+  with *checked it instead* underneath. The row's suggestion comes from a date
+  and the owner is the one looking at the soil, so making the honest answer the
+  slower one is how a record fills up with waterings that did not happen. Rule 9
+  as an interface rather than as a sentence.
+- **One basket keyed by plant.** A plant on two lists cannot be ticked twice,
+  and *Watered* after *Checked* replaces rather than stacks — they changed their
+  mind, they did not do both.
+- **Undo lives until they leave Home, not on a timer.** A countdown you cannot
+  see is a rule you only learn by losing to it.
+- **A row with two problems shows both reasons.** Letting water win is exactly
+  how the stale ratings stayed invisible on the old screen.
+- **See all expands in place** rather than pushing a screen. That is also what
+  killed the "See all 8" bug rather than patching its number.
+- **Do next retired, Due card retired.** Due's figures became rows you can act
+  on, so a card that only counted them earned nothing.
+
+**On Inspect**
+
+- **The recheck lives on the entry; the live state is derived.** A `next_check`
+  field on the plant would be patched state, which rule 10 forbids. Approved as
+  a data shape by the owner's GPT.
+- **The chip sets the delay, scaled to that plant's own interval.** Two earlier
+  answers were built and discarded: a flat three days, which was invented, and a
+  fraction of the interval, which ignored where in the cycle the check happened.
+  **The owner caught the second** — a plant only reaches the board once it is
+  past due, so there is never a remaining interval to wait out.
+- **An undrained standing-water check never quiets a plant.** Hiding the one
+  plant that is actually wrong is the worst thing this feature could do.
+- **A check dated in the future quiets nothing**, and the form will not write
+  one. Two halves of one fix: the fold must be right whatever is already in an
+  append-only log, and the form stops a bad date being written at all.
+
+**On taking entries back**
+
+- **Care entries only.** A rating is refused because rating again is one tap and
+  cheaper; an Edit because the correction for a wrong value is a new edit, and
+  voiding one tangles with the conflict rule; Archive because it has its own
+  path; a Void cannot be voided, which would leave the record asserting two
+  opposite things. **Widening any of that is a decision, not an oversight.**
+- **Every refusal is a sentence, never a greyed-out button.** "Why can't I tap
+  this" is how a person decides an app is broken. The one exception is a Void
+  row, which gets no button at all, because one that always refuses is noise.
+- **No lock after a package is sent.** A Void is itself an entry, so it travels
+  in the next package and the AI learns of the correction.
+
+**On the screen generally**
+
+- **Home may diverge from `DESIGN_REFERENCE.md` more than any other screen, and
+  that is sanctioned.** The original Home is a reporting surface that sends you
+  elsewhere; the owner wants a clipboard. Written down so a later session does
+  not "restore" it as drift.
+- **Every path that writes something Home displays must call `onChanged`.** Home
+  reads `last_backup` once, at boot. This is the rule the 2 Oct backup bug
+  produced, and the next export path added will otherwise repeat it.
+- **No "confirm all" on the ratings list, ever.** Rule 1: one tap confirming 22
+  plants nobody looked at makes the number a lie.
+
+#### NEXT STEPS, IN ORDER, WITH WHAT EACH IS FOR
+
+**1 · Ask what happened in the fortnight.** See the top of this file. Nothing
+below matters more than whether the board survives contact with a real walk.
+
+**2 · Whatever that surfaces.** Expect small things: spacing, wording, a tap
+target. The three bugs of 2 Oct were all of that kind and all invisible to 1,008
+automated checks.
+
+**3 · The backup gap — still the most dangerous item outstanding.**
+`sync/stateTransfer.ts` carries the package registry and applied updates now,
+*but* the owner has never performed a restore, and it has never been exercised
+outside a harness. Nothing to build; it is a thing to remember exists.
+
+**4 · The two parked ideas**, if and only if the owner raises them. The *All*
+link under Needs attention, and Take back being one fold deeper. Both have their
+own section below. **Raise, do not build.**
+
+**5 · The plant-data corrections.** `013-OXA`'s winter interval and `022-CAC`'s
+species belong in an ordinary AI review round, never in code. They have been
+waiting since September for precisely that reason.
+
+**6 · Feed.** No tracked schedule, so Coming up and Needs attention are watering
+only. The old Due card said so and the new board does not. One line if they ever
+start tracking it.
+
+**What is NOT queued, deliberately:** nothing. There is no half-built work and
+no backlog of agreed features. The next thing this project does should come from
+the owner using it, not from a list.
 
 #### IF THE OWNER REPORTS SOMETHING ODD
 
