@@ -49,6 +49,8 @@ export interface HomeProps {
   onHealthHistory: () => void;
   onAddPlant: () => void;
   onPreparePackage: () => void;
+  /** Walks held on this device — the other half of the AI round-trip. */
+  onRecordings: () => void;
   onApplyUpdate: () => void;
   onBackup: () => void;
   /** Null until a backup has been saved. */
@@ -87,7 +89,7 @@ const HANDOFF_CAP = 4;
 
 export default function Home({
   state, snapshots, onOpenPlant, onArchived, onAdherenceHistory, onHealthHistory, onAddPlant,
-  onPreparePackage, onApplyUpdate, onBackup, lastBackup, onSinceLastTime, onMarkPoint,
+  onPreparePackage, onRecordings, onApplyUpdate, onBackup, lastBackup, onSinceLastTime, onMarkPoint,
   as_of, events, onLogCare, onChanged,
 }: HomeProps) {
   const [marking, setMarking] = useState(false);
@@ -183,6 +185,31 @@ export default function Home({
    * away. Written to `meta` on every open — bookkeeping about using the app,
    * not a fact about a plant, so it is deliberately not an event.
    */
+  /**
+   * What the Recordings row says about itself, in the shape every other
+   * utility row here uses. A row that only says "Recordings" makes you open it
+   * to find out whether there is anything to do.
+   */
+  const [walks, setWalks] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const db = await openDeezPlants();
+        const sessions = (await db.getAll('sessions')).filter((w) => w.closed !== false);
+        if (!live || sessions.length === 0) { setWalks(null); return; }
+        const untranscribed = sessions.filter((w) => !w.transcript).length;
+        setWalks(
+          `${sessions.length} walk${sessions.length === 1 ? '' : 's'}`
+          + (untranscribed ? ` · ${untranscribed} not transcribed` : ' · all transcribed'),
+        );
+      } catch {
+        // A subtitle is a courtesy. A read failure must not take Home down.
+      }
+    })();
+    return () => { live = false; };
+  }, [state]);
+
   const [catchUp, setCatchUp] = useState<{ days: number; moved: number } | null>(null);
   useEffect(() => {
     let live = true;
@@ -612,6 +639,24 @@ export default function Home({
           <span className="home-row-icon add"><Icon name="add" size={22} /></span>
           <span className="home-row-body">
             <span className="home-row-name">Add a new plant</span>
+          </span>
+          <span className="home-row-chev" aria-hidden="true">›</span>
+        </button>
+        {/* Directly above Prepare, so the AI round-trip reads as the sequence
+            it is: record → transcribe → package → apply. The owner's route to
+            this was More → scroll → Recordings, which put half the workflow on
+            a different screen from the other half.
+
+            Deliberately no "Record a walk" row beside it: the Rec button is
+            already the centre of the tab bar, and a second route to the same
+            thing is a bigger target for it, not a better one. The same
+            reasoning removed the Log care button from this screen in
+            September. */}
+        <button type="button" className="home-util-row" onClick={onRecordings}>
+          <span className="home-row-icon"><Icon name="mic" size={22} /></span>
+          <span className="home-row-body">
+            <span className="home-row-name">Recordings</span>
+            {walks && <span className="home-row-sub">{walks}</span>}
           </span>
           <span className="home-row-chev" aria-hidden="true">›</span>
         </button>

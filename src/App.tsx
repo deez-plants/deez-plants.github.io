@@ -288,6 +288,7 @@ export default function App() {
         onHealthHistory={() => nav.push({ kind: 'health-history' }, 'Home')}
         onAddPlant={() => nav.push({ kind: 'add-plant' }, 'Home')}
         onPreparePackage={() => nav.push({ kind: 'prepare-package' }, 'Home')}
+        onRecordings={() => nav.push({ kind: 'recordings' }, 'Home')}
         onApplyUpdate={() => nav.push({ kind: 'apply-update' }, 'Home')}
         onBackup={() => nav.push({ kind: 'backup' }, 'Home')}
         lastBackup={load.data.last_backup}
