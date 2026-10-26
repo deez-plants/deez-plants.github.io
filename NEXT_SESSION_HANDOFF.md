@@ -1051,10 +1051,19 @@ update file came back asking for approval row by row rather than wholesale.
 time** — the first round since the reason started being stored, and the first
 with photos travelling under their own names.
 
-#### B · THE BACKUP GAP — PROPOSED, NOT APPROVED
+#### B · THE BACKUP GAP — PROPOSED 21 SEP, BUILT 1 OCT. THIS IS HISTORY.
 
-**`sync/stateTransfer.ts` does not carry the `packages` store**, nor
-`applied_updates`. It exports `[plants, events, registry, meta]` only. So a
+**CORRECTED 2026-10-26: this was built on 1 October as `787ff0a`.** The section
+below describes the problem as it stood before that and is kept for the
+reasoning, not as a live item — it said "not approved" for three weeks after the
+owner approved it and it was built, which is exactly the kind of stale line that
+gets work done twice. Both stores travel in the backup now, merged add-if-absent.
+What has *not* happened is a real restore: only harnesses have exercised it.
+
+---
+
+**The problem, as it stood on 21 September.** `sync/stateTransfer.ts` did not
+carry the `packages` store, nor `applied_updates`. It exports `[plants, events, registry, meta]` only. So a
 Restore onto a new origin lands with the package counters intact and an empty
 package registry — **and every AI update would then fail validation exactly
 the way this one did.** Recover-from-ZIP is now the escape hatch, but the hole
@@ -1096,9 +1105,22 @@ checklist already asked for.
 an abandoned build folds pending entries and burns a package id. Now visible
 on the Handoff log rather than silent, which was the point, but not changed.
 
-### PHASE 03.2 — CONTRACT VALIDATION & REAL-WORLD REVIEW CYCLE
+### PHASE 03.2 — CONTRACT VALIDATION & REAL-WORLD REVIEW CYCLE — CLOSED 1 OCT
 
-**This is the current phase. NO NEW FEATURE WORK IS AUTHORISED.** Bug fixes,
+**CORRECTED 2026-10-26. THIS PHASE IS OVER AND ITS GATE NO LONGER APPLIES.**
+
+The gate read *"no new feature work is authorised until this cycle has run"*.
+**The cycle ran on 1 October**: a package was built, confirmed sent, reviewed by
+the owner's GPT, answered row by row and applied. Everything built since — the
+Inspect recheck, the Home board, Void from history — was authorised by that.
+
+The heading sat here saying it was the current phase for three and a half weeks
+after it closed. **A session reading it in good faith would have refused to
+build any of the work the owner had already approved.** Kept below for the
+record of what the cycle was for; it is history, not a gate.
+
+**The original wording, 18 September:** this is the current phase, no new
+feature work is authorised. Bug fixes,
 validator alignment and contract corrections remain permitted; anything that
 adds capability does not, until this cycle has run.
 
