@@ -34,6 +34,7 @@
     "../src/capture/photoStore.ts",
     "../src/care/inspect.ts",
     "../src/care/board.ts",
-    "../src/care/voidEntry.ts"
+    "../src/care/voidEntry.ts",
+    "../src/care/loggingDate.ts"
   ]
 }

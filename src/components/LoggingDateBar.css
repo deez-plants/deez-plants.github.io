@@ -1,0 +1,71 @@
+/* See LoggingDateBar.tsx. Grey while it says Today, amber the moment it does
+   not — there is deliberately no state where a screen that will write to a past
+   date looks ordinary. */
+
+.logdate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.logdate.back {
+  background: rgba(233, 161, 92, 0.1);
+  border-color: var(--amber);
+}
+
+.logdate-label {
+  font: 600 19px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+}
+
+.logdate.back .logdate-label { color: var(--amber); }
+
+.logdate-value {
+  flex: 1;
+  font: 600 23px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.logdate.back .logdate-value { color: var(--amber); }
+
+/* The input itself is never seen; the label in front of it is the control.
+   A bare date input cannot be made to match anything else on these screens. */
+.logdate-pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 14px;
+  font: 600 20px/1 var(--sans);
+  color: var(--accent);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.logdate-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+}
+
+.logdate-reset {
+  min-height: 44px;
+  padding: 9px 14px;
+  font: 600 20px/1 var(--sans);
+  color: var(--amber);
+  background: none;
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+}

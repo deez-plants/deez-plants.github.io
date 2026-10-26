@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { ClockTime, EventId, ISODate, PlantId } from '../types/ids';
 import type { CareEventType, StoredEvent } from '../types/event';
 import type { DerivedState } from '../types/derived';
@@ -14,7 +14,11 @@ import {
 import {
   deferDays, INSPECT_REASONS, REASON_TEXT, RECHECK_CHOICES,
 } from '../care/inspect';
+import {
+  getSnapshot as dateSnapshot, isBackdated, loggingDate, subscribe as dateSubscribe,
+} from '../care/loggingDate';
 import { addDays, formatDayMonth } from '../lib/dates';
+import { LoggingDateBar } from '../components/LoggingDateBar';
 import { PlantChrome } from '../components/PlantChrome';
 import { ScoreBlock } from '../score/ScoreBlock';
 import { collectionScore } from '../score/score';
@@ -91,11 +95,33 @@ export default function CareRoundPage({
   state, events, registry, thumbs, as_of, onChanged, backLabel, onBack, detailPlantId,
   allPlants, onNavigate, onOpenThisPlant, onOpenPlant, onAllPlants,
 }: CareRoundPageProps) {
+  /**
+   * The date this screen writes to. Today unless the owner has pointed it at a
+   * session they forgot to log — see `care/loggingDate.ts`. Every screen that
+   * can log says so in amber; there is no state where this looks ordinary and
+   * writes to the past.
+   */
+  const logFor = useSyncExternalStore(dateSubscribe, dateSnapshot, dateSnapshot) && loggingDate(as_of);
+  const backdated = isBackdated(as_of);
   const [draft, setDraft] = useState<RoundDraft>(EMPTY_DRAFT);
   const [flash, setFlash] = useState<Flash | null>(null);
   const [busy, setBusy] = useState(false);
 
   const [detailDraft, setDetailDraft] = useState<DetailDraft>(() => emptyDetailDraft(as_of));
+
+  /**
+   * A backdated session set on Log care carries into a plant's own form.
+   *
+   * Without this the band would say Tuesday while the field underneath said
+   * today, which is worse than not having the feature: the screen would be
+   * contradicting itself about the one thing it is there to make obvious. The
+   * field stays editable — this sets where it starts, not where it has to stay.
+   */
+  const [dateFollowed, setDateFollowed] = useState<string | null>(null);
+  if (backdated && dateFollowed !== logFor) {
+    setDateFollowed(logFor);
+    setDetailDraft((d) => ({ ...d, date: logFor }));
+  }
   const [detailFlash, setDetailFlash] = useState<DetailFlash | null>(null);
   /** Once the owner has set the recheck by hand, a chip must not move it back
       under them. Reset with the draft. */
@@ -117,6 +143,7 @@ export default function CareRoundPage({
   // navigates, so the page you are on always matches the plant named at the
   // top of it - which is what stops care being logged against the wrong one.
   const detailPlant = detailPlantId ? state.plants[detailPlantId] ?? null : null;
+
 
   // Both lower tiers start shut. They open if they hold what is already
   // picked, so a selected type is never hidden behind a closed tier.
@@ -184,8 +211,11 @@ export default function CareRoundPage({
    * events of 14 Sep in one line. See `loggedTodayIds`.
    */
   const done = useMemo(
-    () => (draft.action ? loggedTodayIds(draft.action, plants, events, as_of) : new Set<PlantId>()),
-    [draft.action, plants, events, as_of],
+    // Against the date being logged FOR, not today. Backdating Tuesday should
+    // warn about plants already watered on Tuesday — guarding today's entries
+    // while writing to Tuesday would be the guard watching the wrong day.
+    () => (draft.action ? loggedTodayIds(draft.action, plants, events, logFor) : new Set<PlantId>()),
+    [draft.action, plants, events, logFor],
   );
   const dueCount = useMemo(
     () => preselectFor('Water', plants).length,
@@ -206,7 +236,7 @@ export default function CareRoundPage({
       : {
         action,
         // Not what was watered ten minutes ago by hand.
-        selected: preselectFor(action, plants, loggedTodayIds(action, plants, events, as_of)),
+        selected: preselectFor(action, plants, loggedTodayIds(action, plants, events, logFor)),
         note: draft.note,
       });
   };
@@ -249,7 +279,7 @@ export default function CareRoundPage({
     setBusy(true);
     try {
       const db = await openDeezPlants();
-      const round = await logRound(db, draft, as_of);
+      const round = await logRound(db, draft, logFor);
       await onChanged();
       setFlash({
         kind: 'logged',
@@ -343,6 +373,11 @@ export default function CareRoundPage({
           each other. */}
       {!detailPlant && (
       <>
+      {/* The owner's placement: above the health block, always visible, and the
+          one place the date is changed. "So it's always obvious what date we're
+          on." */}
+      <LoggingDateBar today={as_of} editable />
+
       {/* The collection score, rendered by the one score component. Nothing on
           this screen computes a health figure; it reads the one the ratings
           give and shows it in the same block as every other screen. */}
@@ -714,6 +749,10 @@ export default function CareRoundPage({
               </p>
             </>
           )}
+
+          {/* Says it, cannot change it. A date control on six screens is six
+              places to set one by accident; the control lives on Log care. */}
+          <LoggingDateBar today={as_of} />
 
           <label className="care-detail-field-label" htmlFor="care-detail-date">DATE &amp; TIME</label>
           <div className="care-detail-datetime">
