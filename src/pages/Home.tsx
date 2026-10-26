@@ -7,7 +7,7 @@ import { collectionScore, healthBand } from '../score/score';
 import { Icon } from '../components/Icon';
 import { openDeezPlants, META_KEY } from '../db/schema';
 import {
-  buildBoard, commitLabel, counts, ratingsLine, restingLine, toggle,
+  buildBoard, commitLabel, counts, ratingsLine, restingLine, summariseToday, toggle,
   SECTION_CAP, type Basket,
 } from '../care/board';
 import { BoardRowView } from '../components/BoardRow';
@@ -105,6 +105,9 @@ export default function Home({
    * makes a screen tiring. See `care/board.ts`.
    */
   const board = useMemo(() => buildBoard(state), [state]);
+  /** What has and has not been looked at today — see `summariseToday`. */
+  const today = useMemo(() => summariseToday(state, events, as_of), [state, events, as_of]);
+  const [missedOpen, setMissedOpen] = useState(false);
   const [basket, setBasket] = useState<Basket>(() => new Map());
   const [attentionOpen, setAttentionOpen] = useState(false);
   const [comingOpen, setComingOpen] = useState(false);
@@ -450,6 +453,54 @@ export default function Home({
                 <button type="button" className="home-ratings-change" onClick={() => onOpenPlant(p.plant_id)}>
                   Change
                 </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* The owner's question, which nothing answered: what have I NOT touched?
+          Recently logged says what was done; this names what was missed. One
+          line, always visible — the whole point is that "1 not accounted for"
+          catches the eye without being asked for. */}
+      <section className="home-card">
+        <button
+          type="button"
+          className="home-today"
+          onClick={() => setMissedOpen(!missedOpen)}
+          disabled={today.missed.length === 0}
+        >
+          <span className="home-today-head">Today · {today.active_count} plants</span>
+          <span className="home-today-line">
+            {today.watered > 0 && <>{today.watered} watered</>}
+            {today.watered > 0 && (today.checked > 0 || today.other > 0) && ' · '}
+            {today.checked > 0 && <>{today.checked} checked</>}
+            {today.checked > 0 && today.other > 0 && ' · '}
+            {today.other > 0 && <>{today.other} other</>}
+            {today.watered + today.checked + today.other === 0 && 'Nothing logged yet'}
+            {today.missed.length > 0 ? (
+              <>
+                {' · '}
+                <strong className="home-today-missed">
+                  {today.missed.length} not accounted for
+                </strong>
+              </>
+            ) : (
+              <> · <strong className="home-today-all">every plant looked at</strong></>
+            )}
+          </span>
+        </button>
+
+        {missedOpen && today.missed.length > 0 && (
+          <ul className="home-board home-today-list">
+            {today.missed.slice(0, SECTION_CAP * 4).map((p) => (
+              <li key={p.plant_id}>
+                <BoardRowView
+                  row={{ plant: p, days_past: p.adherence.days_past ?? 0, stale_rating: false }}
+                  action={basket.get(p.plant_id) ?? null}
+                  onOpen={() => onLogCare(p.plant_id)}
+                  onTick={(a) => setBasket((b) => toggle(b, p.plant_id, a))}
+                />
               </li>
             ))}
           </ul>

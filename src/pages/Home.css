@@ -547,3 +547,34 @@
   border: 1px solid var(--line-strong);
   border-radius: 13px;
 }
+
+/* Today — what has and has not been looked at. The owner's question, and the
+   one number on it that matters is the one at the end. */
+.home-today {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+}
+
+.home-today:disabled { opacity: 1; }
+
+.home-today-head {
+  font: 600 22px/1.2 var(--sans);
+  color: var(--ink);
+}
+
+.home-today-line {
+  font: 400 21px/1.35 var(--sans);
+  color: var(--ink-50);
+  text-wrap: pretty;
+}
+
+.home-today-missed { color: var(--warn); font-weight: 600; }
+.home-today-all { color: var(--accent); font-weight: 600; }
+
+.home-today-list { margin-top: 12px; }

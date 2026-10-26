@@ -19,7 +19,7 @@
 
 const {
   buildBoard, toggle, counts, commitLabel, rowReason, ratingReason, ratingsLine,
-  restingLine, COMING_UP_DAYS, SECTION_CAP,
+  restingLine, summariseToday, COMING_UP_DAYS, SECTION_CAP,
 } = require('./build/care/board.js');
 
 let pass = 0, fail = 0;
@@ -219,6 +219,92 @@ eq('coming up is a week', COMING_UP_DAYS, 7);
   // An archived plant is never on the board, whatever its dates say.
   const b = buildBoard(stateOf([due('A', 9, { archived: true }), due('B', 1)]));
   eq('archived plants are off the board', ids(b.needs_attention), ['B']);
+}
+
+/* ------------------------------------------- today, and what was missed -- */
+
+/**
+ * The owner's real test case, 25 October: 22 of 23 active plants had water or
+ * a check, and Aloe Vera had neither. The useful answer is not the 22.
+ */
+
+const todayEv = (plant_id, type, date = '2026-10-25', over = {}) =>
+  ({ event_id: `E-${plant_id}-${type}-${date}`, plant_id, type, date, ...over });
+
+{
+  const plants = [];
+  for (let i = 1; i <= 23; i += 1) plants.push(due(`P${i}`, 1));
+  const st = stateOf(plants);
+
+  const events = [];
+  for (let i = 1; i <= 14; i += 1) events.push(todayEv(`P${i}`, 'Water'));
+  for (let i = 15; i <= 22; i += 1) events.push(todayEv(`P${i}`, 'Inspect'));
+  // P23 is the Aloe: nothing at all.
+
+  const t = summariseToday(st, events, '2026-10-25');
+  eq('every plant is counted', t.active_count, 23);
+  eq('waterings', t.watered, 14);
+  eq('checks', t.checked, 8);
+  eq('and the one that matters', t.missed.map((p) => p.plant_id), ['P23']);
+}
+
+{
+  // The owner's rule, which is simpler than the one it replaced: anything you
+  // cannot do without looking at the plant counts.
+  const st = stateOf([due('A', 1), due('B', 1), due('C', 1), due('D', 1), due('E', 1)]);
+  const events = [
+    todayEv('A', 'Dead leaves'),
+    todayEv('B', 'Photo'),
+    todayEv('C', 'Feed'),
+    todayEv('D', 'Rate', '2026-10-25', { to: 7 }),
+  ];
+  const t = summariseToday(st, events, '2026-10-25');
+  eq('dead leaves, a photo, a feed and a rating all count',
+    t.missed.map((p) => p.plant_id), ['E']);
+  eq('and they are counted as other, not as water or checks', [t.watered, t.checked, t.other], [0, 0, 4]);
+}
+
+{
+  // An Edit is a change to the record, not to the plant. Nobody looked at a
+  // leaf to rename a room.
+  const st = stateOf([due('A', 1)]);
+  const t = summariseToday(st, [todayEv('A', 'Edit')], '2026-10-25');
+  eq('an edit does not count as having looked', t.missed.map((p) => p.plant_id), ['A']);
+}
+
+{
+  // A taken-back watering means it did not happen, so the plant goes back to
+  // unaccounted-for. A mistake still counting as a look is the one case where
+  // this card would lie.
+  const st = stateOf([due('A', 1)]);
+  const watered = todayEv('A', 'Water');
+  eq('watered, so accounted for',
+    summariseToday(st, [watered], '2026-10-25').missed.length, 0);
+  const voided = [watered, { event_id: 'V1', plant_id: 'A', type: 'Void', date: '2026-10-25', voids: watered.event_id }];
+  eq('taken back, so not',
+    summariseToday(st, voided, '2026-10-25').missed.map((p) => p.plant_id), ['A']);
+  eq('and the Void itself counts as nothing',
+    summariseToday(st, voided, '2026-10-25').other, 0);
+}
+
+{
+  // It reads the entry's own date. Backdate Tuesday's session on Thursday and
+  // Thursday's card does not move -- those plants still have not been looked
+  // at today.
+  const st = stateOf([due('A', 1)]);
+  const backdated = todayEv('A', 'Water', '2026-10-20');
+  eq('a backdated entry does not account for today',
+    summariseToday(st, [backdated], '2026-10-25').missed.map((p) => p.plant_id), ['A']);
+  eq('but it does account for the day it names',
+    summariseToday(st, [backdated], '2026-10-20').missed.length, 0);
+}
+
+{
+  // An archived plant is nobody's job.
+  const st = stateOf([due('A', 1, { archived: true }), due('B', 1)]);
+  const t = summariseToday(st, [], '2026-10-25');
+  eq('archived plants are not counted', t.active_count, 1);
+  eq('nor missed', t.missed.map((p) => p.plant_id), ['B']);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

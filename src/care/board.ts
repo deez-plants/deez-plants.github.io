@@ -113,6 +113,86 @@ export function buildBoard(state: DerivedState): Board {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Today — what has and has not been looked at                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The owner's question, and the app could not answer it: **what have I NOT
+ * touched today?**
+ *
+ * Their test case, 25 October: 22 of 23 active plants had water or a check,
+ * and Aloe Vera had neither. Recently logged lists what was done; nothing
+ * named what was missed. The useful screen is not a list of twenty-two
+ * successes, it is the one name you skipped.
+ *
+ * **Any care entry counts, and that is the owner's rule rather than mine.**
+ * You cannot take dead leaves off a plant, feed it, repot it, photograph it or
+ * rate it without looking at it. One rule instead of a list of qualifying
+ * types — fewer special cases, and nothing to maintain as care types are added.
+ *
+ * Two edges that follow from it:
+ *
+ * - **A `Void` does not count, and nor does the entry it takes back.** Taking
+ *   back a watering means it did not happen, so the plant returns to
+ *   unaccounted-for. A mistake still counting as a look would be the one case
+ *   where this card lies.
+ * - **It reads the entry's own date, not when it was written.** Backdate
+ *   Tuesday's session on Thursday and Thursday's card does not move: those
+ *   plants still have not been looked at today. Correct, and the kind of thing
+ *   that reads as a bug if nobody says it first.
+ */
+export interface TodaySummary {
+  /** Active plants with any care entry dated today. */
+  accounted: PlantId[];
+  /** Active plants with none — the answer to the actual question. */
+  missed: DerivedPlant[];
+  watered: number;
+  checked: number;
+  /** Every other kind of care, counted together. */
+  other: number;
+  active_count: number;
+}
+
+export function summariseToday(
+  state: DerivedState,
+  events: readonly { plant_id: PlantId | null; type: string; date: ISODate; event_id: string; voids?: string }[],
+  as_of: ISODate,
+): TodaySummary {
+  const voided = new Set<string>();
+  for (const e of events) if (e.type === 'Void' && e.voids) voided.add(e.voids);
+
+  const accounted = new Set<PlantId>();
+  let watered = 0;
+  let checked = 0;
+  let other = 0;
+
+  for (const e of events) {
+    if (e.date !== as_of || e.plant_id === null) continue;
+    if (e.type === 'Void' || voided.has(e.event_id)) continue;
+    // Edits are changes to the record, not to the plant. Nobody looked at a
+    // leaf to rename a room.
+    if (e.type === 'Edit' || e.type === 'Archive') continue;
+    const plant = state.plants[e.plant_id];
+    if (!plant || plant.archived) continue;
+
+    accounted.add(e.plant_id);
+    if (e.type === 'Water') watered += 1;
+    else if (e.type === 'Inspect') checked += 1;
+    else other += 1;
+  }
+
+  const active = state.order.map((id) => state.plants[id]).filter((p) => !p.archived);
+  return {
+    accounted: [...accounted],
+    missed: active.filter((p) => !accounted.has(p.plant_id)),
+    watered,
+    checked,
+    other,
+    active_count: active.length,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
 /* The basket                                                                  */
 /* -------------------------------------------------------------------------- */
 
