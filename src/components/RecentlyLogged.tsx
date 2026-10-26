@@ -86,21 +86,21 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
   return (
     <section className="home-card">
       <button type="button" className="home-fold" onClick={() => setOpen(!open)}>
-        <span className="home-label rec-label">Recently logged</span>
+        <span className="home-label rlog-label">Recently logged</span>
         <span className="home-fold-count">{rows.length}</span>
         <span className="home-fold-mark">{open ? '−' : '+'}</span>
       </button>
 
       {open && (
       <>
-      <ul className="rec-list">
+      <ul className="rlog-list">
         {rows.map((row) => (
-          <li key={row.event.event_id} className={row.voided ? 'rec voided' : 'rec'}>
-            <span className="rec-body">
-              <span className="rec-what">
+          <li key={row.event.event_id} className={row.voided ? 'rlog voided' : 'rlog'}>
+            <span className="rlog-body">
+              <span className="rlog-what">
                 {eventLabel(row.event)} · {row.plant_name}
               </span>
-              <span className="rec-when">
+              <span className="rlog-when">
                 {formatDayMonth(row.event.date)} {row.event.time}
                 {row.voided && ' · taken back'}
               </span>
@@ -111,7 +111,7 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
             {!row.voided && row.event.type !== 'Void' && (
               <button
                 type="button"
-                className="rec-void"
+                className="rlog-void"
                 onClick={() => {
                   // A refusal is shown as a sentence rather than as a dead
                   // button: "why is this greyed out" is how a person decides an
@@ -129,7 +129,7 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
         ))}
       </ul>
 
-      {refused && <p className="rec-refused">{refused}</p>}
+      {refused && <p className="rlog-refused">{refused}</p>}
 
       {rows.length >= RECENT_CAP && (
         <button type="button" className="home-link" onClick={() => setMore(!more)}>
@@ -138,23 +138,23 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
       )}
 
       {asking && (
-        <div className="rec-confirm">
-          <p className="rec-confirm-head">
+        <div className="rlog-confirm">
+          <p className="rlog-confirm-head">
             Take back <strong>{eventLabel(asking)} · {state.plants[asking.plant_id as string]?.name}</strong>,
             {' '}{formatDayMonth(asking.date)} at {asking.time}?
           </p>
-          <p className="rec-confirm-body">
+          <p className="rlog-confirm-body">
             The entry stays in your history, struck through, with this correction
             beneath it. Nothing is deleted — that is what lets the record be
             trusted in ten years.
           </p>
-          <div className="rec-chips">
+          <div className="rlog-chips">
             {VOID_REASONS.map((r) => (
               <button
                 key={r}
                 type="button"
                 aria-pressed={reason === r}
-                className={reason === r ? 'rec-chip on' : 'rec-chip'}
+                className={reason === r ? 'rlog-chip on' : 'rlog-chip'}
                 onClick={() => setReason(reason === r ? null : r)}
               >
                 {VOID_REASON_TEXT[r]}
@@ -163,15 +163,15 @@ export function RecentlyLogged({ state, events, as_of, onChanged }: RecentlyLogg
           </div>
           {/* Said before they commit, not discovered afterwards. */}
           {(asking.type === 'Water' || asking.type === 'Feed') && (
-            <p className="rec-confirm-warn">
+            <p className="rlog-confirm-warn">
               Your care adherence figures will change — this watering stops counting.
             </p>
           )}
-          <div className="rec-confirm-row">
-            <button type="button" className="rec-yes" disabled={busy} onClick={() => void takeBack()}>
+          <div className="rlog-confirm-row">
+            <button type="button" className="rlog-yes" disabled={busy} onClick={() => void takeBack()}>
               {busy ? 'Taking it back…' : 'Take it back'}
             </button>
-            <button type="button" className="rec-no" onClick={() => { setAsking(null); setReason(null); }}>
+            <button type="button" className="rlog-no" onClick={() => { setAsking(null); setReason(null); }}>
               Cancel
             </button>
           </div>
