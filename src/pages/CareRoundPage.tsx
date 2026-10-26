@@ -775,15 +775,27 @@ export default function CareRoundPage({
             </div>
           )}
 
-          <button
-            type="button"
-            className="care-save"
-            disabled={!detailDraft.type || detailBusy}
-            onClick={() => void saveDetail()}
-          >
-            {detailDraft.type ? `Log ${detailDraft.type.toLowerCase()}` : 'Pick what you did'}
-          </button>
-          <p className="care-save-note">Saves one event.</p>
+          {/* Stuck to the foot of the screen, not the foot of the form.
+              The owner entered a reason and a recheck, went back, and the
+              entry was never written — their words were that there seemed to
+              be a hidden second confirmation. There is not: the button had
+              simply gone below the fold when the inspection questions made
+              this form taller, so nothing on screen said the entry was still
+              unwritten. A commit you cannot see is a commit that does not
+              happen. */}
+          <div className="care-save-bar">
+            <button
+              type="button"
+              className="care-save"
+              disabled={!detailDraft.type || detailBusy}
+              onClick={() => void saveDetail()}
+            >
+              {detailDraft.type ? `Log ${detailDraft.type.toLowerCase()}` : 'Pick what you did'}
+            </button>
+            <p className="care-save-note">
+              {detailDraft.type ? 'Not saved until you tap this.' : 'Saves one event.'}
+            </p>
+          </div>
           </>
         </section>
       )}

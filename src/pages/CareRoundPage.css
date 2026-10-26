@@ -676,3 +676,24 @@
   font: 400 20px/1.35 var(--sans) !important;
   color: var(--warn) !important;
 }
+
+/* The detail form's commit, pinned to the foot of the screen.
+
+   It used to sit at the bottom of the form, which was fine until the
+   inspection questions made the form taller than a phone. The owner filled it
+   in, navigated away and lost the lot — reasonably reporting it as a hidden
+   second step, because nothing visible said the entry was still unwritten. */
+.care-save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 18px -20px 0;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+.care-save-bar .care-save-note {
+  margin: 8px 0 0;
+  text-align: center;
+}
