@@ -311,6 +311,41 @@ watch for it. **Parked, not fixed.**
 **GPT's item 10 — the More screen's structure — parked.** With Recordings now on
 Home the pressure is off. Revisit only if the owner raises it.
 
+#### THE OWNER'S NEXT MOVE: THE INTERVALS ARE WRONG, AND IT IS NOT A CODE FIX
+
+**Raised by the owner on 26 October, after a quick test of the day's changes.**
+Their words: the app is working fine, but *"the preset intervals are obviously
+wrong and constantly getting warnings is not what I want to see all the time"*.
+They are going to take it to their GPT and adjust the watering intervals through
+an ordinary review round.
+
+**This is the system working, not failing, and a later session must not treat it
+as a bug to fix in code.** The seeded intervals were a starting guess. Six weeks
+of real waterings and inspections are now in the record, which is exactly the
+evidence an AI round is for. **The correction path is an update file proposing
+new `water_interval_days` values, reviewed row by row.** Nothing in `src/` should
+change.
+
+**Why it matters more than it looks.** A board that says *"4 days past interval"*
+about a plant that was never on a four-day cycle is a board that cries wolf, and
+the owner learns to ignore it. That is the same failure the coverage gate had in
+September — it failed honest walks until the twenty-second tolerance was added,
+with the note that *a gate that cries wolf is worse than no gate*. The attention
+list is the same kind of instrument. **Its value is entirely in being believed.**
+
+**What this means for the Inspect work built on 1 October.** Repeated *still
+moist* on a plant is precisely the pattern that says the interval is too short,
+and their GPT already agreed to propose a longer one in a normal review round
+rather than the app adjusting anything itself. Those inspections are travelling
+in packages now. **If the owner's next round proposes interval changes, that is
+the designed loop closing for the first time** — worth saying so to them, because
+it is the thing the whole append-only record was built to make possible.
+
+**If a future session is asked to "stop the warnings":** the answer is almost
+never to change what the board surfaces. It is either that the interval is wrong
+(an AI round), or that the plant has been checked and deferred (built, 1 Oct).
+Changing the threshold would hide a real signal to quiet a wrong number.
+
 #### WHAT IS STILL OPEN
 
 Nothing is half-built. These are decisions and observations.
@@ -325,6 +360,7 @@ Nothing is half-built. These are decisions and observations.
 | **Feed has no schedule** | So the board is watering only. |
 | **A real restore** | Never performed. Only harnesses have exercised it. |
 | **`013-OXA` winter interval, `022-CAC` species** | Plant-data corrections for an AI round. **Never in code.** |
+| **The watering intervals generally** | The owner is taking these to their GPT — see the section above. Also never in code. |
 
 
 ### 16 OCTOBER — SUPERSEDED BY THE 26 OCTOBER SECTION ABOVE
