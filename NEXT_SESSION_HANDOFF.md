@@ -207,7 +207,126 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ## Start here: what to do first
 
-### READ THIS FIRST — WINDOW CLOSED 16 OCTOBER 2026
+### WHERE THINGS STAND — 26 OCTOBER 2026
+
+**Seven commits today, all deployed.** The owner has been using the app for the
+whole of October: an AI package on 25 October, **23 active plants** (the two new
+ones are in), and on that day 22 of 23 had water or a check logged. The board
+survived contact with real use. What it produced was a repair list, which is
+what today was.
+
+**Everything below is built, checked and pushed. Nothing is half-done.**
+
+#### WHAT WAS WRONG, AND WHAT IT COST
+
+**The Record screen was laid out sideways** — a horizontal strip, vertically
+centred, running off the right of the phone. Screenshots in
+`screenshots/bug-record-sideways-*.png`.
+
+**It was a class-name collision, and it was mine.** The Record page's root has
+been `<main className="rec">` since the beginning; on 2 October I named Recently
+logged's list rows `.rec` as well. **This app's CSS is global** — plain
+stylesheets imported per component, no modules — so `.rec { display: flex }`
+written for a list row landed on the whole recording screen. Renamed to `.rlog`.
+
+**The lesson is not "rename that one".** A short class name in a globally scoped
+stylesheet claims that name for the entire app. Check before taking one.
+
+**And 1,008 automated checks could not see it.** Neither could the browser
+harnesses, because they exercise logic rather than layout. It took a person
+holding a phone on a walk. That is the second time this month real use found
+what the suite could not.
+
+#### WHAT WAS BUILT TODAY
+
+| Commit | What |
+|---|---|
+| `ad8a244` | The Record screen is not sideways any more |
+| `af86903` | Two handoff sections were telling the next session lies |
+| `9acb879` | The Log care commit button cannot go below the fold |
+| `e1f4bfa` | Log a session you forgot to log — backdating |
+| `f4a787e` | Home answers what you have not looked at today |
+| `8d4ab3e` | Recordings sits with the rest of the AI round-trip |
+
+**Backdating** (`care/loggingDate.ts`, `components/LoggingDateBar.tsx`) is the
+substantial one. The date sits above the health block on Log care, always
+visible, and that is the only place it is changed. Grey while it says Today,
+**amber the instant it does not**, with *Back to today* beside it.
+
+Its rules are the safety and they are narrow, because a date that outlives the
+screen can outlive the owner's memory of setting it and entries are permanent:
+
+- **Spent at midnight and on app restart.** Setting Tuesday on Monday night and
+  watering on Tuesday morning would otherwise write Tuesday's care onto Monday
+  with nothing on screen looking wrong.
+- **Never in the future.** Refused rather than clamped — silently moving the
+  owner's choice is worse than ignoring it.
+- **The duplicate guard checks the date being logged for**, not today.
+- **Home is exempt, and the owner chose that.** Its board is about what is due
+  *now*; a backdated tick there would make rows vanish for reasons tied to a
+  date not visible from that screen.
+- **Photos and ratings are exempt, and that is correctness not scope.** A
+  photograph shows the plant at the moment it is taken; a rating is a judgement
+  made today. Care is the only thing that can honestly have happened earlier.
+
+**The Today card** answers the owner's own question — *what have I NOT touched?*
+Any care entry counts, which is their rule and simpler than mine: you cannot
+take dead leaves off a plant, feed it, repot it, photograph it or rate it
+without looking at it. A `Void` does not count and nor does the entry it takes
+back. It reads the entry's own date, so backdating Tuesday on Thursday does not
+move Thursday's card.
+
+#### THE TWO STALE SECTIONS, AND WHY THIS KEEPS HAPPENING
+
+Found while auditing what was outstanding. Both would have cost a session real
+work:
+
+- **"B · THE BACKUP GAP — PROPOSED, NOT APPROVED"** had said that for three
+  weeks after the owner approved it and it was built (`787ff0a`, 1 Oct).
+- **"PHASE 03.2 — NO NEW FEATURE WORK IS AUTHORISED"** still declared itself the
+  current phase. That gate closed on 1 October when the review cycle ran. **A
+  session reading it in good faith would have refused to build everything the
+  owner had already approved.**
+
+Both corrected in place, dated, with the original kept beneath. **The pattern to
+watch: a heading written in the present tense goes stale silently.** When a
+section's claim stops being true, fix the heading first — it is what gets acted
+on.
+
+#### DECIDED TODAY, AND DECLINED
+
+**GPT's audit item 6 — reason chips on Home's Checked — was considered and
+declined**, by the owner, with reasoning. Home stays **one tap, done**: Watered
+or Checked, into the basket, commit. The chips, the recheck override and the
+standing-water prompt live on the plant's page, one tap away by the row's name.
+Speed where you are walking, detail where you have stopped to look. **It was
+raised, weighed and settled — do not bring it back as a fresh idea.**
+
+**GPT's item 1 — back through a plant-to-plant trail — the owner has decided to
+leave as is.** `swapPlant` replaces rather than pushes when you swipe sideways
+through plants, which is deliberate and documented in `nav/stack.ts`. They will
+watch for it. **Parked, not fixed.**
+
+**GPT's item 10 — the More screen's structure — parked.** With Recordings now on
+Home the pressure is off. Revisit only if the owner raises it.
+
+#### WHAT IS STILL OPEN
+
+Nothing is half-built. These are decisions and observations.
+
+| | |
+|---|---|
+| **The phone, again** | Everything today is unverified on a real device. Backdating especially: the amber band and the date picker have only been driven on a laptop. |
+| **The *All* link under Needs attention** | Parked by the owner. Raise, do not build. |
+| **Take back one fold deeper** | Parked knowingly. If they report hunting for it, the fix is Take back on a plant's own History, **not** reopening the fold. |
+| **Back through a plant trail** | Parked today. See above. |
+| **The More screen** | Parked today. |
+| **Feed has no schedule** | So the board is watering only. |
+| **A real restore** | Never performed. Only harnesses have exercised it. |
+| **`013-OXA` winter interval, `022-CAC` species** | Plant-data corrections for an AI round. **Never in code.** |
+
+
+### 16 OCTOBER — SUPERSEDED BY THE 26 OCTOBER SECTION ABOVE
 
 **The last code change was 2 October. Nothing has been committed in the
 fortnight since.** The tree is clean, everything is pushed, and the live site is

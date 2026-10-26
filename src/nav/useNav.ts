@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { RootTab, Screen } from './types';
+import type { TabItem } from './TabBar';
 import * as nav from './stack';
 
 /**
@@ -27,6 +28,24 @@ export function useNav(initialTab: RootTab = 'plants') {
   const root = stack[0].screen;
   const activeTab: RootTab | null =
     root.kind === 'home' || root.kind === 'plants' || root.kind === 'record' ? root.kind : null;
+  /**
+   * Which tab-bar item to light up.
+   *
+   * **`activeTab` is not enough**, and the owner found that: Home and Plants
+   * highlighted, Log and More never did. Those two are not roots — they push a
+   * screen onto whatever you were looking at — so there was nothing for a
+   * root-based check to compare against and the bar simply said nothing.
+   *
+   * So this reads the screen you are ON rather than the root you came from.
+   * Standing on Log care lights Log, wherever you reached it from; standing on
+   * All pages lights More. Everything else falls back to the root, which is
+   * what makes Home and Plants behave as they always have.
+   */
+  const activeItem: TabItem | null =
+    current.kind === 'care' ? 'log'
+      : current.kind === 'all-pages' ? 'more'
+        : activeTab;
+
   const backLabel = stack.length > 1 ? stack[stack.length - 1].backLabel : null;
   /** There is something behind this screen. Roots have nothing behind them,
       which is why the edge-swipe is inert on Home, Plants and Record. */
@@ -36,6 +55,7 @@ export function useNav(initialTab: RootTab = 'plants') {
   return {
     current,
     activeTab,
+    activeItem,
     /** How deep the stack is. `App` watches this to tell a pop from a push, so
         that going back can restore where the screen was left. */
     depth: stack.length,

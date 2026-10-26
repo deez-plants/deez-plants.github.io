@@ -4,8 +4,12 @@ import { Icon, type IconName } from '../components/Icon';
 import type { RootTab } from './types';
 import './TabBar.css';
 
+/** Everything the bar can light up. `RootTab` is the three that clear the
+    stack; Log and More push, which is why they needed naming separately. */
+export type TabItem = RootTab | 'log' | 'more';
+
 export interface TabBarProps {
-  active: RootTab | null;
+  active: TabItem | null;
   /** Home and Plants only. The recorder goes through `onRecord`, which has to
       decide between clearing the stack and pushing onto it. */
   onTab: (tab: 'home' | 'plants') => void;
@@ -109,11 +113,24 @@ export function TabBar({ active, onTab, onRecord, onLog, onMore }: TabBarProps) 
         </span>
         <span className="tabbar-rec-label">{live ? <RecTimer /> : 'Rec'}</span>
       </button>
-      <button type="button" className="tabbar-item" onClick={onLog}>
+      {/* These two push rather than clearing the stack, so "active" means the
+          screen you are on, not the root you came from. They were hardcoded
+          inactive and never lit at all — the owner noticed. */}
+      <button
+        type="button"
+        className={active === 'log' ? 'tabbar-item on' : 'tabbar-item'}
+        aria-current={active === 'log' ? 'page' : undefined}
+        onClick={onLog}
+      >
         <Icon name={ICONS.log} size={ICON_PX} />
         Log
       </button>
-      <button type="button" className="tabbar-item" onClick={onMore}>
+      <button
+        type="button"
+        className={active === 'more' ? 'tabbar-item on' : 'tabbar-item'}
+        aria-current={active === 'more' ? 'page' : undefined}
+        onClick={onMore}
+      >
         <Icon name={ICONS.more} size={ICON_PX} />
         More
       </button>

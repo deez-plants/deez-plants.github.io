@@ -652,7 +652,7 @@ export default function App() {
     <>
       <div className="app-content">{body}</div>
       <TabBar
-        active={nav.activeTab}
+        active={nav.activeItem}
         onTab={nav.goRoot}
         onRecord={openRecorder}
         onLog={() => nav.push({ kind: 'care' }, screenTitle(current))}
