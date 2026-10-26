@@ -209,7 +209,7 @@ their ticks get overwritten. Edit the `steps` array, not prose.
 
 ### WHERE THINGS STAND — 26 OCTOBER 2026
 
-**Seven commits today, all deployed.** The owner has been using the app for the
+**Eight commits today, all deployed.** The owner has been using the app for the
 whole of October: an AI package on 25 October, **23 active plants** (the two new
 ones are in), and on that day 22 of 23 had water or a check logged. The board
 survived contact with real use. What it produced was a repair list, which is
@@ -247,6 +247,7 @@ what the suite could not.
 | `e1f4bfa` | Log a session you forgot to log — backdating |
 | `f4a787e` | Home answers what you have not looked at today |
 | `8d4ab3e` | Recordings sits with the rest of the AI round-trip |
+| `7a0d89e` | Log and More light up like the other tabs |
 
 **Backdating** (`care/loggingDate.ts`, `components/LoggingDateBar.tsx`) is the
 substantial one. The date sits above the health block on Log care, always
